@@ -1,14 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Agentic Predictive Maintenance System
+
+This project implements an agentic system for predictive maintenance using LangGraph.js and Next.js. The system uses AWS Bedrock and MongoDB for state management.
+
+## Architecture
+
+The application is built using:
+
+- **Next.js**: Frontend and API routes
+- **LangGraph.js**: Agent orchestration framework
+- **AWS Bedrock**: LLM provider (Claude models)
+- **MongoDB**: Storage and state persistence
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- MongoDB (local or Atlas)
+- AWS Account with Bedrock access
+
+### Setup
+
+1. Clone the repository
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Copy the example environment file and configure it:
+
+```bash
+cp .env.example .env.local
+```
+
+4. Update the `.env.local` file with your MongoDB and AWS credentials.
+
+5. Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
 pnpm dev
 # or
 bun dev
