@@ -1,8 +1,26 @@
+"use client";
+import { MachineSimulator } from "../../components/machineSimulator";
+import { useMachineSimulator } from "../../components/machineSimulator/hooks";
+import IncidentResponse from "../../components/incidentResponse/IncidentResponse";
+import { useState, useCallback } from "react";
+
 export default function Page() {
+  const [alertTrigger, setAlertTrigger] = useState(0);
+  const sim = useMachineSimulator({
+    onAlert: useCallback(() => {
+      setAlertTrigger((prev) => prev + 1);
+    }, []),
+  });
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen">
-      <h1 className="text-2xl font-bold mb-4">Failure Prediction</h1>
-      <p className="text-gray-500">This page is under construction.</p>
+    <main className="flex flex-row min-h-screen">
+      {/* Left: Machine Simulator (50%) */}
+      <div className="w-1/2 h-full border-r border-gray-200 bg-gray-50">
+        <MachineSimulator {...sim} />
+      </div>
+      {/* Right: Incident Response (50%) */}
+      <div className="w-1/2 h-full flex items-center justify-center">
+        <IncidentResponse alertTrigger={alertTrigger} />
+      </div>
     </main>
   );
 }
