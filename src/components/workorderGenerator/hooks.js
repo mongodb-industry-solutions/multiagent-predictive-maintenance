@@ -26,6 +26,24 @@ export function useWorkOrderGenerator({ triggerAgent, selectedIncident }) {
   const [form, setForm] = useState({});
   const [workorders, setWorkorders] = useState([]);
   const [expanded, setExpanded] = useState(null);
+  // Modal state for AgentStatus info
+  const [showModal, setShowModal] = useState(false);
+
+  // Modal content for this context
+  const modalContent = (
+    <div className="p-4">
+      <h3 className="text-lg font-semibold mb-2">Agent Info</h3>
+      <div className="text-gray-600">(Agent details coming soon...)</div>
+      <div className="mt-4 flex justify-end">
+        <button
+          className="bg-gray-200 px-4 py-2 rounded"
+          onClick={() => setShowModal(false)}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
 
   // Called when the workflow is triggered
   async function handleAgentTrigger() {
@@ -60,5 +78,8 @@ export function useWorkOrderGenerator({ triggerAgent, selectedIncident }) {
     handleFormChange,
     handleExpand,
     handleAgentTrigger,
+    showModal,
+    setShowModal,
+    modalContent,
   };
 }

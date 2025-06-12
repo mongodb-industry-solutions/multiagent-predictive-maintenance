@@ -1,32 +1,13 @@
 "use client";
 
 import React, { useRef } from "react";
-import dynamic from "next/dynamic";
 
-const WorkOrderPlanner = dynamic(
-  () => import("@/components/workOrderPlanner/WorkOrderPlanner"),
-  { ssr: false }
-);
-const WorkOrderGenerator = dynamic(
-  () => import("@/components/workOrderGenerator/temp_WorkOrderGenerator"),
-  { ssr: false }
-);
+import WorkOrderPlanner from "@/components/workOrderPlanner/WorkOrderPlanner";
+import WorkOrderGenerator from "@/components/workOrderGenerator/WorkOrderGenerator";
 
 export default function Page() {
-  const [selectedIncident, setSelectedIncident] = React.useState(null);
+  const [selectedIncidentId, setSelectedIncidentId] = React.useState(null);
   const triggerAgentRef = React.useRef();
-
-  // For controlling the planner's selected incident and triggering the generator
-  const handleIncidentSelect = (incident) => {
-    setSelectedIncident(incident);
-  };
-
-  // Handler for Continue Workflow button
-  const handleContinueWorkflow = () => {
-    if (triggerAgentRef.current) {
-      triggerAgentRef.current();
-    }
-  };
 
   // Mock incident reports (should match planner's)
   const mockIncidentReports = [
@@ -50,9 +31,21 @@ export default function Page() {
     },
   ];
 
+  // Handler for incident selection
+  const handleIncidentSelect = (id) => {
+    setSelectedIncidentId(id);
+  };
+
+  // Handler for Continue Workflow button
+  const handleContinueWorkflow = () => {
+    if (triggerAgentRef.current) {
+      triggerAgentRef.current();
+    }
+  };
+
   // Find the selected incident object
   const selectedIncidentObj = mockIncidentReports.find(
-    (ir) => ir.Id === selectedIncident
+    (ir) => ir.Id === selectedIncidentId
   );
 
   return (
@@ -60,7 +53,7 @@ export default function Page() {
       {/* Left: Planner */}
       <div className="w-1/2 max-w-5xl mx-auto my-8 flex flex-col gap-6">
         <WorkOrderPlanner
-          selectedIncidentId={selectedIncident}
+          selectedIncidentId={selectedIncidentId}
           onSelectIncident={handleIncidentSelect}
           onContinueWorkflow={handleContinueWorkflow}
         />

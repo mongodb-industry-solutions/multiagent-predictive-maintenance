@@ -1,4 +1,3 @@
-import React, { useRef } from "react";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
 import Code from "@leafygreen-ui/code";
 import TextInput from "@leafygreen-ui/text-input";
@@ -17,6 +16,9 @@ export default function WorkOrderGenerator({
     handleFormChange,
     handleExpand,
     handleAgentTrigger,
+    showModal,
+    setShowModal,
+    modalContent,
   } = useWorkOrderGenerator({
     triggerAgent: triggerAgentRef,
     selectedIncident,
@@ -30,7 +32,16 @@ export default function WorkOrderGenerator({
       </h2>
       {/* Agent Status - left aligned */}
       <div className="flex justify-start mb-4">
-        <AgentStatus status={agentStatus} />
+        <AgentStatus
+          isActive={agentStatus === "active"}
+          onInfo={() => setShowModal(true)}
+          onCloseModal={() => setShowModal(false)}
+          showModal={showModal}
+          modalContent={modalContent}
+          statusText="Agent"
+          activeText="Active"
+          inactiveText="Inactive"
+        />
       </div>
       {/* Main content: Form (left) and Workorder list (right) */}
       <div className="flex flex-1 gap-6">
@@ -43,19 +54,19 @@ export default function WorkOrderGenerator({
             label="Machine ID"
             value={form.machine_id || ""}
             onChange={(e) => handleFormChange("machine_id", e.target.value)}
-            disabled
+            readOnly
           />
           <TextInput
             label="Title"
             value={form.title || ""}
             onChange={(e) => handleFormChange("title", e.target.value)}
-            disabled
+            readOnly
           />
           <TextArea
             label="Instructions"
             value={form.instructions || ""}
             onChange={(e) => handleFormChange("instructions", e.target.value)}
-            disabled
+            readOnly
           />
           <TextInput
             label="Estimated Duration"
@@ -63,7 +74,7 @@ export default function WorkOrderGenerator({
             onChange={(e) =>
               handleFormChange("estimated_duration", e.target.value)
             }
-            disabled
+            readOnly
           />
           <TextInput
             label="Proposed Start Time"
@@ -71,7 +82,7 @@ export default function WorkOrderGenerator({
             onChange={(e) =>
               handleFormChange("proposed_start_time", e.target.value)
             }
-            disabled
+            readOnly
           />
         </div>
         {/* Right: Workorder List */}

@@ -1,7 +1,6 @@
 import React from "react";
 import Button from "@leafygreen-ui/button";
 import Code from "@leafygreen-ui/code";
-import { useWorkOrderPlanner } from "./hooks";
 import IncidentReportList from "../incidentReportList/IncidentReportList";
 
 const mockIncidentReports = [
@@ -41,10 +40,11 @@ const staffSample = {
   skills: ["Electrical", "Mechanical"],
 };
 
-export default function WorkOrderPlanner() {
-  const { selectedIncidentId, handleSelectIncident, canContinue } =
-    useWorkOrderPlanner();
-
+export default function WorkOrderPlanner({
+  selectedIncidentId,
+  onSelectIncident,
+  onContinueWorkflow,
+}) {
   return (
     <div className="flex w-full max-w-5xl mx-auto my-8 gap-6">
       {/* Left: Incident Report List */}
@@ -53,16 +53,17 @@ export default function WorkOrderPlanner() {
           incidentReports={mockIncidentReports}
           selectable
           selectedId={selectedIncidentId}
-          onSelect={handleSelectIncident}
+          onSelect={onSelectIncident}
         />
       </div>
       {/* Right: Workflow Actions & Info */}
       <div className="w-1/2 flex flex-col gap-4">
         <Button
           className="self-start"
-          disabled={!canContinue}
+          disabled={selectedIncidentId === null}
           variant="primary"
           size="large"
+          onClick={onContinueWorkflow}
         >
           Continue Workflow
         </Button>
