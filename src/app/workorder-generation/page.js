@@ -1,6 +1,6 @@
 "use client";
 
-import WorkorderPlanner from "@/components/workorderPlanner/WorkorderPlanner";
+import WorkorderPlanner from "@/components/workOrderPlanner/WorkOrderPlanner";
 
 export default function Page() {
   return (
