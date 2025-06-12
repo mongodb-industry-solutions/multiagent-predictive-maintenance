@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 // Template for generating new incident reports
 function generateIncident({ type = "temperature", value, ts }) {
@@ -35,32 +35,37 @@ export function useIncidentResponse({ alertTrigger } = {}) {
   const [agentActive, setAgentActive] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [incidentReports, setIncidentReports] = useState([]); // Start empty
-  const [expandedCard, setExpandedCard] = useState(null);
-  const [expandedType, setExpandedType] = useState(null); // 'form' or 'json'
   const [rootCause, setRootCause] = useState("");
   const [repairInstructions, setRepairInstructions] = useState("");
   const processingRef = useRef(false);
   const lastAlertRef = useRef(alertTrigger);
 
+  // Generic trigger handler for AgentStatus (for future extensibility)
+  const handleAgentStatusTrigger = useCallback((afterAction) => {
+    if (!processingRef.current) {
+      processingRef.current = true;
+      setAgentActive(true);
+      setTimeout(() => {
+        setAgentActive(false);
+        processingRef.current = false;
+        if (typeof afterAction === "function") {
+          afterAction();
+        }
+      }, 5000);
+    }
+  }, []);
+
   // React to alertTrigger prop from parent
   useEffect(() => {
-    // Always update lastAlertRef to the latest alertTrigger
     if (typeof alertTrigger === "number") {
-      if (
-        alertTrigger !== lastAlertRef.current &&
-        !processingRef.current
-      ) {
+      if (alertTrigger !== lastAlertRef.current && !processingRef.current) {
         lastAlertRef.current = alertTrigger;
-        processingRef.current = true;
-        setAgentActive(true);
-        setTimeout(() => {
-          setAgentActive(false);
-          processingRef.current = false;
+        handleAgentStatusTrigger(() => {
           // Generate a new incident report and update root cause/repair instructions
           const now = new Date();
           const ts = now.toLocaleString();
-          // For demo, alternate between two types
-          const type = incidentReports.length % 2 === 0 ? "temperature" : "pressure";
+          const type =
+            incidentReports.length % 2 === 0 ? "temperature" : "pressure";
           const newIncident = generateIncident({ type, ts });
           setIncidentReports((prev) => [...prev, newIncident]);
           setRootCause(newIncident["Root Cause"] || "");
@@ -69,22 +74,12 @@ export function useIncidentResponse({ alertTrigger } = {}) {
               ? newIncident["Repair Instructions"]
               : JSON.stringify(newIncident["Repair Instructions"], null, 2)
           );
-        }, 5000);
+        });
       } else {
         lastAlertRef.current = alertTrigger;
       }
     }
-  }, [alertTrigger, incidentReports]);
-
-  // Card expand/collapse handlers
-  function handleExpand(id, type) {
-    setExpandedCard(id);
-    setExpandedType(type);
-  }
-  function handleCollapse() {
-    setExpandedCard(null);
-    setExpandedType(null);
-  }
+  }, [alertTrigger, incidentReports, handleAgentStatusTrigger]);
 
   return {
     agentActive,
@@ -93,9 +88,6 @@ export function useIncidentResponse({ alertTrigger } = {}) {
     rootCause,
     repairInstructions,
     incidentReports,
-    expandedCard,
-    expandedType,
-    handleExpand,
-    handleCollapse,
+    handleAgentStatusTrigger,
   };
 }
