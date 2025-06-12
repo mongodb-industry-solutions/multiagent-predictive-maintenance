@@ -1,6 +1,6 @@
 "use client";
-import ChatInput from "../components/chatInput/ChatInput";
-import AgentGraph from "../components/agentGraph/AgentGraph";
+import ChatInput from "@/components/chatInput/ChatInput";
+import AgentGraph from "@/components/agentGraph/AgentGraph";
 import { useState } from "react";
 
 export default function Home() {
