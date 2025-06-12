@@ -41,7 +41,7 @@ const staffSample = {
   skills: ["Electrical", "Mechanical"],
 };
 
-export default function WorkOrderPlannerr() {
+export default function WorkOrderPlanner() {
   const { selectedIncidentId, handleSelectIncident, canContinue } =
     useWorkOrderPlanner();
 
