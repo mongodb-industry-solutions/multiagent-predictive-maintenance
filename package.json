@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.828.0",
     "@aws-sdk/credential-provider-sso": "^3.826.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
@@ -16,6 +17,7 @@
     "@langchain/core": "^0.3.57",
     "@langchain/langgraph": "^0.3.1",
     "@langchain/langgraph-checkpoint-mongodb": "^0.0.6",
+    "@langchain/mongodb": "^0.1.0",
     "@leafygreen-ui/button": "^23.1.6",
     "@leafygreen-ui/card": "^12.0.9",
     "@leafygreen-ui/code": "^18.1.0",
