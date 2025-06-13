@@ -20,12 +20,17 @@ Current timestamp: ${new Date().toISOString()}`;
     schema: {
       type: "object",
       properties: {
+        name: {
+          type: "string",
+          description: "Name of the tool for identification purposes",
+          enum: ["dummy_tool"],
+        },
         query: {
           type: "string",
           description: "The query to process",
         },
       },
-      required: ["query"],
+      required: ["name", "query"],
     },
   }
 );
@@ -54,6 +59,11 @@ export const reviewLookupTool = tool(
     schema: {
       type: "object",
       properties: {
+        name: {
+          type: "string",
+          description: "Name of the tool for identification purposes",
+          enum: ["review_lookup"],
+        },
         query: {
           type: "string",
           description: "The search query",
@@ -64,7 +74,7 @@ export const reviewLookupTool = tool(
           default: 10,
         },
       },
-      required: ["query"],
+      required: ["name", "query"],
     },
   }
 );

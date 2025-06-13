@@ -8,6 +8,25 @@ import { getAgentById } from "./config.js";
  */
 const agentGraphCache = {};
 
+// LangChain callback handlers (no emojis, only required params)
+export const agentCallbacks = {
+  handleToolStart(tool, input, runId) {
+    console.log("[Tool Start]", JSON.parse(input).name);
+  },
+  handleToolEnd(output, runId) {
+    console.log("[Tool End]", output.name);
+  },
+  handleToolError(err, runId) {
+    console.error("[Tool Error]", err);
+  },
+  handleLLMError(err, runId) {
+    console.error("[LLM Error]", err);
+  },
+  handleChainError(err, runId) {
+    console.error("[Chain Error]", err);
+  },
+};
+
 /**
  * Call the agent with a message and get a response
  * @param {string} message - User's message
@@ -40,37 +59,7 @@ export async function callAgent(message, threadId, agentId = "test") {
       {
         recursionLimit: 10,
         configurable: { thread_id: threadId },
-        callbacks: [
-          //   {
-          //     handleNodeStart(node, input) {
-          //       console.log(`🔵 [Node Start] ${node.name}`, input);
-          //     },
-          //     handleNodeEnd(node, output) {
-          //       console.log(`🟢 [Node End] ${node.name}`, output);
-          //     },
-          //     handleToolStart(tool, input) {
-          //       console.log(`🛠️ [Tool Start] ${tool.name}`, input);
-          //     },
-          //     handleToolEnd(tool, output) {
-          //       console.log(`✅ [Tool End] ${tool.name}`, output);
-          //     },
-          //     handleChainStart(chain, input) {
-          //       console.log(`⛓️ [Chain Start] ${chain.name}`, input);
-          //     },
-          //     handleChainEnd(chain, output) {
-          //       console.log(`🔚 [Chain End] ${chain.name}`, output);
-          //     },
-          //     handleAgentAction(action, runId) {
-          //       console.log(`🧠 [Agent Action]`, action);
-          //     },
-          //     handleAgentEnd(action, runId) {
-          //       console.log(`🏁 [Agent End]`, action);
-          //     },
-          //     handleError(error, run) {
-          //       console.error(`❌ [Error]`, error);
-          //     },
-          //   },
-        ],
+        callbacks: [agentCallbacks],
       }
     );
 
