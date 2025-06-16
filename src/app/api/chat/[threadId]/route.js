@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { handleChatRequest } from "@/agents/callAgent.js";
+import { handleChatRequestStream } from "@/agents/callAgent.js";
 
 export async function POST(request, { params }) {
   try {
     const { threadId } = await params;
-    const { message } = await request.json();
+    const { message, agentId } = await request.json();
 
     if (!message) {
       return NextResponse.json(
@@ -13,10 +13,29 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Call the agent with the message and existing threadId
-    const result = await handleChatRequest({ message, threadId });
+    const stream = new ReadableStream({
+      async start(controller) {
+        const streamWriter = {
+          ready: Promise.resolve(),
+          write: (chunk) => {
+            controller.enqueue(new TextEncoder().encode(chunk));
+          },
+          close: () => controller.close(),
+        };
+        await handleChatRequestStream(
+          { message, threadId, agentId },
+          streamWriter
+        );
+      },
+    });
 
-    return NextResponse.json({ response: result.response });
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "application/x-ndjson",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   } catch (error) {
     console.error("Error in chat continuation:", error);
     return NextResponse.json(

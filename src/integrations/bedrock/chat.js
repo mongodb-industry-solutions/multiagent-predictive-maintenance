@@ -10,10 +10,10 @@ let bedrockClient = null;
 export function createBedrockClient() {
   if (!bedrockClient) {
     bedrockClient = new ChatBedrockConverse({
-      model: "us.anthropic.claude-3-5-haiku-20241022-v1:0",
-      region: "us-east-1",
+      model: process.env.COMPLETION_MODEL,
+      region: process.env.AWS_REGION,
       credentials: fromSSO({
-        profile: "default",
+        profile: process.env.AWS_PROFILE || "default",
       }),
     });
   }
