@@ -1,29 +1,34 @@
 import { NextResponse } from "next/server";
-import { handleChatRequest } from "@/agents/callAgent.js";
+import { handleChatRequestStream } from "@/agents/callAgent.js";
 
 export async function POST(request) {
-  try {
-    const { message } = await request.json();
+  // Streaming response using ReadableStream
+  const { message, agentId } = await request.json();
+  const threadId = Date.now().toString();
 
-    if (!message) {
-      return NextResponse.json(
-        { error: "Message is required" },
-        { status: 400 }
+  const stream = new ReadableStream({
+    async start(controller) {
+      const writer = controller;
+      // Polyfill for writer interface
+      const streamWriter = {
+        ready: Promise.resolve(),
+        write: (chunk) => {
+          controller.enqueue(new TextEncoder().encode(chunk));
+        },
+        close: () => controller.close(),
+      };
+      await handleChatRequestStream(
+        { message, threadId, agentId },
+        streamWriter
       );
-    }
+    },
+  });
 
-    // Generate a thread ID
-    const threadId = Date.now().toString();
-
-    // Call the agent with the message
-    const result = await handleChatRequest({ message, threadId });
-
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error("Error starting conversation:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 }
