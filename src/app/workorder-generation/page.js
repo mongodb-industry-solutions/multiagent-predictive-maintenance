@@ -1,47 +1,29 @@
 "use client";
-
-import React, { useRef } from "react";
-
-import WorkOrderPlanner from "@/components/workOrderPlanner/WorkOrderPlanner";
-import WorkOrderGenerator from "@/components/workOrderGenerator/WorkOrderGenerator";
+import React from "react";
+import Code from "@leafygreen-ui/code";
+import Button from "@leafygreen-ui/button";
+import CardList from "@/components/cardList/CardList";
+import AgentStatus from "@/components/agentStatus/AgentStatus";
+import WorkOrderForm from "@/components/forms/workOrderForm/WorkOrderForm";
+import { useWorkOrderGenerationPage } from "./hooks";
 
 export default function Page() {
-  const [selectedIncidentId, setSelectedIncidentId] = React.useState(null);
-  const triggerAgentRef = React.useRef();
-
-  // Mock incident reports (should match planner's)
-  const mockIncidentReports = [
-    {
-      Id: 1,
-      Err_name: "Overheating Motor",
-      ts: "2025-06-12T10:00:00Z",
-      Err_code: "E101",
-      "Root Cause": "Insufficient lubrication",
-      "Repair Instructions": "Check oil levels and refill as needed.",
-      Machine_id: "M-001",
-    },
-    {
-      Id: 2,
-      Err_name: "Sensor Failure",
-      ts: "2025-06-11T14:30:00Z",
-      Err_code: "E202",
-      "Root Cause": "Wiring issue",
-      "Repair Instructions": "Inspect and replace faulty wires.",
-      Machine_id: "M-002",
-    },
-  ];
-
-  // Handler for incident selection
-  const handleIncidentSelect = (id) => {
-    setSelectedIncidentId(id);
-  };
-
-  // Handler for Continue Workflow button
-  const handleContinueWorkflow = () => {
-    if (triggerAgentRef.current) {
-      triggerAgentRef.current();
-    }
-  };
+  const {
+    selectedIncidentId,
+    handleIncidentSelect,
+    canContinue,
+    handleContinueWorkflow,
+    workOrderForm,
+    handleFormChange,
+    workorders,
+    agentStatus,
+    showModal,
+    setShowModal,
+    modalContent,
+    mockIncidentReports,
+    inventorySample,
+    staffSample,
+  } = useWorkOrderGenerationPage();
 
   // Find the selected incident object
   const selectedIncidentObj = mockIncidentReports.find(
@@ -49,21 +31,109 @@ export default function Page() {
   );
 
   return (
-    <main className="flex flex-row items-start justify-center min-h-screen">
-      {/* Left: Planner */}
-      <div className="w-1/2 max-w-5xl mx-auto my-8 flex flex-col gap-6">
-        <WorkOrderPlanner
-          selectedIncidentId={selectedIncidentId}
-          onSelectIncident={handleIncidentSelect}
-          onContinueWorkflow={handleContinueWorkflow}
-        />
+    <main className="flex flex-col w-full h-full min-h-screen">
+      {/* Page Title & Subheader */}
+      <div className="w-full flex flex-col items-center justify-center mt-2 mb-4">
+        <h1 className="text-xl font-bold mb-1 text-center">
+          Workorder Generation
+        </h1>
+        <div
+          className="text-gray-600 text-center max-w-3xl text-sm leading-tight"
+          style={{ lineHeight: 1.3 }}
+        >
+          Select an incident report, continue the workflow, and generate
+          workorders. The agent will propose a workorder based on the selected
+          incident and display all generated workorders.
+        </div>
       </div>
-      {/* Right: Generator */}
-      <div className="w-1/2 max-w-5xl mx-auto my-8 flex flex-col gap-6">
-        <WorkOrderGenerator
-          selectedIncident={selectedIncidentObj}
-          triggerAgentRef={triggerAgentRef}
-        />
+      {/* Main content split */}
+      <div className="flex flex-1 w-full gap-8">
+        {/* Left Section */}
+        <div className="flex flex-col w-1/2 h-full">
+          {/* Continue Workflow Button centered */}
+          <div className="flex justify-center mb-4">
+            <Button
+              className="self-center w-auto min-w-0"
+              disabled={!canContinue}
+              variant="primary"
+              onClick={handleContinueWorkflow}
+            >
+              Continue Workflow
+            </Button>
+          </div>
+          {/* Horizontal split: Incident Reports (left), Samples (right) */}
+          <div className="flex flex-1 gap-4 min-h-0">
+            {/* Incident Reports CardList */}
+            <div className="w-1/2 flex flex-col">
+              <CardList
+                items={mockIncidentReports}
+                idField="Id"
+                primaryFields={["Err_name", "ts"]}
+                selectable
+                selectedId={selectedIncidentId}
+                onSelect={handleIncidentSelect}
+                maxHeight="max-h-80"
+                emptyText="No incident reports"
+                listTitle="Incident Reports"
+              />
+            </div>
+            {/* Sample Code Cards */}
+            <div className="w-1/2 flex flex-col gap-3">
+              <div className="bg-gray-50 rounded-lg shadow p-3">
+                <div className="font-semibold text-gray-700 mb-1 text-sm">
+                  Inventory Sample
+                </div>
+                <Code language="json">
+                  {JSON.stringify(inventorySample, null, 2)}
+                </Code>
+              </div>
+              <div className="bg-gray-50 rounded-lg shadow p-3">
+                <div className="font-semibold text-gray-700 mb-1 text-sm">
+                  Staff Sample
+                </div>
+                <Code language="json">
+                  {JSON.stringify(staffSample, null, 2)}
+                </Code>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Right Section */}
+        <div className="flex flex-col w-1/2 h-full">
+          {/* AgentStatus centered */}
+          <div className="flex justify-center mb-4">
+            <AgentStatus
+              isActive={agentStatus === "active"}
+              onInfo={() => setShowModal(true)}
+              onCloseModal={() => setShowModal(false)}
+              showModal={showModal}
+              modalContent={modalContent}
+              statusText="Agent"
+              activeText="Active"
+              inactiveText="Inactive"
+            />
+          </div>
+          {/* Horizontal split: WorkOrderForm (left), Workorders CardList (right) */}
+          <div className="flex flex-1 gap-4 min-h-0">
+            <div className="w-1/2 flex flex-col">
+              <WorkOrderForm
+                form={workOrderForm}
+                handleFormChange={handleFormChange}
+              />
+            </div>
+            <div className="w-1/2 flex flex-col gap-3">
+              <CardList
+                items={workorders}
+                idField="machine_id"
+                primaryFields={["title", "proposed_start_time"]}
+                maxHeight="max-h-80"
+                emptyText="No workorders generated yet."
+                cardTitle={(wo) => wo.title || `Workorder for ${wo.machine_id}`}
+                listTitle="Workorders"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   );

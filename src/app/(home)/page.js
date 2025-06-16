@@ -11,7 +11,7 @@ import Image from "next/image";
 
 export default function Page() {
   return (
-    <main className="flex flex-col items-center px-4 py-8 min-h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)] w-full max-w-7xl mx-auto overflow-hidden">
+    <main className="flex flex-col items-center w-full max-h-[calc(100vh-4rem)] overflow-hidden">
       {/* Top Section: Title + Image */}
       <section className="flex flex-col items-center w-full flex-grow mb-4 min-h-0">
         <H1 className="mt-8 mb-4 text-center text-3xl md:text-4xl lg:text-5xl">

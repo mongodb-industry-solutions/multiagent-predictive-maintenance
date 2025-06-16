@@ -1,8 +1,8 @@
 import { useState } from "react";
 
-export function useIncidentReportList() {
+export function useCardList() {
   const [expandedCard, setExpandedCard] = useState(null);
-  const [expandedType, setExpandedType] = useState(null); // 'form' or 'json'
+  const [expandedType, setExpandedType] = useState(null); // e.g. 'json'
 
   function handleExpand(id, type) {
     setExpandedCard(id);
