@@ -7,8 +7,9 @@ export default function Navbar() {
   const pathname = usePathname();
   const navLinks = [
     { href: "/", label: "Demo Overview" },
-    { href: "/failure-detection", label: "Failure Prediction" },
+    { href: "/failure-prediction", label: "Failure Prediction" },
     { href: "/workorder-generation", label: "Workorder Generation" },
+    { href: "/workorder-scheduler", label: "Workorder Scheduler" },
     { href: "/agent-sandbox", label: "Agent Sandbox" },
   ];
 
