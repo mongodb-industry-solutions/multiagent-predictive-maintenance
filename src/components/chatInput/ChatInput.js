@@ -72,31 +72,27 @@ export default function ChatInput({ agentId, setAgentId }) {
           {response}
         </div>
         {error && <div className="mt-2 text-red-600">{error}</div>}
+        {/* Logs under thread ID - always show logs panel */}
+        <div className="mt-2 bg-gray-50 rounded p-2 text-xs text-gray-600 max-h-24 overflow-auto border border-gray-200">
+          <div className="font-semibold text-gray-500 mb-1">Agent Logs</div>
+          {logs.length > 0 ? (
+            logs.map((log, i) => (
+              <div key={i}>
+                <span className="font-mono text-gray-700">[{log.name}]</span>{" "}
+                <span>{log.values?.name}</span>
+                {log.type === "error" && (
+                  <span className="text-red-500 ml-2">(error)</span>
+                )}
+              </div>
+            ))
+          ) : (
+            <span className="text-gray-300">No logs yet</span>
+          )}
+        </div>
         {threadId && (
-          <>
-            <div className="mt-2 text-xs text-gray-400">
-              Thread ID: {threadId}
-            </div>
-            {/* Logs under thread ID */}
-            <div className="mt-2 bg-gray-50 rounded p-2 text-xs text-gray-600 max-h-24 overflow-auto border border-gray-200">
-              <div className="font-semibold text-gray-500 mb-1">Agent Logs</div>
-              {logs.length > 0 ? (
-                logs.map((log, i) => (
-                  <div key={i}>
-                    <span className="font-mono text-gray-700">
-                      [{log.name}]
-                    </span>{" "}
-                    <span>{log.values?.name}</span>
-                    {log.type === "error" && (
-                      <span className="text-red-500 ml-2">(error)</span>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <span className="text-gray-300">No logs yet</span>
-              )}
-            </div>
-          </>
+          <div className="mt-2 text-xs text-gray-400">
+            Thread ID: {threadId}
+          </div>
         )}
       </div>
     </div>

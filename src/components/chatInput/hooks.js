@@ -48,7 +48,7 @@ export function useChatInput({
     setLoading(true);
     setError(null);
     setResponse("");
-    setLogs([]);
+    setLogs([]); // Clear logs before starting async work
     try {
       const url = threadId ? `/api/chat/${threadId}` : "/api/chat";
       const res = await fetch(url, {
@@ -58,8 +58,8 @@ export function useChatInput({
       });
       if (!res.body) throw new Error("No response body");
       let newThreadId = threadId;
-      setLogs([]);
       for await (const evt of streamAgentEvents(res.body)) {
+        console.log("Event received:", evt);
         if (evt.type === "update") {
           setLogs((prev) => [...prev, evt]);
         } else if (evt.type === "final") {

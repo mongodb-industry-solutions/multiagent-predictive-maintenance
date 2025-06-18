@@ -19,6 +19,7 @@ function createAgentCallbacks(writer) {
   };
   return {
     handleToolStart(tool, input, runId) {
+      console.log("[Tool Start]", JSON.parse(input).name);
       writeLog({
         type: "update",
         name: "tool_start",
@@ -26,6 +27,7 @@ function createAgentCallbacks(writer) {
       });
     },
     handleToolEnd(output, runId) {
+      console.log("[Tool End]", output.name);
       writeLog({
         type: "update",
         name: "tool_end",
@@ -99,6 +101,8 @@ export async function callAgent(message, threadId, agentId = "test", writer) {
       agentGraph = agentConfig.createGraph(client, dbName);
       agentGraphCache[agentId] = agentGraph;
     }
+
+    console.log(writer ? "Streaming mode enabled" : "Non-streaming mode");
 
     // Use streaming callbacks if writer is provided
     const callbacks = writer
