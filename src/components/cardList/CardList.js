@@ -1,7 +1,13 @@
 import React from "react";
 import { useCardList } from "./hooks";
 import Button from "@leafygreen-ui/button";
-import Code from "@leafygreen-ui/code";
+import dynamic from "next/dynamic";
+//import Code from "@leafygreen-ui/code";
+
+const Code = dynamic(
+  () => import("@leafygreen-ui/code").then((mod) => mod.Code),
+  { ssr: false }
+);
 
 export default function CardList({
   items = [],

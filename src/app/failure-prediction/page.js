@@ -1,12 +1,17 @@
 "use client";
 import React from "react";
-import Code from "@leafygreen-ui/code";
+import dynamic from "next/dynamic";
 import Button from "@leafygreen-ui/button";
 import { useFailureDetectionPage } from "./hooks";
 import MachineController from "@/components/machineController/MachineController";
 import CardList from "@/components/cardList/CardList";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
 import IncidentResponseForm from "@/components/forms/IncidentResponseForm/IncidentResponseForm";
+
+const Code = dynamic(
+  () => import("@leafygreen-ui/code").then((mod) => mod.Code),
+  { ssr: false }
+);
 
 export default function Page() {
   const {

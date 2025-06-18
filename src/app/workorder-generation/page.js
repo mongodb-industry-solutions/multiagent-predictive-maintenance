@@ -1,11 +1,17 @@
 "use client";
 import React from "react";
-import Code from "@leafygreen-ui/code";
+import dynamic from "next/dynamic";
+//import Code from "@leafygreen-ui/code";
 import Button from "@leafygreen-ui/button";
 import CardList from "@/components/cardList/CardList";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
 import WorkOrderForm from "@/components/forms/workOrderForm/WorkOrderForm";
 import { useWorkOrderGenerationPage } from "./hooks";
+
+const Code = dynamic(
+  () => import("@leafygreen-ui/code").then((mod) => mod.Code),
+  { ssr: false }
+);
 
 export default function Page() {
   const {
