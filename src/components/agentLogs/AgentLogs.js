@@ -49,7 +49,7 @@ export default function AgentLogs({ logs, threadId, onNewThread }) {
       {/* Logs display */}
       <div
         className="flex-1 min-h-0 overflow-y-auto p-4"
-        style={{ maxHeight: "calc(100vh - 140px)" }}
+        style={{ maxHeight: "calc(100vh - 200px)" }}
       >
         {uiLogs && uiLogs.length > 0 ? (
           <>
@@ -96,7 +96,10 @@ export default function AgentLogs({ logs, threadId, onNewThread }) {
                         <span className="flex items-center gap-2">
                           {formattedToolName}
                           {log.loading && (
-                            <Spinner description="Loading tool" />
+                            <Spinner
+                              displayOption="default-horizontal"
+                              description="Running..."
+                            />
                           )}
                         </span>
                       }
@@ -120,7 +123,7 @@ export default function AgentLogs({ logs, threadId, onNewThread }) {
                           ) && (
                             <div className="max-h-64 overflow-y-auto space-y-2">
                               <Body className="font-semibold mb-1 block">
-                                Retrieved chunks:
+                                Result:
                               </Body>
                               {log.documents.map((doc, idx) => (
                                 <Code key={idx} language="json">

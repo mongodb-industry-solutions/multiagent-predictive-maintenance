@@ -23,7 +23,7 @@ export default function Home() {
   return (
     <LeafyGreenProvider baseFontSize={16}>
       <div>
-        <main className="min-h-screen bg-gray-50 flex flex-row items-stretch w-full overflow-hidden">
+        <main className="min-h-screen bg-gray-50 flex flex-row items-stretch mt-3 w-full overflow-hidden">
           <div
             className="flex-1 min-w-0 h-screen flex flex-col overflow-hidden"
             style={{ flexBasis: "50%", maxWidth: "50%" }}
