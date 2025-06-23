@@ -1,6 +1,9 @@
 import React from "react";
 import Image from "next/image";
 import { useAgentGraph } from "./hooks";
+import { Option, Select } from "@leafygreen-ui/select";
+import TextArea from "@leafygreen-ui/text-area";
+import Button from "@leafygreen-ui/button";
 
 export default function ChatInput({
   agentId,
@@ -18,25 +21,27 @@ export default function ChatInput({
   return (
     <div className="flex flex-col h-full w-full max-w-full">
       {/* Agent selector */}
-      <div className="p-4 border-b border-gray-100">
-        <label className="block text-sm font-medium mb-1">Select Agent</label>
-        <select
-          className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400"
+      <div className="p-4">
+        <Select
+          label="Agent"
+          placeholder="Choose agent"
+          name="agent-select"
           value={agentId}
-          onChange={(e) => setAgentId(e.target.value)}
+          onChange={setAgentId}
           disabled={loading || loadingAgents}
+          style={{ width: "100%" }}
         >
           {agentOptions.map((opt) => (
-            <option key={opt.id} value={opt.id}>
+            <Option key={opt.id} value={opt.id}>
               {opt.name}
-            </option>
+            </Option>
           ))}
-        </select>
+        </Select>
       </div>
       {/* Graph and input split 50/50 */}
       <div className="flex-1 flex flex-col">
         {/* Graph (top 50%) */}
-        <div className="flex-1 flex items-center justify-center border-b border-gray-100 bg-white relative overflow-hidden">
+        <div className="flex-1 flex items-center justify-center bg-white relative overflow-hidden m-5">
           {graphLoading && (
             <div className="text-gray-400">Loading graph...</div>
           )}
@@ -53,26 +58,30 @@ export default function ChatInput({
                 unoptimized
                 sizes="100vw"
                 priority
+                className="p-5"
               />
             </div>
           )}
         </div>
         {/* Input (bottom 50%) */}
         <div className="flex-1 flex flex-col p-4">
-          <textarea
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400 resize-none min-h-[60px] mb-2"
+          <TextArea
+            className="mb-2"
             placeholder="Type your message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
+            resize="none"
+            style={{ minHeight: 100 }}
           />
-          <button
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50 mb-2"
+          <Button
+            className="w-full mb-2"
             onClick={sendMessage}
             disabled={loading || !input.trim()}
+            variant="primary"
           >
             {loading ? "Sending..." : "Send"}
-          </button>
+          </Button>
           {error && <div className="mt-2 text-red-600">{error}</div>}
         </div>
       </div>

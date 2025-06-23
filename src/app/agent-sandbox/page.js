@@ -2,6 +2,7 @@
 import ChatInput from "@/components/chatInput/ChatInput";
 import AgentLogs from "@/components/agentLogs/AgentLogs";
 import { useAgentSandbox } from "./hooks";
+import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
 
 export default function Home() {
   const {
@@ -20,33 +21,37 @@ export default function Home() {
   } = useAgentSandbox();
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-row items-stretch w-full overflow-hidden">
-      <div
-        className="flex-1 min-w-0 h-screen flex flex-col overflow-hidden"
-        style={{ flexBasis: "50%", maxWidth: "50%" }}
-      >
-        <ChatInput
-          agentId={agentId}
-          setAgentId={setAgentId}
-          input={input}
-          setInput={setInput}
-          loading={loading}
-          error={error}
-          sendMessage={sendMessage}
-          agentOptions={agentOptions}
-          loadingAgents={loadingAgents}
-        />
+    <LeafyGreenProvider baseFontSize={16}>
+      <div>
+        <main className="min-h-screen bg-gray-50 flex flex-row items-stretch w-full overflow-hidden">
+          <div
+            className="flex-1 min-w-0 h-screen flex flex-col overflow-hidden"
+            style={{ flexBasis: "50%", maxWidth: "50%" }}
+          >
+            <ChatInput
+              agentId={agentId}
+              setAgentId={setAgentId}
+              input={input}
+              setInput={setInput}
+              loading={loading}
+              error={error}
+              sendMessage={sendMessage}
+              agentOptions={agentOptions}
+              loadingAgents={loadingAgents}
+            />
+          </div>
+          <div
+            className="flex-1 min-w-0 h-screen flex flex-col overflow-hidden border-l border-gray-200"
+            style={{ flexBasis: "50%", maxWidth: "50%" }}
+          >
+            <AgentLogs
+              logs={logs}
+              threadId={threadId}
+              onNewThread={resetConversation}
+            />
+          </div>
+        </main>
       </div>
-      <div
-        className="flex-1 min-w-0 h-screen flex flex-col overflow-hidden border-l border-gray-200"
-        style={{ flexBasis: "50%", maxWidth: "50%" }}
-      >
-        <AgentLogs
-          logs={logs}
-          threadId={threadId}
-          onNewThread={resetConversation}
-        />
-      </div>
-    </main>
+    </LeafyGreenProvider>
   );
 }

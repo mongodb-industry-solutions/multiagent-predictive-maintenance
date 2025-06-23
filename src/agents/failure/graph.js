@@ -32,16 +32,15 @@ export async function callModel(state, config) {
     [
       "system",
       `You are the Failure agent. 
-      You receive alert details, retrieve additional context, and generate an incident report. 
-      Use your tools as needed.
-      Current time: {time}.`,
+      You receive alert details, retrieve additional context, and generate an incident report.
+      No need to add details in the final response, after the incident report is generated, just acknowledge the completion.  
+      Use your tools as needed.`,
     ],
     new MessagesPlaceholder("messages"),
   ]);
 
   // Format the prompt with the current state
   const formattedPrompt = await prompt.formatMessages({
-    time: new Date().toISOString(),
     messages: state.messages,
   });
 
