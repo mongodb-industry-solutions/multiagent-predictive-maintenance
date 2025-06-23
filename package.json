@@ -2,11 +2,13 @@
   "name": "agentic-predictive-maintenance",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "embed": "node scripts/embed_collections.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.828.0",
@@ -27,6 +29,7 @@
     "@leafygreen-ui/text-input": "^14.0.13",
     "@leafygreen-ui/typography": "^20.1.9",
     "@mui/material": "^7.1.1",
+    "dotenv": "^16.5.0",
     "mongodb": "^6.17.0",
     "next": "15.3.3",
     "react": "^19.0.0",
