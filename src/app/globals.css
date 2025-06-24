@@ -7,3 +7,16 @@
 .animate-agent-glow {
   animation: agent-glow-fade 1s infinite alternate;
 }
+
+/* Custom scrollbar for CardList */
+.cardlist-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.cardlist-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* Tailwind slate-300 */
+  border-radius: 4px;
+}
+.cardlist-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc; /* thumb and track */
+}

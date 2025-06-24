@@ -8,8 +8,9 @@ import { generateEmbedding } from "../bedrock/embeddings.js";
  * @param {object} dbConfig - The MongoDB vector search configuration.
  * @param {string} dbConfig.collection - The name of the MongoDB collection to search in.
  * @param {string} dbConfig.indexName - The name of the vector index to use.
- * @param {string} dbConfig.textKey - The key for the text field in the collection.
+ * @param {string|string[]} dbConfig.textKey - The key(s) for the text field(s) in the collection.
  * @param {string} dbConfig.embeddingKey - The key for the embedding field in the collection.
+ * @param {boolean} [dbConfig.includeScore=true] - Whether to include the vector search score in the result.
  * @param {object} [options] - Optional parameters (e.g., filter, etc.)
  * @param {number} [n=10] - The number of results to return.
  * @returns {Promise<Array>} List of search results with similarity scores.
@@ -25,7 +26,28 @@ export async function vectorSearch(query, dbConfig, n = 10, options = {}) {
   // Generate embedding for the query
   const queryEmbedding = await generateEmbedding(query);
 
+  // Determine which fields to project
+  let textKeys = dbConfig.textKey;
+  if (!textKeys) textKeys = [];
+  if (!Array.isArray(textKeys)) textKeys = [textKeys];
+
+  // Option to include score (default true)
+  const includeScore =
+    typeof dbConfig.includeScore === "boolean" ? dbConfig.includeScore : true;
+
   // Build the vector search pipeline
+  const projectFields = {};
+  for (const key of textKeys) {
+    projectFields[key] = 1;
+  }
+  if (options.project) {
+    Object.assign(projectFields, options.project);
+  }
+  if (includeScore) {
+    projectFields.score = { $meta: "vectorSearchScore" };
+  }
+  projectFields._id = 0;
+
   const pipeline = [
     {
       $vectorSearch: {
@@ -38,12 +60,7 @@ export async function vectorSearch(query, dbConfig, n = 10, options = {}) {
       },
     },
     {
-      $project: {
-        _id: 0,
-        score: { $meta: "vectorSearchScore" },
-        [dbConfig.textKey || "embedding_text"]: 1,
-        ...(options.project || {}),
-      },
+      $project: projectFields,
     },
   ];
 

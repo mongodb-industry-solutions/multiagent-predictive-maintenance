@@ -7,8 +7,9 @@ export const retrieveManual = tool(
     const dbConfig = {
       collection: "manuals",
       indexName: "default",
-      textKey: "text",
+      textKey: ["text"],
       embeddingKey: "embedding",
+      includeScore: true,
     };
     const result = await vectorSearch(query, dbConfig, n);
     return JSON.stringify(result);
@@ -45,8 +46,9 @@ export const retrieveWorkOrders = tool(
     const dbConfig = {
       collection: "workorders",
       indexName: "default",
-      textKey: "instructions",
+      textKey: ["instructions"],
       embeddingKey: "embedding",
+      includeScore: true,
     };
     const result = await vectorSearch(query, dbConfig, n);
     return JSON.stringify(result);
@@ -83,8 +85,9 @@ export const retrieveInterviews = tool(
     const dbConfig = {
       collection: "interviews",
       indexName: "default",
-      textKey: "text",
+      textKey: ["text"],
       embeddingKey: "embedding",
+      includeScore: true,
     };
     const result = await vectorSearch(query, dbConfig, n);
     return JSON.stringify(result);

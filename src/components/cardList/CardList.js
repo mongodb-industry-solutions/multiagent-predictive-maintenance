@@ -32,7 +32,7 @@ export default function CardList({
         </h3>
       )}
       <div
-        className="flex flex-col gap-3 flex-1 overflow-y-auto"
+        className="flex flex-col gap-3 flex-1 overflow-y-auto cardlist-scrollbar"
         style={{ minHeight: 0 }}
       >
         {items.length === 0 && (

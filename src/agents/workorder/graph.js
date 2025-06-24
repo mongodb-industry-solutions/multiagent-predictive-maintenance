@@ -14,7 +14,11 @@ const tools = getTools();
 const prompt = ChatPromptTemplate.fromMessages([
   [
     "system",
-    `You are the Workorder agent. You receive an incident report, retrieve additional context, and generate a workorder. Use your tools as needed. If you have completed the workorder, start your response with FINISHED. Current time: {time}.`,
+    `You are the work order agent. 
+    You receive an incident report, retrieve additional context, and generate a work order.
+    No need to add details in the final response, after the incident report is generated, just acknowledge the completion.
+    Use your tools as needed.
+    `,
   ],
   new MessagesPlaceholder("messages"),
 ]);
@@ -23,7 +27,6 @@ export async function callModel(state) {
   const model = createBedrockClient();
   const bindedModel = model.bindTools(tools);
   const formattedPrompt = await prompt.formatMessages({
-    time: new Date().toISOString(),
     messages: state.messages,
   });
   const result = await bindedModel.invoke(formattedPrompt);

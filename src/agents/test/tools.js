@@ -1,5 +1,4 @@
 import { tool } from "@langchain/core/tools";
-import { vectorSearch } from "@/integrations/mongodb/vectorSearch";
 
 /**
  * A simple dummy tool that just returns a placeholder response
@@ -36,53 +35,9 @@ Current timestamp: ${new Date().toISOString()}`;
 );
 
 /**
- * Tool for performing a vector search on the 'reviews' collection.
- */
-export const reviewLookupTool = tool(
-  async ({ query, n = 10 }) => {
-    console.log("Review lookup tool called with query:", query);
-
-    const dbConfig = {
-      collection: "reviews",
-      indexName: "default",
-      textKey: "message",
-      embeddingKey: "emb",
-    };
-
-    const result = await vectorSearch(query, dbConfig, n);
-    return JSON.stringify(result);
-  },
-  {
-    name: "review_lookup",
-    description:
-      "Performs a vector search on the reviews collection to find relevant reviews.",
-    schema: {
-      type: "object",
-      properties: {
-        name: {
-          type: "string",
-          description: "Name of the tool for identification purposes",
-          enum: ["review_lookup"],
-        },
-        query: {
-          type: "string",
-          description: "The search query",
-        },
-        n: {
-          type: "number",
-          description: "Number of results to return (optional, default 10)",
-          default: 10,
-        },
-      },
-      required: ["name", "query"],
-    },
-  }
-);
-
-/**
  * Get all available tools for the agent
  * @returns {Array} Array of tool objects
  */
 export function getTools() {
-  return [dummyTool, reviewLookupTool];
+  return [dummyTool];
 }
