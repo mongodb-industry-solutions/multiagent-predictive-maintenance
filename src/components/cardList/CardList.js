@@ -27,14 +27,18 @@ export default function CardList({
 
   return (
     <div
-      className={`flex flex-col w-full h-full overflow-y-auto gap-4 ${maxHeight}`}
+      className={`flex flex-col w-full h-full ${maxHeight}`}
+      style={{ minHeight: 0 }}
     >
       {listTitle && (
-        <h3 className="font-semibold text-lg mb-2 text-gray-800">
+        <h3 className="font-semibold text-lg mb-2 text-gray-800 flex-shrink-0">
           {listTitle}
         </h3>
       )}
-      <div className="flex flex-col gap-3">
+      <div
+        className="flex flex-col gap-3 flex-1 overflow-y-auto"
+        style={{ minHeight: 0 }}
+      >
         {items.length === 0 && (
           <div className="text-gray-400 text-center">{emptyText}</div>
         )}

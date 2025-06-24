@@ -45,9 +45,9 @@ export default function Page() {
         </div>
       </div>
       {/* Main content split */}
-      <div className="flex flex-1 w-full gap-8">
+      <div className="flex flex-1 w-full gap-12">
         {/* Left Section: Machine Simulation */}
-        <div className="flex flex-col w-1/2 h-full">
+        <div className="flex flex-col w-1/2 h-full pb-8">
           {/* Start/Stop Button centered */}
           <div className="flex justify-center mb-4">
             {sim.isRunning ? (
@@ -77,19 +77,21 @@ export default function Page() {
             </div>
             {/* Controls and Alerts */}
             <div className="w-1/2 flex flex-col gap-4 h-full">
-              <MachineController
-                status={sim.status}
-                temperature={sim.temperature}
-                vibration={sim.vibration}
-                onTemperatureChange={sim.onTemperatureChange}
-                onVibrationChange={sim.onVibrationChange}
-              />
-              <div className="flex-1 flex flex-col">
+              <div className="flex-1 flex flex-row items-stretch">
+                <MachineController
+                  status={sim.status}
+                  temperature={sim.temperature}
+                  vibration={sim.vibration}
+                  onTemperatureChange={sim.onTemperatureChange}
+                  onVibrationChange={sim.onVibrationChange}
+                />
+              </div>
+              <div className="flex-1 flex flex-col justify-end mb-8">
                 <CardList
                   items={sim.alerts}
                   idField="_id"
                   primaryFields={["err_code", "err_name", "ts"]}
-                  maxHeight="max-h-48"
+                  maxHeight="max-h-[calc(100vh-420px)] mb-8"
                   emptyText="No alerts"
                   listTitle="Alerts"
                 />
@@ -98,14 +100,14 @@ export default function Page() {
           </div>
         </div>
         {/* Right Section: Agent Response */}
-        <div className="flex flex-col w-1/2 h-full">
+        <div className="flex flex-col w-1/2 h-full pb-8">
           {/* AgentStatus centered */}
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-8">
             <AgentStatus
               isActive={agentActive}
-              onInfo={() => setShowModal(true)}
-              onCloseModal={() => setShowModal(false)}
               showModal={showModal}
+              onCloseModal={() => setShowModal(false)}
+              setShowModal={setShowModal}
               modalContent={modalContent}
               statusText="Agent"
               activeText="Active"
@@ -114,18 +116,19 @@ export default function Page() {
           </div>
           {/* Horizontal split: Form (left), Incident Reports (right) */}
           <div className="flex flex-1 gap-4 min-h-0">
-            <div className="w-1/2 flex flex-col">
+            <div className="w-1/2 flex flex-col h-full">
               <IncidentResponseForm
                 rootCause={rootCause}
                 repairInstructions={repairInstructions}
+                className="flex-1 mb-8"
               />
             </div>
-            <div className="w-1/2 flex flex-col">
+            <div className="w-1/2 flex flex-col h-full">
               <CardList
                 items={incidentReports}
                 idField="_id"
                 primaryFields={["Err_name", "ts"]}
-                maxHeight="max-h-80"
+                maxHeight="max-h-[calc(100vh-320px)] mb-8"
                 emptyText="No incident reports"
                 listTitle="Incident Reports"
               />
