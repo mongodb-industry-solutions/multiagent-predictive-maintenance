@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 export function useAgentStatus({
   isActive,
@@ -76,6 +76,11 @@ export function useAgentStatus({
   const logsArrow = "→";
   const logsPlaceholder = "";
 
+  // Logs Drawer State
+  const [logsDrawerOpen, setLogsDrawerOpen] = useState(false);
+  const openLogsDrawer = useCallback(() => setLogsDrawerOpen(true), []);
+  const closeLogsDrawer = useCallback(() => setLogsDrawerOpen(false), []);
+
   return {
     handleBubbleClick,
     agentImgSrc,
@@ -86,6 +91,9 @@ export function useAgentStatus({
     logsArrow,
     logsPlaceholder,
     latestToolLog,
+    logsDrawerOpen,
+    openLogsDrawer,
+    closeLogsDrawer,
   };
 }
 

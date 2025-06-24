@@ -161,12 +161,28 @@ export function useFailureDetectionPage() {
         const callAgentAsync = async () => {
           try {
             const alertToSend = lastGeneratedAlertRef.current;
+            // Push initial user message with label
+            setAgentLogs((prev) => [
+              ...prev,
+              {
+                type: "user",
+                values: {
+                  content:
+                    "New alert received:\n" +
+                    JSON.stringify(alertToSend, null, 2),
+                },
+              },
+            ]);
             await callFailureAgent(alertToSend, {
               onEvent: (evt) => {
                 if (
                   evt.type === "update" &&
                   (evt.name === "tool_start" || evt.name === "tool_end")
                 ) {
+                  setAgentLogs((prev) => [...prev, evt]);
+                } else if (evt.type === "final") {
+                  setAgentLogs((prev) => [...prev, evt]);
+                } else if (evt.type === "error") {
                   setAgentLogs((prev) => [...prev, evt]);
                 }
               },

@@ -34,7 +34,7 @@ export function useCardList(items = [], cardType = "default") {
         case "incident-reports":
           return {
             title: `${item.error_name || item.Err_name || "Unknown Error"}${
-              item.machine_id ? ` in machine ${item.machine_id}` : ""
+              item.machine_id ? ` in ${item.machine_id}` : ""
             }`,
             flagText: undefined,
             description: formatTimestamp(item.ts),
