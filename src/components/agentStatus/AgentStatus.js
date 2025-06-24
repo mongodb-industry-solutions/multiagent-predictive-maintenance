@@ -1,7 +1,14 @@
 import React from "react";
 import Image from "next/image";
 import Modal from "@leafygreen-ui/modal";
+import Icon from "@leafygreen-ui/icon";
+import dynamic from "next/dynamic";
 import { useAgentStatus } from "./hooks";
+
+const Spinner = dynamic(
+  () => import("@leafygreen-ui/loading-indicator").then((mod) => mod.Spinner),
+  { ssr: false }
+);
 
 export default function AgentStatus({
   isActive,
@@ -9,6 +16,7 @@ export default function AgentStatus({
   showModal,
   onCloseModal,
   setShowModal,
+  logs = [], // Accept logs as prop
 }) {
   const {
     handleBubbleClick,
@@ -19,10 +27,11 @@ export default function AgentStatus({
     logsLabel,
     logsArrow,
     logsPlaceholder,
-  } = useAgentStatus({ isActive, showModal, onCloseModal, setShowModal });
+    latestToolLog,
+  } = useAgentStatus({ isActive, showModal, onCloseModal, setShowModal, logs });
 
   return (
-    <div className="flex items-center gap-4 mt-1">
+    <div className="flex items-center gap-4 mt-1 w-full">
       {/* Agent Bubble (acts as button) */}
       <button
         className={`relative flex items-center rounded-full px-4 py-2 shadow-md transition-all duration-200 focus:outline-none cursor-pointer group border border-gray-200 bg-white ${
@@ -65,13 +74,29 @@ export default function AgentStatus({
         </div>
       </button>
       {/* Right Area: Logs and Placeholder */}
-      <div className="flex flex-col justify-between h-12 min-w-[140px]">
+      <div className="flex flex-col justify-between h-12 min-w-[140px] w-full">
         <div className="flex items-center text-xs text-gray-500 font-medium cursor-pointer select-none">
           {logsLabel}
           <span className="ml-1 text-base">{logsArrow}</span>
         </div>
-        <div className="text-xs text-gray-400 mt-1 truncate max-w-[120px]">
-          {logsPlaceholder}
+        <div className="text-xs text-gray-400 mt-1 truncate max-w-[180px] w-full flex items-center">
+          {latestToolLog ? (
+            <>
+              <span
+                className="mr-2 flex items-center justify-center"
+                style={{ width: 20, height: 20, minWidth: 20 }}
+              >
+                {latestToolLog.isLoading ? (
+                  <Spinner displayOption="default-horizontal" description="" />
+                ) : (
+                  <Icon glyph="CheckmarkWithCircle" fill="#22c55e" size={16} />
+                )}
+              </span>
+              <span className="text-gray-700">{latestToolLog.toolName}</span>
+            </>
+          ) : (
+            logsPlaceholder
+          )}
         </div>
       </div>
       {/* Modal */}

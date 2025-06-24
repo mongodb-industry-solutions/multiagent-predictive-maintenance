@@ -7,6 +7,7 @@ import MachineController from "@/components/machineController/MachineController"
 import CardList from "@/components/cardList/CardList";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
 import IncidentResponseForm from "@/components/forms/IncidentResponseForm/IncidentResponseForm";
+import AgentLogs from "@/components/agentLogs/AgentLogs";
 
 const Code = dynamic(
   () => import("@leafygreen-ui/code").then((mod) => mod.Code),
@@ -25,6 +26,7 @@ export default function Page() {
     modalContent,
     handleStart,
     handleStop,
+    agentLogs, // <-- Make sure to get logs from the hook if available
   } = useFailureDetectionPage();
 
   return (
@@ -51,7 +53,7 @@ export default function Page() {
           {/* Start/Stop Button centered */}
           <div className="flex justify-center mb-4">
             {sim.isRunning ? (
-              <Button variant="danger" onClick={handleStop}>
+              <Button variant="default" onClick={handleStop}>
                 Stop Simulator
               </Button>
             ) : (
@@ -102,17 +104,20 @@ export default function Page() {
         {/* Right Section: Agent Response */}
         <div className="flex flex-col w-1/2 h-full pb-8">
           {/* AgentStatus centered */}
-          <div className="flex justify-center mb-8">
-            <AgentStatus
-              isActive={agentActive}
-              showModal={showModal}
-              onCloseModal={() => setShowModal(false)}
-              setShowModal={setShowModal}
-              modalContent={modalContent}
-              statusText="Agent"
-              activeText="Active"
-              inactiveText="Inactive"
-            />
+          <div className="flex justify-center mb-8 w-full">
+            <div className="w-full">
+              <AgentStatus
+                isActive={agentActive}
+                showModal={showModal}
+                onCloseModal={() => setShowModal(false)}
+                setShowModal={setShowModal}
+                modalContent={modalContent}
+                logs={agentLogs || []}
+                statusText="Agent"
+                activeText="Active"
+                inactiveText="Inactive"
+              />
+            </div>
           </div>
           {/* Horizontal split: Form (left), Incident Reports (right) */}
           <div className="flex flex-1 gap-4 min-h-0">

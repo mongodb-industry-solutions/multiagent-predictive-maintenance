@@ -102,8 +102,6 @@ export async function callAgent(message, threadId, agentId = "test", writer) {
       agentGraphCache[agentId] = agentGraph;
     }
 
-    console.log(writer ? "Streaming mode enabled" : "Non-streaming mode");
-
     // Use streaming callbacks if writer is provided
     const callbacks = writer
       ? [createAgentCallbacks(writer)]

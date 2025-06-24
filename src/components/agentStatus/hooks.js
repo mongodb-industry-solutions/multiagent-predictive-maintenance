@@ -1,10 +1,11 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 export function useAgentStatus({
   isActive,
   showModal,
   onCloseModal,
   setShowModal,
+  logs = [], // Accept logs as a prop
 }) {
   // Image source based on agent status
   const agentImgSrc = isActive ? "/img/agent-color.png" : "/img/agent-gray.png";
@@ -34,10 +35,46 @@ export function useAgentStatus({
     [setShowModal]
   );
 
+  // Streaming logs logic
+  const latestToolLog = useMemo(() => {
+    if (!isActive) return null;
+    if (!logs || !Array.isArray(logs) || logs.length === 0) return null;
+    // Find the last tool_start or tool_end event
+    let lastToolEvent = null;
+    for (let i = logs.length - 1; i >= 0; i--) {
+      const log = logs[i];
+      if (log.name === "tool_start" || log.name === "tool_end") {
+        lastToolEvent = log;
+        break;
+      }
+      // If another event, treat last start_tool as done
+      if (
+        lastToolEvent &&
+        log.name !== "tool_start" &&
+        log.name !== "tool_end"
+      ) {
+        lastToolEvent = { ...lastToolEvent, name: "tool_end" };
+        break;
+      }
+    }
+    if (!lastToolEvent) return null;
+    // Tool name formatting
+    let toolName =
+      lastToolEvent.values?.name ||
+      lastToolEvent.values?.kwargs?.name ||
+      "Tool";
+    toolName = toolName
+      .replace(/_/g, " ")
+      .replace(/^\w/, (c) => c.toUpperCase());
+    // Status: loading if tool_start, done if tool_end
+    const isLoading = lastToolEvent.name === "tool_start";
+    return { toolName, isLoading };
+  }, [logs, isActive]);
+
   // Logs area
   const logsLabel = "See full logs";
   const logsArrow = "→";
-  const logsPlaceholder = "Streaming logs will appear here...";
+  const logsPlaceholder = "";
 
   return {
     handleBubbleClick,
@@ -48,6 +85,7 @@ export function useAgentStatus({
     logsLabel,
     logsArrow,
     logsPlaceholder,
+    latestToolLog,
   };
 }
 

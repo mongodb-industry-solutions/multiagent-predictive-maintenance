@@ -130,6 +130,7 @@ export function useFailureDetectionPage() {
   const [repairInstructions, setRepairInstructions] = useState("");
   const processingRef = useRef(false);
   const lastAlertRef = useRef(alertTrigger);
+  const [agentLogs, setAgentLogs] = useState([]);
 
   function formatRepairInstructions(instructions) {
     if (!Array.isArray(instructions)) return "";
@@ -141,19 +142,14 @@ export function useFailureDetectionPage() {
   const fetchIncidentReportsCallback = useCallback(async () => {
     const data = await fetchIncidentReports();
     setIncidentReports(data);
-    if (data.length > 0) {
-      setRootCause(data[0].root_cause || "");
-      setRepairInstructions(
-        formatRepairInstructions(data[0].repair_instructions)
-      );
-    } else {
-      setRootCause("");
-      setRepairInstructions("");
-    }
+    // Do not set root cause or repair instructions on page load
   }, []);
 
   useEffect(() => {
     fetchIncidentReportsCallback();
+    // Always clear root cause and repair instructions on load
+    setRootCause("");
+    setRepairInstructions("");
   }, [fetchIncidentReportsCallback]);
 
   useEffect(() => {
@@ -161,14 +157,35 @@ export function useFailureDetectionPage() {
       if (alertTrigger !== lastAlertRef.current && !processingRef.current) {
         lastAlertRef.current = alertTrigger;
         setAgentActive(true);
+        setAgentLogs([]); // Clear logs for new agent run
         const callAgentAsync = async () => {
           try {
             const alertToSend = lastGeneratedAlertRef.current;
-            await callFailureAgent(alertToSend);
+            await callFailureAgent(alertToSend, {
+              onEvent: (evt) => {
+                if (
+                  evt.type === "update" &&
+                  (evt.name === "tool_start" || evt.name === "tool_end")
+                ) {
+                  setAgentLogs((prev) => [...prev, evt]);
+                }
+              },
+            });
           } finally {
             setAgentActive(false);
             processingRef.current = false;
-            fetchIncidentReportsCallback();
+            // Fetch new incident reports and set root cause/repair instructions from the latest
+            const data = await fetchIncidentReports();
+            setIncidentReports(data);
+            if (data && data.length > 0) {
+              setRootCause(data[0].root_cause || "");
+              setRepairInstructions(
+                formatRepairInstructions(data[0].repair_instructions)
+              );
+            } else {
+              setRootCause("");
+              setRepairInstructions("");
+            }
           }
         };
         processingRef.current = true;
@@ -177,7 +194,7 @@ export function useFailureDetectionPage() {
         lastAlertRef.current = alertTrigger;
       }
     }
-  }, [alertTrigger, fetchIncidentReportsCallback]);
+  }, [alertTrigger]);
 
   const modalContent = (
     <div className="p-4">
@@ -215,5 +232,6 @@ export function useFailureDetectionPage() {
     modalContent,
     handleStart,
     handleStop,
+    agentLogs, // <-- pass logs to page
   };
 }

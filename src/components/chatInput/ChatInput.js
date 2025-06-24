@@ -67,6 +67,7 @@ export default function ChatInput({
         <div className="flex-1 flex flex-col p-4">
           <TextArea
             className="mb-2"
+            aria-labelledby={"Chat input"}
             placeholder="Type your message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
