@@ -1,6 +1,12 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 
-export function useCardList(items = [], cardType = "default") {
+export function useCardList(
+  items = [],
+  cardType = "default",
+  selectable = false,
+  selectedIdProp,
+  onSelectProp
+) {
   // Format timestamp to locale string
   const formatTimestamp = useCallback((timestamp) => {
     if (!timestamp) return "";
@@ -62,9 +68,37 @@ export function useCardList(items = [], cardType = "default") {
     return items.map((item) => getCardConfig(item, cardType));
   }, [items, cardType, getCardConfig]);
 
+  // Radio selection logic
+  const [selectedId, setSelectedId] = useState(
+    selectable && items.length > 0
+      ? items[0]?.["_id"] || items[0]?.Id
+      : undefined
+  );
+
+  // Keep in sync with controlled selectedIdProp
+  useEffect(() => {
+    if (selectable && selectedIdProp !== undefined) {
+      setSelectedId(selectedIdProp);
+    }
+  }, [selectedIdProp, selectable]);
+
+  // When items change, reset selection to first
+  useEffect(() => {
+    if (selectable && items.length > 0) {
+      setSelectedId(items[0]?.["_id"] || items[0]?.Id);
+    }
+  }, [items, selectable]);
+
+  const handleRadioSelect = (id) => {
+    setSelectedId(id);
+    if (onSelectProp) onSelectProp(id);
+  };
+
   return {
     cardConfigs,
     formatTimestamp,
     getCardConfig,
+    selectedId,
+    handleRadioSelect,
   };
 }

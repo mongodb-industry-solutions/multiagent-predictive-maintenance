@@ -11,7 +11,7 @@ const Code = dynamic(
 export default function CardList({
   items = [],
   idField = "_id",
-  cardType = "default", // NEW: type of card (alerts, incident-reports, workorders)
+  cardType = "default",
   selectable = false,
   selectedId,
   onSelect,
@@ -19,7 +19,11 @@ export default function CardList({
   emptyText = "No items",
   listTitle = "",
 }) {
-  const { cardConfigs } = useCardList(items, cardType);
+  const {
+    cardConfigs,
+    selectedId: selectedRadioId,
+    handleRadioSelect,
+  } = useCardList(items, cardType, selectable, selectedId, onSelect);
 
   return (
     <div
@@ -40,31 +44,41 @@ export default function CardList({
         )}
         {items.map((item, index) => {
           const id = item[idField];
-          const isSelected = selectable && selectedId === id;
           const config = cardConfigs[index];
+          const isSelected = selectable && selectedRadioId === id;
 
           return (
-            <div
-              key={id}
-              className={`${selectable ? "cursor-pointer" : ""}`}
-              onClick={selectable ? () => onSelect(id) : undefined}
-            >
-              <ExpandableCard
-                title={config.title}
-                description={config.description}
-                flagText={config.flagText}
-                style={isSelected ? { backgroundColor: "#f3f4f6" } : {}}
-              >
-                <div className="w-full">
-                  <Code
-                    language="json"
-                    className="w-full"
-                    style={{ width: "100%" }}
-                  >
-                    {JSON.stringify(item, null, 2)}
-                  </Code>
+            <div key={id} className="flex items-center w-full">
+              {selectable && (
+                <div className="flex items-center justify-center h-full pr-2">
+                  <input
+                    type="radio"
+                    name="cardlist-radio-group"
+                    checked={isSelected}
+                    onChange={() => handleRadioSelect(id)}
+                    className="form-radio h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer"
+                    style={{ accentColor: "#2563eb" }}
+                  />
                 </div>
-              </ExpandableCard>
+              )}
+              <div className="flex-1">
+                <ExpandableCard
+                  title={config.title}
+                  description={config.description}
+                  flagText={config.flagText}
+                  style={isSelected ? { backgroundColor: "#f3f4f6" } : {}}
+                >
+                  <div className="w-full">
+                    <Code
+                      language="json"
+                      className="w-full"
+                      style={{ width: "100%" }}
+                    >
+                      {JSON.stringify(item, null, 2)}
+                    </Code>
+                  </div>
+                </ExpandableCard>
+              </div>
             </div>
           );
         })}
