@@ -58,7 +58,9 @@ function generateWorkOrder(incident) {
 }
 
 export function useWorkOrderGenerationPage() {
-  const [selectedIncidentId, setSelectedIncidentId] = useState(null);
+  const [selectedIncidentId, setSelectedIncidentId] = useState(
+    mockIncidentReports.length > 0 ? mockIncidentReports[0].Id : null
+  );
   const [workOrderForm, setWorkOrderForm] = useState({});
   const [workorders, setWorkorders] = useState([]);
   const [agentStatus, setAgentStatus] = useState("idle"); // idle | active | done

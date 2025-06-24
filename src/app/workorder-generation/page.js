@@ -74,7 +74,7 @@ export default function Page() {
               <CardList
                 items={mockIncidentReports}
                 idField="Id"
-                primaryFields={["Err_name", "ts"]}
+                cardType="incident-reports"
                 selectable
                 selectedId={selectedIncidentId}
                 onSelect={handleIncidentSelect}
@@ -131,10 +131,9 @@ export default function Page() {
               <CardList
                 items={workorders}
                 idField="machine_id"
-                primaryFields={["title", "proposed_start_time"]}
+                cardType="workorders"
                 maxHeight="max-h-80"
                 emptyText="No workorders generated yet."
-                cardTitle={(wo) => wo.title || `Workorder for ${wo.machine_id}`}
                 listTitle="Workorders"
               />
             </div>

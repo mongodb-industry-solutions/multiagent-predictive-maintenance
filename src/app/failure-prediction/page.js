@@ -79,7 +79,7 @@ export default function Page() {
             </div>
             {/* Controls and Alerts */}
             <div className="w-1/2 flex flex-col gap-4 h-full">
-              <div className="flex-1 flex flex-row items-stretch">
+              <div className="flex flex-row items-stretch">
                 <MachineController
                   status={sim.status}
                   temperature={sim.temperature}
@@ -88,11 +88,11 @@ export default function Page() {
                   onVibrationChange={sim.onVibrationChange}
                 />
               </div>
-              <div className="flex-1 flex flex-col justify-end mb-8">
+              <div className="mt-2">
                 <CardList
                   items={sim.alerts}
                   idField="_id"
-                  primaryFields={["err_code", "err_name", "ts"]}
+                  cardType="alerts"
                   maxHeight="max-h-[calc(100vh-420px)] mb-8"
                   emptyText="No alerts"
                   listTitle="Alerts"
@@ -132,7 +132,7 @@ export default function Page() {
               <CardList
                 items={incidentReports}
                 idField="_id"
-                primaryFields={["Err_name", "ts"]}
+                cardType="incident-reports"
                 maxHeight="max-h-[calc(100vh-320px)] mb-8"
                 emptyText="No incident reports"
                 listTitle="Incident Reports"

@@ -1,8 +1,7 @@
 import React from "react";
 import { useCardList } from "./hooks";
-import Button from "@leafygreen-ui/button";
+import ExpandableCard from "@leafygreen-ui/expandable-card";
 import dynamic from "next/dynamic";
-//import Code from "@leafygreen-ui/code";
 
 const Code = dynamic(
   () => import("@leafygreen-ui/code").then((mod) => mod.Code),
@@ -12,18 +11,15 @@ const Code = dynamic(
 export default function CardList({
   items = [],
   idField = "_id",
-  primaryFields = [],
+  cardType = "default", // NEW: type of card (alerts, incident-reports, workorders)
   selectable = false,
   selectedId,
   onSelect,
-  cardTitle,
-  cardActions,
   maxHeight = "max-h-96",
   emptyText = "No items",
-  listTitle = "", // NEW: configurable title
+  listTitle = "",
 }) {
-  const { expandedCard, expandedType, handleExpand, handleCollapse } =
-    useCardList();
+  const { cardConfigs } = useCardList(items, cardType);
 
   return (
     <div
@@ -42,76 +38,33 @@ export default function CardList({
         {items.length === 0 && (
           <div className="text-gray-400 text-center">{emptyText}</div>
         )}
-        {items.map((item) => {
+        {items.map((item, index) => {
           const id = item[idField];
           const isSelected = selectable && selectedId === id;
+          const config = cardConfigs[index];
+
           return (
             <div
               key={id}
-              className={`border rounded shadow-sm p-4 relative transition-colors ${
-                isSelected
-                  ? "bg-blue-50 border-blue-400"
-                  : "bg-white hover:bg-gray-50 border-gray-200"
-              } ${selectable ? "cursor-pointer" : ""}`}
+              className={`${selectable ? "cursor-pointer" : ""}`}
               onClick={selectable ? () => onSelect(id) : undefined}
-              style={
-                selectable
-                  ? { boxShadow: isSelected ? "0 0 0 2px #2563eb" : undefined }
-                  : {}
-              }
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-gray-800">
-                    {cardTitle
-                      ? typeof cardTitle === "function"
-                        ? cardTitle(item)
-                        : cardTitle
-                      : primaryFields
-                          .map((f) => item[f])
-                          .filter(Boolean)
-                          .join(" - ")}
-                  </div>
-                  {primaryFields.length > 1 && (
-                    <div className="text-xs text-gray-500">
-                      {primaryFields
-                        .slice(1)
-                        .map((f) => item[f])
-                        .join(" | ")}
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  {cardActions &&
-                    cardActions(item, {
-                      expandedCard,
-                      expandedType,
-                      handleExpand,
-                    })}
-                  <Button
-                    aria-label="Expand as JSON"
-                    className="!p-1 !rounded-full !bg-gray-200 !text-gray-700"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleExpand(id, "json");
-                    }}
-                    disabled={expandedCard === id && expandedType === "json"}
+              <ExpandableCard
+                title={config.title}
+                description={config.description}
+                flagText={config.flagText}
+                style={isSelected ? { backgroundColor: "#f3f4f6" } : {}}
+              >
+                <div className="w-full">
+                  <Code
+                    language="json"
+                    className="w-full"
+                    style={{ width: "100%" }}
                   >
-                    <span className="material-icons">code</span>
-                  </Button>
+                    {JSON.stringify(item, null, 2)}
+                  </Code>
                 </div>
-              </div>
-              {/* Expanded content */}
-              {expandedCard === id && expandedType === "json" && (
-                <div className="mt-3 border-t pt-3 max-h-48 overflow-y-auto">
-                  <Code language="json">{JSON.stringify(item, null, 2)}</Code>
-                  <div className="flex justify-end mt-2">
-                    <Button size="xsmall" onClick={handleCollapse}>
-                      Collapse
-                    </Button>
-                  </div>
-                </div>
-              )}
+              </ExpandableCard>
             </div>
           );
         })}
