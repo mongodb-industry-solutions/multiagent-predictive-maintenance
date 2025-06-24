@@ -94,21 +94,6 @@ export const generateWorkOrder = tool(
           type: "string",
           description: "Title of the work order",
         },
-        repair_instructions: {
-          type: "array",
-          description:
-            "Repair instructions as specified by the incident report",
-          minItems: 3,
-          maxItems: 6,
-          items: {
-            type: "object",
-            properties: {
-              step: { type: "integer" },
-              description: { type: "string" },
-            },
-            required: ["step", "description"],
-          },
-        },
         estimated_duration_days: {
           type: "number",
           description: "Estimated duration in days (1-5)",
@@ -163,7 +148,6 @@ export const generateWorkOrder = tool(
         "name",
         "machine_id",
         "title",
-        "instructions",
         "estimated_duration_days",
         "required_skills",
         "required_materials",

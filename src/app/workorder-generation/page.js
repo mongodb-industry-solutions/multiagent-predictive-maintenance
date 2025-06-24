@@ -26,14 +26,16 @@ export default function Page() {
     showModal,
     setShowModal,
     modalContent,
-    mockIncidentReports,
+    incidentReports,
     inventorySample,
     staffSample,
+    emptyIncidentText,
+    agentLogs,
   } = useWorkOrderGenerationPage();
 
   // Find the selected incident object
-  const selectedIncidentObj = mockIncidentReports.find(
-    (ir) => ir.Id === selectedIncidentId
+  const selectedIncidentObj = incidentReports.find(
+    (ir) => ir._id === selectedIncidentId || ir.Id === selectedIncidentId
   );
 
   return (
@@ -72,14 +74,18 @@ export default function Page() {
             {/* Incident Reports CardList */}
             <div className="w-1/2 flex flex-col">
               <CardList
-                items={mockIncidentReports}
-                idField="Id"
+                items={incidentReports}
+                idField={
+                  incidentReports.length > 0 && incidentReports[0]._id
+                    ? "_id"
+                    : "Id"
+                }
                 cardType="incident-reports"
                 selectable
                 selectedId={selectedIncidentId}
                 onSelect={handleIncidentSelect}
                 maxHeight="max-h-80"
-                emptyText="No incident reports"
+                emptyText={emptyIncidentText || "No incident reports"}
                 listTitle="Incident Reports"
               />
             </div>
@@ -117,6 +123,7 @@ export default function Page() {
               statusText="Agent"
               activeText="Active"
               inactiveText="Inactive"
+              logs={agentLogs || []}
             />
           </div>
           {/* Horizontal split: WorkOrderForm (left), Workorders CardList (right) */}
@@ -130,7 +137,7 @@ export default function Page() {
             <div className="w-1/2 flex flex-col gap-3">
               <CardList
                 items={workorders}
-                idField="machine_id"
+                idField="_id"
                 cardType="workorders"
                 maxHeight="max-h-80"
                 emptyText="No workorders generated yet."

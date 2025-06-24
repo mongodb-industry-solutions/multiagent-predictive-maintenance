@@ -62,3 +62,25 @@ export async function callFailureAgent(alert, { onEvent } = {}) {
   }
   return fullText;
 }
+
+export async function callWorkOrderAgent(incidentReport, { onEvent } = {}) {
+  // Always use /api/chat for workorder agent
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: JSON.stringify(incidentReport, null, 2),
+      agentId: "workorder",
+    }),
+  });
+  if (!response.body) throw new Error("No response body");
+  let fullText = "";
+  for await (const evt of streamAgentEvents(response.body)) {
+    if (onEvent) onEvent(evt);
+    if (evt.type === "update" || evt.type === "final") {
+      fullText += evt.values?.content || "";
+    }
+    // handle errors or other event types as needed
+  }
+  return fullText;
+}
