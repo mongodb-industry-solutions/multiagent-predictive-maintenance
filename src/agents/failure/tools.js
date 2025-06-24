@@ -121,13 +121,12 @@ export const generateIncidentReport = tool(
     const { name, ...rest } = params;
     // Add timestamp
     const doc = { ...rest, ts: new Date() };
-    console.log(doc);
+
     // Insert into MongoDB
     const client = await clientPromise;
     const db = client.db(process.env.DATABASE_NAME);
     const result = await db.collection("incident_reports").insertOne(doc);
-    console.log(result);
-    return { status: "success", inserted: true };
+    return JSON.stringify(result);
   },
   {
     name: "generate_incident_report",

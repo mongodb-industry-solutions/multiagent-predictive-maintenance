@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { streamAgentEvents } from "@/lib/stream/agent";
+import { sendChatMessage, fetchAgentOptions } from "@/lib/api/agent";
 
 export function useAgentSandbox({ initialAgentId = "test" } = {}) {
   const [agentId, setAgentId] = useState(initialAgentId);
@@ -17,8 +17,7 @@ export function useAgentSandbox({ initialAgentId = "test" } = {}) {
       setLoadingAgents(true);
       setError(null);
       try {
-        const res = await fetch("/api/agent/options");
-        const data = await res.json();
+        const data = await fetchAgentOptions();
         setAgentOptions(data.options || []);
       } catch (e) {
         setError("Failed to load agent options");
@@ -46,29 +45,14 @@ export function useAgentSandbox({ initialAgentId = "test" } = {}) {
     // Add user message to logs immediately
     setLogs((prev) => [...prev, { type: "user", values: { content: input } }]);
     try {
-      const url = threadId ? `/api/chat/${threadId}` : "/api/chat";
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input, agentId }),
+      await sendChatMessage({
+        message: input,
+        agentId,
+        threadId,
+        setLogs,
+        setThreadId,
+        setError,
       });
-      if (!res.body) throw new Error("No response body");
-      let newThreadId = threadId;
-      for await (const evt of streamAgentEvents(res.body)) {
-        if (evt.type === "update") {
-          setLogs((prev) => [...prev, evt]);
-        } else if (evt.type === "final") {
-          setLogs((prev) => [...prev, { ...evt, type: "final" }]);
-        } else if (evt.type === "error") {
-          setError(evt.values?.name || "Error");
-          setLogs((prev) => [...prev, evt]);
-        }
-        if (!newThreadId && evt.threadId) {
-          newThreadId = evt.threadId;
-          setThreadId(newThreadId);
-        }
-      }
-      if (!newThreadId) setThreadId((prev) => prev || Date.now().toString());
     } catch (e) {
       setError("Failed to send message");
     } finally {

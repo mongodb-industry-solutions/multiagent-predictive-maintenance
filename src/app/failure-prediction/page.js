@@ -123,7 +123,7 @@ export default function Page() {
             <div className="w-1/2 flex flex-col">
               <CardList
                 items={incidentReports}
-                idField="Id"
+                idField="_id"
                 primaryFields={["Err_name", "ts"]}
                 maxHeight="max-h-80"
                 emptyText="No incident reports"

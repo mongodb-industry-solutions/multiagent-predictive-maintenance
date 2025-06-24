@@ -11,7 +11,7 @@ const Code = dynamic(
 
 export default function CardList({
   items = [],
-  idField = "id",
+  idField = "_id",
   primaryFields = [],
   selectable = false,
   selectedId,
