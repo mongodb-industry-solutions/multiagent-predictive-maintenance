@@ -138,11 +138,6 @@ export const generateWorkOrder = tool(
           description:
             "Observations relevant to the work order from past work orders",
         },
-        root_cause: {
-          type: "string",
-          description:
-            "Root cause of the issue as specified by the incident report",
-        },
       },
       required: [
         "name",
@@ -152,7 +147,6 @@ export const generateWorkOrder = tool(
         "required_skills",
         "required_materials",
         "observations",
-        "root_cause",
       ],
     },
   }

@@ -23,7 +23,12 @@ export default function WorkOrderForm({ form, handleFormChange }) {
       />
       <TextInput
         label="Estimated Duration (days)"
-        value={form.estimated_duration_days || form.estimated_duration || ""}
+        value={
+          form.estimated_duration_days !== undefined &&
+          form.estimated_duration_days !== null
+            ? String(form.estimated_duration_days)
+            : form.estimated_duration || ""
+        }
         onChange={(e) =>
           handleFormChange("estimated_duration_days", e.target.value)
         }
@@ -43,7 +48,7 @@ export default function WorkOrderForm({ form, handleFormChange }) {
         readOnly
         className="mb-1"
       />
-      <TextArea
+      <TextInput
         label="Required Skills"
         value={
           Array.isArray(form.required_skills)
@@ -53,9 +58,8 @@ export default function WorkOrderForm({ form, handleFormChange }) {
         onChange={(e) => handleFormChange("required_skills", e.target.value)}
         readOnly
         className="mb-1"
-        rows={2}
       />
-      <TextArea
+      <TextInput
         label="Required Materials"
         value={
           Array.isArray(form.required_materials)
@@ -65,7 +69,6 @@ export default function WorkOrderForm({ form, handleFormChange }) {
         onChange={(e) => handleFormChange("required_materials", e.target.value)}
         readOnly
         className="mb-1"
-        rows={2}
       />
       <TextArea
         label="Observations"

@@ -90,6 +90,17 @@ export function useWorkOrderGenerationPage() {
       (ir) => ir._id === selectedIncidentId || ir.Id === selectedIncidentId
     );
     try {
+      // Add initial user message to logs
+      setAgentLogs([
+        {
+          type: "user",
+          values: {
+            content:
+              "New workorder requested for incident:\n" +
+              JSON.stringify(selectedIncident, null, 2),
+          },
+        },
+      ]);
       // Stream logs from agent
       await callWorkOrderAgent(selectedIncident, {
         onEvent: (evt) => {
