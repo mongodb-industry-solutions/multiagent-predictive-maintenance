@@ -39,6 +39,8 @@ export default function WorkorderSchedulerPage() {
     modalContent,
     canContinue,
     handleContinueWorkflow,
+    handleResetCalendar,
+    agentLogs,
   } = useWorkorderSchedulerPage();
 
   return (
@@ -112,7 +114,7 @@ export default function WorkorderSchedulerPage() {
               showModal={showModal}
               setShowModal={setShowModal}
               modalContent={modalContent}
-              logs={[]}
+              logs={agentLogs || []}
             />
           </div>
           {/* Calendar directly under AgentStatus with margin */}
@@ -129,6 +131,12 @@ export default function WorkorderSchedulerPage() {
               eventContent={renderEventContent}
               height={500}
             />
+          </div>
+          {/* Reset Button below calendar, right aligned */}
+          <div className="flex justify-end mt-2">
+            <Button variant="default" onClick={handleResetCalendar}>
+              Reset Calendar
+            </Button>
           </div>
         </div>
       </div>

@@ -98,7 +98,7 @@ export const generateWorkOrder = tool(
           type: "number",
           description: "Estimated duration in days (1-5)",
           minimum: 1,
-          maximum: 5,
+          maximum: 3,
         },
         required_skills: {
           type: "array",

@@ -16,7 +16,7 @@ const prompt = ChatPromptTemplate.fromMessages([
     "system",
     `You are the work order agent. 
     You receive an incident report, retrieve additional context, and generate a work order.
-    No need to add details in the final response, after the incident report is generated, just acknowledge the completion.
+    No need to add details in the final response, after the work order is generated, just acknowledge the completion.
     Use your tools as needed.
     `,
   ],

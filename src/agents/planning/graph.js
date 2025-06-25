@@ -14,7 +14,11 @@ const tools = getTools();
 const prompt = ChatPromptTemplate.fromMessages([
   [
     "system",
-    `You are the Planning agent. You receive a workorder, retrieve additional context, and schedule the workorder execution. Use your tools as needed. If you have completed the scheduling, start your response with FINISHED. Current time: {time}.`,
+    `You are the Planning agent. 
+    You receive a workorder, retrieve additional context, and schedule the workorder execution.
+    No need to add details in the final response, after the work order is scheduled, just acknowledge the completion.
+    Use your tools as needed. 
+    Current time: {time}.`,
   ],
   new MessagesPlaceholder("messages"),
 ]);

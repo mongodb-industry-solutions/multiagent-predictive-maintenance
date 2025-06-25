@@ -21,7 +21,8 @@ export async function fetchProductionCalendarEvents() {
     const startDate = new Date(task.planned_start_date);
     const endDate = new Date(startDate);
     endDate.setUTCDate(endDate.getUTCDate() + (task.duration || 1));
-    return {
+    // Set orange background for maintenance tasks
+    const event = {
       id: task.task_id,
       title: `${task.task_id}: ${task.pieces_to_produce} pcs (${task.priority})`,
       start: startDate,
@@ -31,5 +32,35 @@ export async function fetchProductionCalendarEvents() {
         ...task,
       },
     };
+    if (task.task_type === "maintenance") {
+      event.backgroundColor = "#FFA500"; // orange
+      event.borderColor = "#FFA500";
+    }
+    return event;
+  });
+}
+
+// Reset production calendar: remove all maintenance tasks and reset planned_start_date for rescheduled tasks
+export async function resetProductionCalendar() {
+  // 1. Delete all maintenance tasks
+  await fetch("/api/action/deleteMany", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      collection: "production_calendar",
+      filter: { task_type: "maintenance" },
+    }),
+  });
+  // 2. Update all tasks where planned_start_date != initial_start_date using aggregation pipeline
+  await fetch("/api/action/updateMany", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      collection: "production_calendar",
+      filter: {
+        $expr: { $ne: ["$planned_start_date", "$initial_start_date"] },
+      },
+      update: [{ $set: { planned_start_date: "$initial_start_date" } }],
+    }),
   });
 }

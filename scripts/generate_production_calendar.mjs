@@ -71,6 +71,7 @@ async function main() {
     const duration = getRandomInt(1, 5);
     const initialStartDate = setToUTCMidnight(currentDate);
     const plannedStartDate = setToUTCMidnight(currentDate);
+    const plannedEndDate = addDaysUTC(plannedStartDate, duration);
     const deadlineBase = addDaysUTC(initialStartDate, duration * 2);
     const deadlineDate = setToUTCMidnight(
       addDaysUTC(deadlineBase, getRandomInt(0, 3))
@@ -91,6 +92,7 @@ async function main() {
       task_type: "production",
       initial_start_date: initialStartDate,
       planned_start_date: plannedStartDate,
+      planned_end_date: plannedEndDate,
       deadline_date: deadlineDate,
       duration: duration,
       delay_factor: delayFactor,

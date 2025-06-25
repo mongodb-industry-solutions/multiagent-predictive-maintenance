@@ -46,7 +46,7 @@ export const retrieveWorkOrders = tool(
     const dbConfig = {
       collection: "workorders",
       indexName: "default",
-      textKey: ["instructions"],
+      textKey: ["title", "observations"],
       embeddingKey: "embedding",
       includeScore: true,
     };

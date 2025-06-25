@@ -1,6 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
-import { fetchProductionCalendarEvents } from "@/lib/api/calendar";
+import { useEffect, useState, useCallback, useRef } from "react";
+import {
+  fetchProductionCalendarEvents,
+  resetProductionCalendar,
+} from "@/lib/api/calendar";
 import { fetchWorkOrders } from "@/lib/api/workOrders";
+import { sendChatMessage } from "@/lib/api/agent";
 
 const productionCalendarSample = {
   task_id: "PROD-1001",
@@ -50,7 +54,7 @@ export function useWorkorderSchedulerPage() {
   const [calendarLoading, setCalendarLoading] = useState(true);
   const [calendarError, setCalendarError] = useState(null);
 
-  useEffect(() => {
+  const fetchCalendar = useCallback(() => {
     setCalendarLoading(true);
     fetchProductionCalendarEvents()
       .then((evs) => setCalendarEvents(evs))
@@ -58,9 +62,67 @@ export function useWorkorderSchedulerPage() {
       .finally(() => setCalendarLoading(false));
   }, []);
 
-  // Agent status (placeholder, not connected yet)
+  useEffect(() => {
+    fetchCalendar();
+  }, [fetchCalendar]);
+
+  // Agent status and logs
   const [agentStatus, setAgentStatus] = useState("idle");
   const [showModal, setShowModal] = useState(false);
+  const [agentLogs, setAgentLogs] = useState([]);
+  const [threadId, setThreadId] = useState(null);
+  const [agentError, setAgentError] = useState(null);
+  const processingRef = useRef(false);
+
+  // Continue workflow: schedule selected workorder
+  const canContinue = selectedWorkorderId && !processingRef.current;
+  const handleContinueWorkflow = useCallback(async () => {
+    if (!selectedWorkorderId || processingRef.current) return;
+    const selectedWorkorder = workorders.find(
+      (w) => w._id === selectedWorkorderId
+    );
+    if (!selectedWorkorder) return;
+    setAgentStatus("active");
+    setAgentLogs([]);
+    setAgentError(null);
+    processingRef.current = true;
+    setThreadId(null);
+    // Initial user message
+    setAgentLogs([
+      {
+        type: "user",
+        values: {
+          content:
+            "Schedule this workorder in the production calendar:\n" +
+            JSON.stringify(selectedWorkorder, null, 2),
+        },
+      },
+    ]);
+    try {
+      await sendChatMessage({
+        message:
+          "Schedule this workorder in the production calendar:\n" +
+          JSON.stringify(selectedWorkorder, null, 2),
+        agentId: "planning",
+        threadId: null,
+        setLogs: setAgentLogs,
+        setThreadId,
+        setError: setAgentError,
+      });
+    } finally {
+      setAgentStatus("done");
+      processingRef.current = false;
+      // Refresh calendar events after agent finishes
+      fetchCalendar();
+    }
+  }, [selectedWorkorderId, workorders, fetchCalendar]);
+
+  // Reset calendar handler
+  const handleResetCalendar = useCallback(async () => {
+    await resetProductionCalendar();
+    fetchCalendar();
+  }, [fetchCalendar]);
+
   const modalContent = (
     <>
       <h3 className="text-lg font-semibold mb-2">Agent Info</h3>
@@ -90,5 +152,11 @@ export function useWorkorderSchedulerPage() {
     showModal,
     setShowModal,
     modalContent,
+    agentLogs,
+    threadId,
+    canContinue,
+    handleContinueWorkflow,
+    agentError,
+    handleResetCalendar,
   };
 }
