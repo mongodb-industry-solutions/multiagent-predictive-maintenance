@@ -1,13 +1,8 @@
 "use client";
-import {
-  H1,
-  H3,
-  Description,
-  Link as LGLink,
-  Body,
-} from "@leafygreen-ui/typography";
+import { H1, H3, Description, Body } from "@leafygreen-ui/typography";
 import Card from "@leafygreen-ui/card";
 import Image from "next/image";
+import Icon from "@leafygreen-ui/icon";
 
 export default function Page() {
   return (
@@ -52,14 +47,20 @@ export default function Page() {
             <Description className="text-center mb-1 text-xs">
               Explore the source code and implementation details of this demo.
             </Description>
-            <LGLink
-              href="https://www.mongodb.com/resources/solutions/use-cases/generative-ai-predictive-maintenance-applications"
+            <a
+              href="https://github.com/mongodb-industry-solutions/multiagent-predictive-maintenance"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center self-center text-blue-600 hover:underline mt-1"
+              className="mt-1 inline-flex items-center self-center text-blue-600 hover:underline hover:decoration-gray-200 hover:underline-offset-4 hover:decoration-2"
+              style={{ color: "#2563eb" }}
             >
               Try the demo
-            </LGLink>
+              <Icon
+                glyph="ChevronRight"
+                size={10}
+                className="ml-1 text-blue-600"
+              />
+            </a>
           </Card>
           {/* Card 2 */}
           <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto">
@@ -74,14 +75,20 @@ export default function Page() {
             <Description className="text-center mb-1 text-xs">
               Discover how agentic AI is transforming predictive maintenance.
             </Description>
-            <LGLink
-              href="https://www.mongodb.com/blog/post/ai-predictive-maintenance"
+            <a
+              href="https://mongodb.highspot.com/items/6079a342c79c5260a535141a"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center self-center text-blue-600 hover:underline mt-1"
+              className="inline-flex items-center self-center text-blue-600 hover:underline hover:decoration-gray-200 hover:underline-offset-4 hover:decoration-2 mt-1"
+              style={{ color: "#2563eb" }}
             >
               View the deck
-            </LGLink>
+              <Icon
+                glyph="ChevronRight"
+                size={10}
+                className="ml-1 text-blue-600"
+              />
+            </a>
           </Card>
           {/* Card 3 */}
           <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto">
@@ -97,14 +104,20 @@ export default function Page() {
               Learn more about multi-agent collaboration for manufacturing
               operations excellence.
             </Description>
-            <LGLink
+            <a
               href="https://www.mongodb.com/blog/post/multi-agent-collaboration-for-manufacturing-operations-optimization"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center self-center text-blue-600 hover:underline mt-1"
+              className="inline-flex items-center self-center text-blue-600 hover:underline hover:decoration-gray-200 hover:underline-offset-4 hover:decoration-2 mt-1"
+              style={{ color: "#2563eb" }}
             >
               Read the blog
-            </LGLink>
+              <Icon
+                glyph="ChevronRight"
+                size={10}
+                className="ml-1 text-blue-600"
+              />
+            </a>
           </Card>
         </div>
       </section>
