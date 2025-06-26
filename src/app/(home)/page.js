@@ -1,13 +1,8 @@
 "use client";
-import {
-  H1,
-  H3,
-  Description,
-  Link as LGLink,
-  Body,
-} from "@leafygreen-ui/typography";
+import { H1, H3, Description, Body } from "@leafygreen-ui/typography";
 import Card from "@leafygreen-ui/card";
 import Image from "next/image";
+import Icon from "@leafygreen-ui/icon";
 
 export default function Page() {
   return (
@@ -23,12 +18,12 @@ export default function Page() {
             style={{ aspectRatio: "7 / 4", minHeight: 120 }}
           >
             <Image
-              src="/read.png"
+              src="/img/high-level-architecture.svg"
               alt="Predictive Maintenance Demo"
               fill={false}
               width={700}
               height={400}
-              className="object-contain w-full h-auto max-h-[30vh] sm:max-h-[220px] md:max-h-[320px] lg:max-h-[400px] rounded-lg shadow"
+              className="object-contain w-full h-auto max-h-[30vh] sm:max-h-[220px] md:max-h-[320px] lg:max-h-[400px]"
               priority
               sizes="(max-width: 768px) 100vw, 80vw"
             />
@@ -42,71 +37,87 @@ export default function Page() {
           {/* Card 1 */}
           <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto">
             <Image
-              src="/read.png"
-              alt="White Paper"
+              src="/img/github.png"
+              alt="GitHub Repository"
               width={36}
               height={36}
               className="mb-1 object-contain"
             />
-            <H3 className="mb-1 text-center text-base">White Paper</H3>
+            <H3 className="mb-1 text-center text-base">GitHub Repository</H3>
             <Description className="text-center mb-1 text-xs">
-              Learn more about using generative AI to achieve maintenance
-              excellence.
+              Explore the source code and implementation details of this demo.
             </Description>
-            <LGLink
-              href="https://www.mongodb.com/resources/solutions/use-cases/generative-ai-predictive-maintenance-applications"
+            <a
+              href="https://github.com/mongodb-industry-solutions/multiagent-predictive-maintenance"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center self-center text-blue-600 hover:underline mt-1"
+              className="mt-1 inline-flex items-center self-center text-blue-600 hover:underline hover:decoration-gray-200 hover:underline-offset-4 hover:decoration-2"
+              style={{ color: "#2563eb" }}
             >
-              Read the paper
-            </LGLink>
+              Try the demo
+              <Icon
+                glyph="ChevronRight"
+                size={10}
+                className="ml-1 text-blue-600"
+              />
+            </a>
           </Card>
           {/* Card 2 */}
           <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto">
             <Image
-              src="/globe.svg"
-              alt="Blog Post"
+              src="/img/deck.png"
+              alt="Slides Deck"
+              width={36}
+              height={36}
+              className="mb-1 object-contain"
+            />
+            <H3 className="mb-1 text-center text-base">Slide Deck</H3>
+            <Description className="text-center mb-1 text-xs">
+              Discover how agentic AI is transforming predictive maintenance.
+            </Description>
+            <a
+              href="https://mongodb.highspot.com/items/6079a342c79c5260a535141a"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center self-center text-blue-600 hover:underline hover:decoration-gray-200 hover:underline-offset-4 hover:decoration-2 mt-1"
+              style={{ color: "#2563eb" }}
+            >
+              View the deck
+              <Icon
+                glyph="ChevronRight"
+                size={10}
+                className="ml-1 text-blue-600"
+              />
+            </a>
+          </Card>
+          {/* Card 3 */}
+          <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto">
+            <Image
+              src="/img/read.png"
+              alt="MongoDB Atlas"
               width={36}
               height={36}
               className="mb-1 object-contain"
             />
             <H3 className="mb-1 text-center text-base">Blog Post</H3>
             <Description className="text-center mb-1 text-xs">
-              Discover how AI is transforming predictive maintenance in
-              real-world scenarios.
+              Learn more about multi-agent collaboration for manufacturing
+              operations excellence.
             </Description>
-            <LGLink
-              href="https://www.mongodb.com/blog/post/ai-predictive-maintenance"
+            <a
+              href="https://www.mongodb.com/blog/post/multi-agent-collaboration-for-manufacturing-operations-optimization"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center self-center text-blue-600 hover:underline mt-1"
+              className="inline-flex items-center self-center text-blue-600 hover:underline hover:decoration-gray-200 hover:underline-offset-4 hover:decoration-2 mt-1"
+              style={{ color: "#2563eb" }}
             >
               Read the blog
-            </LGLink>
-          </Card>
-          {/* Card 3 */}
-          <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto">
-            <Image
-              src="/window.svg"
-              alt="MongoDB Atlas"
-              width={36}
-              height={36}
-              className="mb-1 object-contain"
-            />
-            <H3 className="mb-1 text-center text-base">MongoDB Atlas</H3>
-            <Description className="text-center mb-1 text-xs">
-              Explore the cloud platform powering this demo and many other AI
-              solutions.
-            </Description>
-            <LGLink
-              href="https://www.mongodb.com/products/platform/atlas"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center self-center text-blue-600 hover:underline mt-1"
-            >
-              Visit Atlas
-            </LGLink>
+              <Icon
+                glyph="ChevronRight"
+                size={10}
+                className="ml-1 text-blue-600"
+              />
+            </a>
           </Card>
         </div>
       </section>

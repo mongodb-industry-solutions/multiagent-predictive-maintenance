@@ -1,19 +1,57 @@
 "use client";
 import ChatInput from "@/components/chatInput/ChatInput";
-import AgentGraph from "@/components/agentGraph/AgentGraph";
-import { useState } from "react";
+import AgentLogs from "@/components/agentLogs/AgentLogs";
+import { useAgentSandbox } from "./hooks";
+import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
 
 export default function Home() {
-  const [agentId, setAgentId] = useState("test");
+  const {
+    agentId,
+    setAgentId,
+    input,
+    setInput,
+    logs,
+    loading,
+    error,
+    sendMessage,
+    threadId,
+    resetConversation,
+    agentOptions,
+    loadingAgents,
+  } = useAgentSandbox();
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-row items-stretch w-full">
-      <div className="w-1/2 h-screen">
-        <AgentGraph agentId={agentId} />
+    <LeafyGreenProvider baseFontSize={16}>
+      <div>
+        <main className="min-h-screen flex flex-row items-stretch mt-3 w-full overflow-hidden">
+          <div
+            className="flex-1 min-w-0 h-screen flex flex-col overflow-hidden"
+            style={{ flexBasis: "50%", maxWidth: "50%" }}
+          >
+            <ChatInput
+              agentId={agentId}
+              setAgentId={setAgentId}
+              input={input}
+              setInput={setInput}
+              loading={loading}
+              error={error}
+              sendMessage={sendMessage}
+              agentOptions={agentOptions}
+              loadingAgents={loadingAgents}
+            />
+          </div>
+          <div
+            className="flex-1 min-w-0 h-screen flex flex-col overflow-hidden border-l border-gray-200"
+            style={{ flexBasis: "50%", maxWidth: "50%" }}
+          >
+            <AgentLogs
+              logs={logs}
+              threadId={threadId}
+              onNewThread={resetConversation}
+            />
+          </div>
+        </main>
       </div>
-      <div className="w-1/2 h-screen flex items-center justify-center">
-        <ChatInput agentId={agentId} setAgentId={setAgentId} />
-      </div>
-    </main>
+    </LeafyGreenProvider>
   );
 }
