@@ -8,6 +8,10 @@
   animation: agent-glow-fade 1s infinite alternate;
 }
 
+body {
+  @apply bg-white;
+}
+
 /* Custom scrollbar for CardList */
 .cardlist-scrollbar::-webkit-scrollbar {
   width: 6px;

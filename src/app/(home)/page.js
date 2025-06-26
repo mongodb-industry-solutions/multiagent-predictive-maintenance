@@ -23,12 +23,12 @@ export default function Page() {
             style={{ aspectRatio: "7 / 4", minHeight: 120 }}
           >
             <Image
-              src="/read.png"
+              src="/img/high-level-architecture.svg"
               alt="Predictive Maintenance Demo"
               fill={false}
               width={700}
               height={400}
-              className="object-contain w-full h-auto max-h-[30vh] sm:max-h-[220px] md:max-h-[320px] lg:max-h-[400px] rounded-lg shadow"
+              className="object-contain w-full h-auto max-h-[30vh] sm:max-h-[220px] md:max-h-[320px] lg:max-h-[400px]"
               priority
               sizes="(max-width: 768px) 100vw, 80vw"
             />
@@ -42,16 +42,15 @@ export default function Page() {
           {/* Card 1 */}
           <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto">
             <Image
-              src="/read.png"
-              alt="White Paper"
+              src="/img/github.png"
+              alt="GitHub Repository"
               width={36}
               height={36}
               className="mb-1 object-contain"
             />
-            <H3 className="mb-1 text-center text-base">White Paper</H3>
+            <H3 className="mb-1 text-center text-base">GitHub Repository</H3>
             <Description className="text-center mb-1 text-xs">
-              Learn more about using generative AI to achieve maintenance
-              excellence.
+              Explore the source code and implementation details of this demo.
             </Description>
             <LGLink
               href="https://www.mongodb.com/resources/solutions/use-cases/generative-ai-predictive-maintenance-applications"
@@ -59,22 +58,21 @@ export default function Page() {
               rel="noopener noreferrer"
               className="inline-flex items-center self-center text-blue-600 hover:underline mt-1"
             >
-              Read the paper
+              Try the demo
             </LGLink>
           </Card>
           {/* Card 2 */}
           <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto">
             <Image
-              src="/globe.svg"
-              alt="Blog Post"
+              src="/img/deck.png"
+              alt="Slides Deck"
               width={36}
               height={36}
               className="mb-1 object-contain"
             />
-            <H3 className="mb-1 text-center text-base">Blog Post</H3>
+            <H3 className="mb-1 text-center text-base">Slide Deck</H3>
             <Description className="text-center mb-1 text-xs">
-              Discover how AI is transforming predictive maintenance in
-              real-world scenarios.
+              Discover how agentic AI is transforming predictive maintenance.
             </Description>
             <LGLink
               href="https://www.mongodb.com/blog/post/ai-predictive-maintenance"
@@ -82,30 +80,30 @@ export default function Page() {
               rel="noopener noreferrer"
               className="inline-flex items-center self-center text-blue-600 hover:underline mt-1"
             >
-              Read the blog
+              View the deck
             </LGLink>
           </Card>
           {/* Card 3 */}
           <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto">
             <Image
-              src="/window.svg"
+              src="/img/read.png"
               alt="MongoDB Atlas"
               width={36}
               height={36}
               className="mb-1 object-contain"
             />
-            <H3 className="mb-1 text-center text-base">MongoDB Atlas</H3>
+            <H3 className="mb-1 text-center text-base">Blog Post</H3>
             <Description className="text-center mb-1 text-xs">
-              Explore the cloud platform powering this demo and many other AI
-              solutions.
+              Learn more about multi-agent collaboration for manufacturing
+              operations excellence.
             </Description>
             <LGLink
-              href="https://www.mongodb.com/products/platform/atlas"
+              href="https://www.mongodb.com/blog/post/multi-agent-collaboration-for-manufacturing-operations-optimization"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center self-center text-blue-600 hover:underline mt-1"
             >
-              Visit Atlas
+              Read the blog
             </LGLink>
           </Card>
         </div>

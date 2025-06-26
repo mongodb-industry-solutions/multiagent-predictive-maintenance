@@ -24,7 +24,7 @@ export default function Navbar() {
               alt="Logo"
               fill
               style={{ objectFit: "contain" }}
-              sizes="48px"
+              sizes="500px"
               priority
             />
           </div>
