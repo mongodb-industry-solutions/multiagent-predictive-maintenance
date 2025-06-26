@@ -15,18 +15,23 @@ export default function Navbar() {
 
   return (
     <nav className="w-full bg-white shadow-md fixed top-0 left-0">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 relative">
-        <div className="flex-shrink-0 flex items-center absolute left-0 h-full">
-          <Link href="/" className="flex items-center">
+      {/* Logo absolutely positioned in the top-left corner */}
+      <div className="absolute left-0 top-0 pl-5 pt-2">
+        <Link href="/" className="flex items-center">
+          <div className="relative h-11 w-50">
             <Image
-              src="/file.svg"
+              src="/img/logo.png"
               alt="Logo"
-              width={32}
-              height={32}
-              className="mr-2"
+              fill
+              style={{ objectFit: "contain" }}
+              sizes="48px"
+              priority
             />
-          </Link>
-        </div>
+          </div>
+        </Link>
+      </div>
+      {/* Main navbar content centered horizontally */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 relative">
         <div className="w-full flex justify-center">
           <div className="flex space-x-6">
             {navLinks.map(({ href, label }) => (
