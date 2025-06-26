@@ -1,5 +1,7 @@
 import React from "react";
 import Slider from "@mui/material/Slider";
+import Icon from "@leafygreen-ui/icon";
+import Image from "next/image";
 import { useMachineController } from "./hooks";
 
 export default function MachineController({
@@ -11,13 +13,31 @@ export default function MachineController({
 }) {
   useMachineController(); // For future extensibility
   return (
-    <div className="flex flex-row items-center gap-4 w-full">
-      {/* Machine Icon */}
-      <div className="flex items-center justify-center w-1/2">
-        <span className="text-5xl">🛠️</span>
+    <div className="flex flex-row items-center gap-4 w-full h-full">
+      {/* Machine Image with alert icon */}
+      <div
+        className="flex items-center justify-center relative"
+        style={{ flexBasis: "60%", flexGrow: 0, flexShrink: 0 }}
+      >
+        <Image
+          src="/img/robot.png"
+          alt="Machine"
+          width={120}
+          height={120}
+          className="object-contain"
+          priority
+        />
+        {status === "alert" && (
+          <span className="absolute top-2 right-2">
+            <Icon glyph="Warning" fill="red" size={28} />
+          </span>
+        )}
       </div>
       {/* Sliders */}
-      <div className="flex flex-col gap-6 w-1/2">
+      <div
+        className="flex flex-col gap-6"
+        style={{ flexBasis: "40%", flexGrow: 1, flexShrink: 1 }}
+      >
         <div>
           <div className="font-medium mb-1">Temperature</div>
           <Slider

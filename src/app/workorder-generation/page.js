@@ -1,11 +1,17 @@
 "use client";
 import React from "react";
-import Code from "@leafygreen-ui/code";
+import dynamic from "next/dynamic";
+//import Code from "@leafygreen-ui/code";
 import Button from "@leafygreen-ui/button";
 import CardList from "@/components/cardList/CardList";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
 import WorkOrderForm from "@/components/forms/workOrderForm/WorkOrderForm";
 import { useWorkOrderGenerationPage } from "./hooks";
+
+const Code = dynamic(
+  () => import("@leafygreen-ui/code").then((mod) => mod.Code),
+  { ssr: false }
+);
 
 export default function Page() {
   const {
@@ -20,14 +26,16 @@ export default function Page() {
     showModal,
     setShowModal,
     modalContent,
-    mockIncidentReports,
+    incidentReports,
     inventorySample,
     staffSample,
+    emptyIncidentText,
+    agentLogs,
   } = useWorkOrderGenerationPage();
 
   // Find the selected incident object
-  const selectedIncidentObj = mockIncidentReports.find(
-    (ir) => ir.Id === selectedIncidentId
+  const selectedIncidentObj = incidentReports.find(
+    (ir) => ir._id === selectedIncidentId || ir.Id === selectedIncidentId
   );
 
   return (
@@ -66,14 +74,18 @@ export default function Page() {
             {/* Incident Reports CardList */}
             <div className="w-1/2 flex flex-col">
               <CardList
-                items={mockIncidentReports}
-                idField="Id"
-                primaryFields={["Err_name", "ts"]}
+                items={incidentReports}
+                idField={
+                  incidentReports.length > 0 && incidentReports[0]._id
+                    ? "_id"
+                    : "Id"
+                }
+                cardType="incident-reports"
                 selectable
                 selectedId={selectedIncidentId}
                 onSelect={handleIncidentSelect}
                 maxHeight="max-h-80"
-                emptyText="No incident reports"
+                emptyText={emptyIncidentText || "No incident reports"}
                 listTitle="Incident Reports"
               />
             </div>
@@ -111,6 +123,7 @@ export default function Page() {
               statusText="Agent"
               activeText="Active"
               inactiveText="Inactive"
+              logs={agentLogs || []}
             />
           </div>
           {/* Horizontal split: WorkOrderForm (left), Workorders CardList (right) */}
@@ -124,11 +137,10 @@ export default function Page() {
             <div className="w-1/2 flex flex-col gap-3">
               <CardList
                 items={workorders}
-                idField="machine_id"
-                primaryFields={["title", "proposed_start_time"]}
+                idField="_id"
+                cardType="workorders"
                 maxHeight="max-h-80"
                 emptyText="No workorders generated yet."
-                cardTitle={(wo) => wo.title || `Workorder for ${wo.machine_id}`}
                 listTitle="Workorders"
               />
             </div>

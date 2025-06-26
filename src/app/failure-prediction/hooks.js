@@ -4,6 +4,10 @@ import {
   updateMachineTelemetry,
 } from "@/lib/simulation/machineTelemetry";
 import { checkForAlert } from "@/lib/simulation/failureDetection";
+import { fetchIncidentReports } from "@/lib/api/incidentReports";
+import { callFailureAgent } from "@/lib/api/agent";
+import { fetchAlerts, persistAlert } from "@/lib/api/alerts";
+import { persistTelemetry } from "@/lib/api/telemetry";
 
 export function useFailureDetectionPage() {
   // Machine simulation logic
@@ -19,6 +23,7 @@ export function useFailureDetectionPage() {
   const alertActiveRef = useRef(false);
   const temperatureRef = useRef(temperature);
   const vibrationRef = useRef(vibration);
+  const lastGeneratedAlertRef = useRef(null);
 
   useEffect(() => {
     temperatureRef.current = temperature;
@@ -27,6 +32,30 @@ export function useFailureDetectionPage() {
     vibrationRef.current = vibration;
   }, [vibration]);
 
+  // Alerts
+  const fetchAlertsCallback = useCallback(async () => {
+    const data = await fetchAlerts();
+    setAlerts(data);
+  }, []);
+
+  useEffect(() => {
+    fetchAlertsCallback();
+  }, [fetchAlertsCallback]);
+
+  const persistAlertCallback = useCallback(
+    async (alert) => {
+      await persistAlert(alert);
+      fetchAlertsCallback();
+    },
+    [fetchAlertsCallback]
+  );
+
+  // Telemetry
+  const persistTelemetryCallback = useCallback(async (telemetry) => {
+    await persistTelemetry(telemetry);
+  }, []);
+
+  // Simulation
   const handleStart = useCallback(() => {
     setIsRunning(true);
     setStatus("running");
@@ -38,17 +67,20 @@ export function useFailureDetectionPage() {
           temperatureRef.current,
           vibrationRef.current
         );
+        // Persist telemetry to DB
+        persistTelemetryCallback(updated);
         let newStatus = "running";
         let newAlert = null;
         if (
           (updated.temperature.value > 90 || updated.vibration.value > 1.2) &&
           !alertActiveRef.current
         ) {
-          newAlert = checkForAlert(updated, alerts, status);
+          newAlert = checkForAlert(updated, [], status);
           if (newAlert) {
+            lastGeneratedAlertRef.current = newAlert;
+            persistAlertCallback(newAlert);
             newStatus = "alert";
             alertActiveRef.current = true;
-            setAlerts((prevAlerts) => [...prevAlerts, newAlert]);
             setAlertTrigger((prev) => prev + 1);
           }
         } else if (
@@ -67,7 +99,7 @@ export function useFailureDetectionPage() {
         return updated;
       });
     }, 1000);
-  }, [alerts, status]);
+  }, [status, persistTelemetryCallback, persistAlertCallback]);
 
   const handleStop = useCallback(() => {
     setIsRunning(false);
@@ -90,37 +122,7 @@ export function useFailureDetectionPage() {
     }));
   }, []);
 
-  // Incident response logic
-  function generateIncident({ type = "temperature", value, ts }) {
-    if (type === "temperature") {
-      return {
-        Id: Date.now(),
-        Err_code: "E12",
-        Err_name: "High temperature",
-        "Root Cause": "Tool Wear",
-        "Repair Instructions": {
-          step1: "Replace worn tool.",
-          step2: "Check coolant.",
-        },
-        Machine_id: "M1",
-        ts,
-      };
-    } else {
-      return {
-        Id: Date.now(),
-        Err_code: "E07",
-        Err_name: "Low Pressure",
-        "Root Cause": "Seal Leak",
-        "Repair Instructions": {
-          step1: "Inspect seals.",
-          step2: "Replace faulty seal.",
-        },
-        Machine_id: "M2",
-        ts,
-      };
-    }
-  }
-
+  // Incident Reports
   const [agentActive, setAgentActive] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [incidentReports, setIncidentReports] = useState([]);
@@ -128,44 +130,87 @@ export function useFailureDetectionPage() {
   const [repairInstructions, setRepairInstructions] = useState("");
   const processingRef = useRef(false);
   const lastAlertRef = useRef(alertTrigger);
+  const [agentLogs, setAgentLogs] = useState([]);
 
-  const handleAgentStatusTrigger = useCallback((afterAction) => {
-    if (!processingRef.current) {
-      processingRef.current = true;
-      setAgentActive(true);
-      setTimeout(() => {
-        setAgentActive(false);
-        processingRef.current = false;
-        if (typeof afterAction === "function") {
-          afterAction();
-        }
-      }, 5000);
-    }
+  function formatRepairInstructions(instructions) {
+    if (!Array.isArray(instructions)) return "";
+    return instructions
+      .map((step) => `- Step ${step.step}: ${step.description}`)
+      .join("\n");
+  }
+
+  const fetchIncidentReportsCallback = useCallback(async () => {
+    const data = await fetchIncidentReports();
+    setIncidentReports(data);
+    // Do not set root cause or repair instructions on page load
   }, []);
+
+  useEffect(() => {
+    fetchIncidentReportsCallback();
+    // Always clear root cause and repair instructions on load
+    setRootCause("");
+    setRepairInstructions("");
+  }, [fetchIncidentReportsCallback]);
 
   useEffect(() => {
     if (typeof alertTrigger === "number") {
       if (alertTrigger !== lastAlertRef.current && !processingRef.current) {
         lastAlertRef.current = alertTrigger;
-        handleAgentStatusTrigger(() => {
-          const now = new Date();
-          const ts = now.toLocaleString();
-          const type =
-            incidentReports.length % 2 === 0 ? "temperature" : "pressure";
-          const newIncident = generateIncident({ type, ts });
-          setIncidentReports((prev) => [...prev, newIncident]);
-          setRootCause(newIncident["Root Cause"] || "");
-          setRepairInstructions(
-            typeof newIncident["Repair Instructions"] === "string"
-              ? newIncident["Repair Instructions"]
-              : JSON.stringify(newIncident["Repair Instructions"], null, 2)
-          );
-        });
+        setAgentActive(true);
+        setAgentLogs([]); // Clear logs for new agent run
+        const callAgentAsync = async () => {
+          try {
+            const alertToSend = lastGeneratedAlertRef.current;
+            // Push initial user message with label
+            setAgentLogs((prev) => [
+              ...prev,
+              {
+                type: "user",
+                values: {
+                  content:
+                    "New alert received:\n" +
+                    JSON.stringify(alertToSend, null, 2),
+                },
+              },
+            ]);
+            await callFailureAgent(alertToSend, {
+              onEvent: (evt) => {
+                if (
+                  evt.type === "update" &&
+                  (evt.name === "tool_start" || evt.name === "tool_end")
+                ) {
+                  setAgentLogs((prev) => [...prev, evt]);
+                } else if (evt.type === "final") {
+                  setAgentLogs((prev) => [...prev, evt]);
+                } else if (evt.type === "error") {
+                  setAgentLogs((prev) => [...prev, evt]);
+                }
+              },
+            });
+          } finally {
+            setAgentActive(false);
+            processingRef.current = false;
+            // Fetch new incident reports and set root cause/repair instructions from the latest
+            const data = await fetchIncidentReports();
+            setIncidentReports(data);
+            if (data && data.length > 0) {
+              setRootCause(data[0].root_cause || "");
+              setRepairInstructions(
+                formatRepairInstructions(data[0].repair_instructions)
+              );
+            } else {
+              setRootCause("");
+              setRepairInstructions("");
+            }
+          }
+        };
+        processingRef.current = true;
+        callAgentAsync();
       } else {
         lastAlertRef.current = alertTrigger;
       }
     }
-  }, [alertTrigger, incidentReports, handleAgentStatusTrigger]);
+  }, [alertTrigger]);
 
   const modalContent = (
     <div className="p-4">
@@ -203,5 +248,6 @@ export function useFailureDetectionPage() {
     modalContent,
     handleStart,
     handleStop,
+    agentLogs, // <-- pass logs to page
   };
 }

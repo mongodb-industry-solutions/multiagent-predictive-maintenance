@@ -1,25 +1,7 @@
-import { useState } from "react";
-
-const mockIncidentReports = [
-  {
-    Id: 1,
-    Err_name: "Overheating Motor",
-    ts: "2025-06-12T10:00:00Z",
-    Err_code: "E101",
-    "Root Cause": "Insufficient lubrication",
-    "Repair Instructions": "Check oil levels and refill as needed.",
-    Machine_id: "M-001",
-  },
-  {
-    Id: 2,
-    Err_name: "Sensor Failure",
-    ts: "2025-06-11T14:30:00Z",
-    Err_code: "E202",
-    "Root Cause": "Wiring issue",
-    "Repair Instructions": "Inspect and replace faulty wires.",
-    Machine_id: "M-002",
-  },
-];
+import { useState, useEffect, useCallback, useRef } from "react";
+import { fetchIncidentReports } from "@/lib/api/incidentReports";
+import { fetchWorkOrders } from "@/lib/api/workOrders";
+import { callWorkOrderAgent } from "@/lib/api/agent";
 
 const inventorySample = {
   _id: "inv123",
@@ -37,32 +19,47 @@ const staffSample = {
   skills: ["Electrical", "Mechanical"],
 };
 
-function generateWorkOrder(incident) {
-  if (!incident) return null;
-  const now = new Date();
-  const proposedStart = new Date(now.getTime() + 2 * 60 * 60 * 1000); // +2 hours
-  return {
-    machine_id: incident.Machine_id,
-    title: `Maintenance for ${incident.Machine_id}`,
-    instructions:
-      incident["Repair Instructions"] || "Refer to OEM manual section 4.2.",
-    estimated_duration: "2 hours",
-    proposed_start_time: proposedStart.toISOString(),
-    required_skills: ["General Maintenance"],
-    recommended_action:
-      incident["Repair Instructions"] || "Check and repair as needed.",
-    justification: incident["Root Cause"] || "Routine maintenance required.",
-    status: "draft",
-    created_at: now.toISOString(),
-  };
-}
-
 export function useWorkOrderGenerationPage() {
+  const [incidentReports, setIncidentReports] = useState([]);
   const [selectedIncidentId, setSelectedIncidentId] = useState(null);
   const [workOrderForm, setWorkOrderForm] = useState({});
   const [workorders, setWorkorders] = useState([]);
   const [agentStatus, setAgentStatus] = useState("idle"); // idle | active | done
   const [showModal, setShowModal] = useState(false);
+  const [emptyIncidentText, setEmptyIncidentText] = useState("");
+  const [agentLogs, setAgentLogs] = useState([]);
+  const processingRef = useRef(false);
+
+  // Fetch incident reports from API
+  const fetchReports = useCallback(async () => {
+    const data = await fetchIncidentReports();
+    setIncidentReports(data);
+    if (data && data.length > 0) {
+      setSelectedIncidentId(data[0]._id || data[0].Id);
+      setEmptyIncidentText("");
+    } else {
+      setSelectedIncidentId(null);
+      setEmptyIncidentText(
+        "No incident reports found. You can generate new incidents by running the simulation in the Failure Prediction tab!"
+      );
+    }
+  }, []);
+
+  // Fetch workorders from API
+  const fetchWorkorders = useCallback(async () => {
+    const data = await fetchWorkOrders();
+    setWorkorders(data);
+    if (data && data.length > 0) {
+      setWorkOrderForm(data[0]);
+    } else {
+      setWorkOrderForm({});
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchReports();
+    fetchWorkorders();
+  }, [fetchReports, fetchWorkorders]);
 
   const modalContent = (
     <div className="p-4">
@@ -83,19 +80,39 @@ export function useWorkOrderGenerationPage() {
     setSelectedIncidentId(id);
   }
 
-  function handleContinueWorkflow() {
-    if (selectedIncidentId == null) return;
+  async function handleContinueWorkflow() {
+    if (selectedIncidentId == null || processingRef.current) return;
     setAgentStatus("active");
     setWorkOrderForm({});
-    setTimeout(() => {
-      const selectedIncident = mockIncidentReports.find(
-        (ir) => ir.Id === selectedIncidentId
-      );
-      const workorder = generateWorkOrder(selectedIncident);
-      setWorkOrderForm(workorder);
-      setWorkorders((prev) => [workorder, ...prev]);
+    setAgentLogs([]);
+    processingRef.current = true;
+    const selectedIncident = incidentReports.find(
+      (ir) => ir._id === selectedIncidentId || ir.Id === selectedIncidentId
+    );
+    try {
+      // Add initial user message to logs
+      setAgentLogs([
+        {
+          type: "user",
+          values: {
+            content:
+              "New workorder requested for incident:\n" +
+              JSON.stringify(selectedIncident, null, 2),
+          },
+        },
+      ]);
+      // Stream logs from agent
+      await callWorkOrderAgent(selectedIncident, {
+        onEvent: (evt) => {
+          setAgentLogs((prev) => [...prev, evt]);
+        },
+      });
+    } finally {
       setAgentStatus("done");
-    }, 5000);
+      processingRef.current = false;
+      // Refresh workorders and fill form with latest
+      await fetchWorkorders();
+    }
   }
 
   function handleFormChange(field, value) {
@@ -105,7 +122,7 @@ export function useWorkOrderGenerationPage() {
   return {
     selectedIncidentId,
     handleIncidentSelect,
-    canContinue: selectedIncidentId !== null,
+    canContinue: selectedIncidentId !== null && !processingRef.current,
     handleContinueWorkflow,
     workOrderForm,
     handleFormChange,
@@ -114,8 +131,10 @@ export function useWorkOrderGenerationPage() {
     showModal,
     setShowModal,
     modalContent,
-    mockIncidentReports,
+    incidentReports,
     inventorySample,
     staffSample,
+    emptyIncidentText,
+    agentLogs,
   };
 }

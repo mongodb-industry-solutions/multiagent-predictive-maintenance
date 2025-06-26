@@ -1,0 +1,636 @@
+[
+  {
+    "employee_id": "EMP-1001",
+    "name": "Carlos Alvarez",
+    "role": "Maintenance Technician II",
+    "skills": ["Mechanical Maintenance", "Diagnostics", "Welding"],
+    "weekly_schedule": [
+      {
+        "day": "monday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "WO-8752" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "tuesday",
+        "full_day": true,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "WO-8719" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "WO-8703" }
+        ]
+      },
+      {
+        "day": "wednesday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "WO-8704" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "thursday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "WO-8699" }
+        ]
+      },
+      {
+        "day": "friday",
+        "full_day": true,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "WO-8721" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      }
+    ]
+  },
+  {
+    "employee_id": "EMP-1002",
+    "name": "Magdalena Weiss",
+    "role": "Maintenance Electrician",
+    "skills": ["Electrical Maintenance", "Calibration", "Diagnostics"],
+    "weekly_schedule": [
+      {
+        "day": "monday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "tuesday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "WO-8733" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "wednesday",
+        "full_day": true,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "WO-8741" },
+          { "shift_id": "afternoon-2", "task": "free" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "thursday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "friday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "WO-8748" },
+          { "shift_id": "afternoon-2", "task": "free" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      }
+    ]
+  },
+  {
+    "employee_id": "EMP-1003",
+    "name": "Alicia Mori",
+    "role": "Maintenance Engineer",
+    "skills": ["Safety Compliance", "Diagnostics"],
+    "weekly_schedule": [
+      {
+        "day": "monday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "WO-8755" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "tuesday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "wednesday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "WO-8762" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "thursday",
+        "full_day": true,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "WO-8767" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "friday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      }
+    ]
+  },
+  {
+    "employee_id": "EMP-1004",
+    "name": "Björn Müller",
+    "role": "Calibration Specialist",
+    "skills": ["Calibration", "Diagnostics", "Electrical Maintenance"],
+    "weekly_schedule": [
+      {
+        "day": "monday",
+        "full_day": true,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "WO-8771" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "tuesday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "WO-8778" }
+        ]
+      },
+      {
+        "day": "wednesday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "thursday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "WO-8784" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "friday",
+        "full_day": true,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "WO-8790" },
+          { "shift_id": "afternoon-2", "task": "free" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      }
+    ]
+  },
+  {
+    "employee_id": "EMP-1005",
+    "name": "Sofia Garcia",
+    "role": "Safety Officer",
+    "skills": ["Safety Compliance", "Mechanical Maintenance"],
+    "weekly_schedule": [
+      {
+        "day": "monday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "WO-8795" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "tuesday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" },
+          { "shift_id": "night-1", "task": "WO-8801" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "wednesday",
+        "full_day": true,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "WO-8805" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "thursday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "WO-8810" }
+        ]
+      },
+      {
+        "day": "friday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      }
+    ]
+  },
+  {
+    "employee_id": "EMP-1006",
+    "name": "James Lee",
+    "role": "Mechanical Engineer",
+    "skills": [
+      "Mechanical Maintenance",
+      "Electrical Maintenance",
+      "Calibration"
+    ],
+    "weekly_schedule": [
+      {
+        "day": "monday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "WO-8816" },
+          { "shift_id": "afternoon-2", "task": "free" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "tuesday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "WO-8822" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "wednesday",
+        "full_day": true,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "WO-8828" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "WO-8829" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "thursday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "friday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "WO-8835" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      }
+    ]
+  },
+  {
+    "employee_id": "EMP-1007",
+    "name": "Isabella Rossi",
+    "role": "Diagnostics Technician",
+    "skills": ["Diagnostics", "Electrical Maintenance"],
+    "weekly_schedule": [
+      {
+        "day": "monday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "WO-8840" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "tuesday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "WO-8844" },
+          { "shift_id": "afternoon-2", "task": "free" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "wednesday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "WO-8848" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "thursday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "friday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "WO-8853" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      }
+    ]
+  },
+  {
+    "employee_id": "EMP-1008",
+    "name": "Lukas Novak",
+    "role": "Welder Technician",
+    "skills": ["Welding", "Mechanical Maintenance"],
+    "weekly_schedule": [
+      {
+        "day": "monday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "WO-8857" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "tuesday",
+        "full_day": true,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "WO-8863" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "wednesday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "thursday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "WO-8869" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "friday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      }
+    ]
+  },
+  {
+    "employee_id": "EMP-1009",
+    "name": "Emma Svensson",
+    "role": "Instrumentation Engineer",
+    "skills": ["Calibration", "Electrical Maintenance", "Diagnostics"],
+    "weekly_schedule": [
+      {
+        "day": "monday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "WO-8872" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "tuesday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "WO-8879" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "wednesday",
+        "full_day": true,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "WO-8885" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "thursday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "friday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "WO-8891" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      }
+    ]
+  },
+  {
+    "employee_id": "EMP-1010",
+    "name": "Olivia Chen",
+    "role": "Mechanical Calibration Technician",
+    "skills": ["Mechanical Maintenance", "Calibration", "Safety Compliance"],
+    "weekly_schedule": [
+      {
+        "day": "monday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "WO-8895" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "tuesday",
+        "full_day": true,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "WO-8901" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "wednesday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "thursday",
+        "full_day": false,
+        "coverage": "afternoon-night",
+        "shifts": [
+          { "shift_id": "afternoon-1", "task": "free" },
+          { "shift_id": "afternoon-2", "task": "WO-8907" },
+          { "shift_id": "night-1", "task": "free" },
+          { "shift_id": "night-2", "task": "free" }
+        ]
+      },
+      {
+        "day": "friday",
+        "full_day": false,
+        "coverage": "morning-afternoon",
+        "shifts": [
+          { "shift_id": "morning-1", "task": "free" },
+          { "shift_id": "morning-2", "task": "free" },
+          { "shift_id": "afternoon-1", "task": "WO-8913" },
+          { "shift_id": "afternoon-2", "task": "free" }
+        ]
+      }
+    ]
+  }
+]

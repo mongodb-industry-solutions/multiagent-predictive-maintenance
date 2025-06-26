@@ -1,103 +1,90 @@
 import React from "react";
-import { useChatInput, useAgentOptions } from "./hooks";
+import Image from "next/image";
+import { useAgentGraph } from "./hooks";
+import { Option, Select } from "@leafygreen-ui/select";
+import TextArea from "@leafygreen-ui/text-area";
+import Button from "@leafygreen-ui/button";
 
-export default function ChatInput({ agentId, setAgentId }) {
-  const {
-    input,
-    setInput,
-    response,
-    logs,
-    loading,
-    error,
-    sendMessage,
-    threadId,
-    resetConversation,
-    agentId: selectedAgentId,
-    setAgentId: handleAgentChange,
-  } = useChatInput({ agentId, setAgentId });
-  const { options: agentOptions, loading: loadingAgents } = useAgentOptions();
+export default function ChatInput({
+  agentId,
+  setAgentId,
+  input,
+  setInput,
+  loading,
+  error,
+  sendMessage,
+  agentOptions,
+  loadingAgents,
+}) {
+  const { imageUrl, graphLoading, graphError } = useAgentGraph(agentId);
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="p-4 bg-white rounded shadow">
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Select Agent</label>
-          <select
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400"
-            value={selectedAgentId}
-            onChange={(e) => {
-              handleAgentChange(e.target.value);
-              setAgentId(e.target.value);
-            }}
-            disabled={loading || loadingAgents}
-          >
-            {agentOptions.map((opt) => (
-              <option key={opt.id} value={opt.id}>
-                {opt.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <input
-          type="text"
-          className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400"
-          placeholder="Type your message..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") sendMessage();
-          }}
-          disabled={loading}
-        />
-        <div className="flex gap-2 mt-2">
-          <button
-            className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            onClick={sendMessage}
-            disabled={loading || !input.trim()}
-          >
-            {loading ? "Sending..." : "Send"}
-          </button>
-          {threadId && (
-            <button
-              className="flex-1 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300"
-              onClick={resetConversation}
-              disabled={loading}
-            >
-              Reset Conversation
-            </button>
+    <div className="flex flex-col h-full w-full max-w-full">
+      {/* Agent selector */}
+      <div className="p-4">
+        <Select
+          label="Agent"
+          placeholder="Choose agent"
+          name="agent-select"
+          value={agentId}
+          onChange={setAgentId}
+          disabled={loading || loadingAgents}
+          style={{ width: "100%" }}
+        >
+          {agentOptions.map((opt) => (
+            <Option key={opt.id} value={opt.id}>
+              {opt.name}
+            </Option>
+          ))}
+        </Select>
+      </div>
+      {/* Graph and input split 50/50 */}
+      <div className="flex-1 flex flex-col">
+        {/* Graph (top 50%) */}
+        <div className="flex-1 flex items-center justify-center bg-white relative overflow-hidden m-5">
+          {graphLoading && (
+            <div className="text-gray-400">Loading graph...</div>
+          )}
+          {graphError && (
+            <div className="text-red-500 text-sm">{graphError}</div>
+          )}
+          {imageUrl && (
+            <div className="relative w-full h-full max-h-full flex items-center justify-center">
+              <Image
+                src={imageUrl}
+                alt="Agent Graph"
+                fill
+                style={{ objectFit: "contain", width: "100%", height: "100%" }}
+                unoptimized
+                sizes="100vw"
+                priority
+                className="p-5"
+              />
+            </div>
           )}
         </div>
-        {/* Response output below buttons, scrollable if long */}
-        <div className="mt-4 bg-gray-100 rounded p-3 text-gray-800 whitespace-pre-line min-h-[3rem] max-h-48 overflow-auto border border-gray-200">
-          {response}
+        {/* Input (bottom 50%) */}
+        <div className="flex-1 flex flex-col p-4">
+          <TextArea
+            className="mb-2"
+            aria-labelledby={"Chat input"}
+            placeholder="Type your message..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={loading}
+            resize="none"
+            style={{ minHeight: 100 }}
+          />
+          <Button
+            className="w-full mb-2"
+            onClick={sendMessage}
+            disabled={loading || !input.trim()}
+            variant="primary"
+          >
+            {loading ? "Sending..." : "Send"}
+          </Button>
+          {error && <div className="mt-2 text-red-600">{error}</div>}
         </div>
-        {error && <div className="mt-2 text-red-600">{error}</div>}
-        {threadId && (
-          <>
-            <div className="mt-2 text-xs text-gray-400">
-              Thread ID: {threadId}
-            </div>
-            {/* Logs under thread ID */}
-            <div className="mt-2 bg-gray-50 rounded p-2 text-xs text-gray-600 max-h-24 overflow-auto border border-gray-200">
-              <div className="font-semibold text-gray-500 mb-1">Agent Logs</div>
-              {logs.length > 0 ? (
-                logs.map((log, i) => (
-                  <div key={i}>
-                    <span className="font-mono text-gray-700">
-                      [{log.name}]
-                    </span>{" "}
-                    <span>{log.values?.name}</span>
-                    {log.type === "error" && (
-                      <span className="text-red-500 ml-2">(error)</span>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <span className="text-gray-300">No logs yet</span>
-              )}
-            </div>
-          </>
-        )}
       </div>
     </div>
   );

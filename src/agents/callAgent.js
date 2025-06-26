@@ -19,17 +19,19 @@ function createAgentCallbacks(writer) {
   };
   return {
     handleToolStart(tool, input, runId) {
+      console.log("[Tool Start]", JSON.parse(input).name);
       writeLog({
         type: "update",
         name: "tool_start",
-        values: { name: JSON.parse(input).name },
+        values: JSON.parse(input),
       });
     },
     handleToolEnd(output, runId) {
+      console.log("[Tool End]", output.name);
       writeLog({
         type: "update",
         name: "tool_end",
-        values: { name: output.name },
+        values: output,
       });
     },
     handleToolError(err, runId) {
@@ -111,7 +113,7 @@ export async function callAgent(message, threadId, agentId = "test", writer) {
         messages: [new HumanMessage(message)],
       },
       {
-        recursionLimit: 10,
+        recursionLimit: 25,
         configurable: { thread_id: threadId },
         callbacks,
       }
