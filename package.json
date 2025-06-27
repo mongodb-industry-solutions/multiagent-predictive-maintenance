@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.828.0",
+    "@aws-sdk/credential-provider-node": "^3.835.0",
     "@aws-sdk/credential-provider-sso": "^3.826.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
