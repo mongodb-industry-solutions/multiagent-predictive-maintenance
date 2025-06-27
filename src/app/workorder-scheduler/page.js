@@ -70,8 +70,8 @@ export default function WorkorderSchedulerPage() {
               </Button>
             </div>
             <div className="flex flex-1 gap-4 min-h-0 overflow-hidden">
-              {/* Workorders CardList */}
-              <div className="w-1/2 flex flex-col min-w-[180px]">
+              {/* Workorders CardList fills available space */}
+              <div className="w-full flex flex-col min-w-[180px]">
                 <CardList
                   items={workorders}
                   idField="_id"
@@ -79,24 +79,12 @@ export default function WorkorderSchedulerPage() {
                   selectable
                   selectedId={selectedWorkorderId}
                   onSelect={setSelectedWorkorderId}
-                  maxHeight="max-h-80"
+                  maxHeight="max-h-full"
                   emptyText="No workorders found."
-                  listTitle="Workorders (last hour)"
+                  listTitle="Work Orders"
+                  listDescription="Select a workorder to find the optimal maintenance window."
                   isItemDisabled={(item) => item.status !== "new"}
                 />
-              </div>
-              {/* Production Calendar Sample Code Card */}
-              <div className="w-1/2 flex flex-col min-w-[180px]">
-                <div className="font-semibold mb-2">
-                  Production Calendar Sample
-                </div>
-                <Code
-                  language="json"
-                  className="flex-1 min-h-[200px] max-h-[400px] h-full"
-                  style={{ minHeight: 0 }}
-                >
-                  {JSON.stringify(productionCalendarSample, null, 2)}
-                </Code>
               </div>
             </div>
           </section>
@@ -126,7 +114,6 @@ export default function WorkorderSchedulerPage() {
                 weekends={true}
                 events={calendarEvents}
                 eventContent={renderEventContent}
-                height={400}
               />
             </div>
             {/* Reset Button below calendar, right aligned */}

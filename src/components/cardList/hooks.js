@@ -5,7 +5,8 @@ export function useCardList(
   cardType = "default",
   selectable = false,
   selectedIdProp,
-  onSelectProp
+  onSelectProp,
+  listDescription
 ) {
   // Format timestamp to locale string
   const formatTimestamp = useCallback((timestamp) => {
@@ -29,14 +30,46 @@ export function useCardList(
   // Get card configuration based on type and item
   const getCardConfig = useCallback(
     (item, type) => {
+      let icon = undefined;
+      let titleColor = undefined;
+      let descColor = undefined;
+      let flagTextColor = undefined;
+      let iconColor = undefined;
+      let hasForm = false;
+      switch (type) {
+        case "alerts":
+          icon = "Warning";
+          titleColor = "#5B0000";
+          descColor = "#5B0000";
+          flagTextColor = "#5B0000";
+          iconColor = "#5B0000";
+          break;
+        case "incident-reports":
+          icon = "Guide";
+          hasForm = true;
+          break;
+        case "workorders":
+          icon = "Wrench";
+          hasForm = true;
+          break;
+        default:
+          break;
+      }
       switch (type) {
         case "alerts":
           return {
-            title: item.err_name || "Unknown Error",
-            flagText: item.err_code || undefined,
-            description: formatTimestamp(item.ts),
+            title: `${item.err_code || ""}${
+              item.err_code && item.err_name ? " - " : ""
+            }${item.err_name || "Unknown Error"}`,
+            flagText: formatTimestamp(item.ts),
+            description: "",
+            icon,
+            titleColor,
+            descColor,
+            flagTextColor,
+            iconColor,
+            hasForm,
           };
-
         case "incident-reports":
           return {
             title: `${item.error_name || item.Err_name || "Unknown Error"}${
@@ -44,20 +77,36 @@ export function useCardList(
             }`,
             flagText: undefined,
             description: formatTimestamp(item.ts),
+            icon,
+            titleColor,
+            descColor,
+            flagTextColor,
+            iconColor,
+            hasForm,
           };
-
         case "workorders":
           return {
             title: item.title || `Workorder for ${item.machine_id}`,
             flagText: "Maintenance",
             description: formatTimestamp(item.created_at),
+            icon,
+            titleColor,
+            descColor,
+            flagTextColor,
+            iconColor,
+            hasForm,
           };
-
         default:
           return {
             title: item.title || item.name || "Item",
             flagText: undefined,
             description: "",
+            icon,
+            titleColor,
+            descColor,
+            flagTextColor,
+            iconColor,
+            hasForm,
           };
       }
     },
@@ -94,11 +143,23 @@ export function useCardList(
     if (onSelectProp) onSelectProp(id);
   };
 
+  // Segmented control state per card (by id)
+  const [viewById, setViewById] = useState({});
+  const getView = (id) => viewById[id] || "form";
+  const setView = (id, value) =>
+    setViewById((prev) => ({ ...prev, [id]: value }));
+
+  // List description
+  const cardListDescription = listDescription || "";
+
   return {
     cardConfigs,
     formatTimestamp,
     getCardConfig,
     selectedId,
     handleRadioSelect,
+    getView,
+    setView,
+    cardListDescription,
   };
 }

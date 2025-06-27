@@ -30,7 +30,7 @@ export default function IncidentResponseForm({
           readOnly
           className="resize-none h-full"
           rows={8}
-          style={{ flex: 1, minHeight: 360, height: "100%" }}
+          style={{ flex: 1, minHeight: 250 }}
         />
       </div>
     </div>

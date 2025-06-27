@@ -7,7 +7,6 @@ import { useFailureDetectionPage } from "./hooks";
 import MachineController from "@/components/machineController/MachineController";
 import CardList from "@/components/cardList/CardList";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
-import IncidentResponseForm from "@/components/forms/IncidentResponseForm/IncidentResponseForm";
 import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
 
 const Code = dynamic(
@@ -113,6 +112,7 @@ export default function Page() {
                     maxHeight="max-h-full"
                     emptyText="No alerts"
                     listTitle="Alerts"
+                    listDescription="Start the simulation and increase the temperature and vibration values to trigger an alert."
                   />
                 </div>
               </div>
@@ -125,6 +125,7 @@ export default function Page() {
                   maxHeight="max-h-full"
                   emptyText="No alerts"
                   listTitle="Alerts"
+                  listDescription="Start the simulation and increase the temperature and vibration values to trigger an alert."
                 />
               </div>
             )}
@@ -147,25 +148,17 @@ export default function Page() {
                 />
               </div>
             </div>
-            {/* Horizontal split: Form (left), Incident Reports (right) */}
-            <div className="flex flex-1 gap-4 min-h-0 overflow-hidden">
-              <div className="w-1/2 flex flex-col h-full min-w-[180px]">
-                <IncidentResponseForm
-                  rootCause={rootCause}
-                  repairInstructions={repairInstructions}
-                  className="flex-1 mb-8"
-                />
-              </div>
-              <div className="w-1/2 flex flex-col h-full min-w-[180px]">
-                <CardList
-                  items={incidentReports}
-                  idField="_id"
-                  cardType="incident-reports"
-                  maxHeight="max-h-[calc(100vh-320px)] mb-8"
-                  emptyText="No incident reports"
-                  listTitle="Incident Reports"
-                />
-              </div>
+            {/* Incident Reports CardList fills available space */}
+            <div className="flex flex-1 min-h-0 overflow-hidden">
+              <CardList
+                items={incidentReports}
+                idField="_id"
+                cardType="incident-reports"
+                maxHeight="max-h-full"
+                emptyText="No incident reports"
+                listTitle="Incident Reports"
+                listDescription="Automated incident reports with root cause analysis."
+              />
             </div>
           </section>
         </div>

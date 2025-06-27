@@ -20,7 +20,6 @@ export default function Page() {
     handleIncidentSelect,
     canContinue,
     handleContinueWorkflow,
-    workOrderForm,
     handleFormChange,
     workorders,
     agentStatus,
@@ -28,8 +27,6 @@ export default function Page() {
     setShowModal,
     modalContent,
     incidentReports,
-    inventorySample,
-    staffSample,
     emptyIncidentText,
     agentLogs,
   } = useWorkOrderGenerationPage();
@@ -52,7 +49,7 @@ export default function Page() {
         <div className="flex flex-1 min-h-0 w-full gap-6 px-2 pb-4">
           {/* Left Section */}
           <section className="flex flex-col w-1/2 border border-gray-200 rounded-xl bg-white p-4 m-2 overflow-hidden min-w-[320px] min-h-[320px]">
-            {/* Continue Workflow Button centered */}
+            {/* Continue Workflow Button left aligned */}
             <div className="flex justify-start mb-4">
               <Button
                 className="self-start w-auto min-w-0"
@@ -63,45 +60,24 @@ export default function Page() {
                 Continue Workflow
               </Button>
             </div>
-            {/* Horizontal split: Incident Reports (left), Samples (right) */}
-            <div className="flex flex-1 gap-4 min-h-0 overflow-hidden">
-              {/* Incident Reports CardList */}
-              <div className="w-1/2 flex flex-col min-w-[180px]">
-                <CardList
-                  items={incidentReports}
-                  idField={
-                    incidentReports.length > 0 && incidentReports[0]._id
-                      ? "_id"
-                      : "Id"
-                  }
-                  cardType="incident-reports"
-                  selectable
-                  selectedId={selectedIncidentId}
-                  onSelect={handleIncidentSelect}
-                  maxHeight="max-h-80"
-                  emptyText={emptyIncidentText || "No incident reports"}
-                  listTitle="Incident Reports"
-                />
-              </div>
-              {/* Sample Code Cards */}
-              <div className="w-1/2 flex flex-col gap-3 min-w-[180px]">
-                <div className="bg-gray-50 rounded-lg shadow p-3">
-                  <div className="font-semibold text-gray-700 mb-1 text-sm">
-                    Inventory Sample
-                  </div>
-                  <Code language="json">
-                    {JSON.stringify(inventorySample, null, 2)}
-                  </Code>
-                </div>
-                <div className="bg-gray-50 rounded-lg shadow p-3">
-                  <div className="font-semibold text-gray-700 mb-1 text-sm">
-                    Staff Sample
-                  </div>
-                  <Code language="json">
-                    {JSON.stringify(staffSample, null, 2)}
-                  </Code>
-                </div>
-              </div>
+            {/* Incident Reports CardList fills available space */}
+            <div className="flex flex-1 min-h-0 overflow-hidden">
+              <CardList
+                items={incidentReports}
+                idField={
+                  incidentReports.length > 0 && incidentReports[0]._id
+                    ? "_id"
+                    : "Id"
+                }
+                cardType="incident-reports"
+                selectable
+                selectedId={selectedIncidentId}
+                onSelect={handleIncidentSelect}
+                maxHeight="max-h-full"
+                emptyText={emptyIncidentText || "No incident reports"}
+                listTitle="Incident Reports"
+                listDescription="Select an incident report and continue the workflow to produce a workorder draft."
+              />
             </div>
           </section>
           {/* Right Section */}
@@ -120,24 +96,17 @@ export default function Page() {
                 logs={agentLogs || []}
               />
             </div>
-            {/* Horizontal split: WorkOrderForm (left), Workorders CardList (right) */}
-            <div className="flex flex-1 gap-4 min-h-0 overflow-hidden">
-              <div className="w-1/2 flex flex-col min-w-[180px]">
-                <WorkOrderForm
-                  form={workOrderForm}
-                  handleFormChange={handleFormChange}
-                />
-              </div>
-              <div className="w-1/2 flex flex-col gap-3 min-w-[180px]">
-                <CardList
-                  items={workorders}
-                  idField="_id"
-                  cardType="workorders"
-                  maxHeight="max-h-80"
-                  emptyText="No workorders generated yet."
-                  listTitle="Workorders"
-                />
-              </div>
+            {/* Workorders CardList fills available space */}
+            <div className="flex flex-1 min-h-0 overflow-hidden">
+              <CardList
+                items={workorders}
+                idField="_id"
+                cardType="workorders"
+                maxHeight="max-h-full"
+                emptyText="No workorders generated yet."
+                listTitle="Work Orders"
+                listDescription="Automated work order templates with estimated durations and required materials and skills."
+              />
             </div>
           </section>
         </div>
