@@ -2,6 +2,7 @@
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { Body } from "@leafygreen-ui/typography";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -34,19 +35,31 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 relative">
         <div className="w-full flex justify-center">
           <div className="flex space-x-6">
-            {navLinks.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`text-gray-700 hover:text-blue-600 font-medium transition-colors px-2 py-1 rounded-md ${
-                  (href === "/" ? pathname === "/" : pathname.startsWith(href))
-                    ? "bg-blue-100 text-blue-700 shadow-sm"
-                    : ""
-                }`}
-              >
-                {label}
-              </Link>
-            ))}
+            {navLinks.map(({ href, label }) => {
+              const selected =
+                href === "/" ? pathname === "/" : pathname.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`transition-colors px-2 py-1 rounded-md ${
+                    selected
+                      ? "bg-[#E3FCF7]"
+                      : "text-gray-700 hover:text-blue-600"
+                  }`}
+                >
+                  <Body
+                    className="m-0 p-0"
+                    as="span"
+                    baseFontSize={16}
+                    weight={selected ? "medium" : "regular"}
+                    style={selected ? { color: "#00684A" } : {}}
+                  >
+                    {label}
+                  </Body>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>

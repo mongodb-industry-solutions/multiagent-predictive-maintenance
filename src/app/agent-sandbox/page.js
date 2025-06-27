@@ -23,9 +23,9 @@ export default function Home() {
   return (
     <LeafyGreenProvider baseFontSize={16}>
       <div>
-        <main className="min-h-screen flex flex-row items-stretch mt-3 w-full overflow-hidden">
+        <main className="flex flex-row items-stretch w-full h-full min-h-0 mt-3 mb-6 overflow-hidden">
           <div
-            className="flex-1 min-w-0 h-screen flex flex-col overflow-hidden"
+            className="flex-1 min-w-0 flex flex-col overflow-hidden"
             style={{ flexBasis: "50%", maxWidth: "50%" }}
           >
             <ChatInput
@@ -41,7 +41,7 @@ export default function Home() {
             />
           </div>
           <div
-            className="flex-1 min-w-0 h-screen flex flex-col overflow-hidden border-l border-gray-200"
+            className="flex-1 min-w-0 flex flex-col overflow-hidden border-l border-gray-200"
             style={{ flexBasis: "50%", maxWidth: "50%" }}
           >
             <AgentLogs
