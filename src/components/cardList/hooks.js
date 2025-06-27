@@ -85,8 +85,12 @@ export function useCardList(
             hasForm,
           };
         case "workorders":
+          // Title: WO- + first 5 chars of _id uppercased
+          let woId = item._id || item.Id || "";
+          let woShort =
+            typeof woId === "string" ? woId.slice(0, 5).toUpperCase() : "";
           return {
-            title: item.title || `Workorder for ${item.machine_id}`,
+            title: `WO-${woShort}`,
             flagText: "Maintenance",
             description: formatTimestamp(item.created_at),
             icon,

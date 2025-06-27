@@ -17,9 +17,22 @@ const Code = dynamic(
 );
 
 function renderEventContent(eventInfo) {
+  // Only show MAINT-XXX and priority for maintenance tasks
+  const { event } = eventInfo;
+  if (event.extendedProps && event.extendedProps.task_type === "maintenance") {
+    return (
+      <>
+        {event.extendedProps.task_id}
+        {event.extendedProps.priority && (
+          <span className="ml-2">({event.extendedProps.priority})</span>
+        )}
+      </>
+    );
+  }
+  // Default: show time and title (for production, etc)
   return (
     <>
-      <b>{eventInfo.timeText}</b> <i>{eventInfo.event.title}</i>
+      <b>{eventInfo.timeText}</b> <i>{event.title}</i>
     </>
   );
 }
