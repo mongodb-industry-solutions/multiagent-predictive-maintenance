@@ -1,5 +1,11 @@
 import { ChatBedrockConverse } from "@langchain/aws";
 import { fromSSO } from "@aws-sdk/credential-provider-sso";
+import { defaultProvider } from "@aws-sdk/credential-provider-node";
+
+const AWS_REGION = process.env.AWS_REGION;
+const AWS_PROFILE = process.env.AWS_PROFILE;
+const ENV = process.env.NEXT_PUBLIC_ENV;
+const COMPLETION_MODEL = process.env.COMPLETION_MODEL;
 
 /**
  * Initialize a Bedrock client with configured model and credentials
@@ -10,11 +16,12 @@ let bedrockClient = null;
 export function createBedrockClient() {
   if (!bedrockClient) {
     bedrockClient = new ChatBedrockConverse({
-      model: process.env.COMPLETION_MODEL,
-      region: process.env.AWS_REGION,
-      credentials: fromSSO({
-        profile: process.env.AWS_PROFILE || "default",
-      }),
+      model: COMPLETION_MODEL,
+      region: AWS_REGION,
+      credentials:
+        ENV == "production"
+          ? defaultProvider()
+          : fromSSO({ profile: AWS_PROFILE || "default" }),
     });
   }
   return bedrockClient;

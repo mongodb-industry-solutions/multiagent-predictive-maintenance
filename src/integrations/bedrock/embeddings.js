@@ -3,14 +3,23 @@ import {
   InvokeModelCommand,
 } from "@aws-sdk/client-bedrock-runtime";
 import { fromSSO } from "@aws-sdk/credential-provider-sso";
+import { defaultProvider } from "@aws-sdk/credential-provider-node";
+
+const AWS_REGION = process.env.AWS_REGION;
+const AWS_PROFILE = process.env.AWS_PROFILE;
+const ENV = process.env.NEXT_PUBLIC_ENV;
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL;
 
 let bedrockClient = null;
 
 function getBedrockClient(options = {}) {
   if (!bedrockClient) {
     bedrockClient = new BedrockRuntimeClient({
-      region: process.env.AWS_REGION,
-      credentials: fromSSO({ profile: process.env.AWS_PROFILE || "default" }),
+      region: AWS_REGION,
+      credentials:
+        ENV == "production"
+          ? defaultProvider()
+          : fromSSO({ profile: AWS_PROFILE || "default" }),
       ...options,
     });
   }
@@ -32,7 +41,7 @@ export async function generateEmbedding(text, options = {}) {
 
   const input = {
     body: JSON.stringify(payload),
-    modelId: process.env.EMBEDDING_MODEL,
+    modelId: EMBEDDING_MODEL,
     accept: "*/*",
     contentType: "application/json",
   };
