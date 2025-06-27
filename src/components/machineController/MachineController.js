@@ -13,7 +13,7 @@ export default function MachineController({
 }) {
   useMachineController(); // For future extensibility
   return (
-    <div className="flex flex-row items-center gap-4 w-full h-full">
+    <div className="flex flex-row items-center gap-3 w-full h-full min-h-[100px] max-h-[120px]">
       {/* Machine Image with alert icon */}
       <div
         className="flex items-center justify-center relative"
@@ -22,20 +22,20 @@ export default function MachineController({
         <Image
           src="/img/robot.png"
           alt="Machine"
-          width={120}
-          height={120}
+          width={100}
+          height={100}
           className="object-contain"
           priority
         />
         {status === "alert" && (
-          <span className="absolute top-2 right-2">
-            <Icon glyph="Warning" fill="red" size={28} />
+          <span className="absolute top-1 right-12">
+            <Icon glyph="Warning" fill="red" size={25} />
           </span>
         )}
       </div>
       {/* Sliders */}
       <div
-        className="flex flex-col gap-6"
+        className="flex flex-col gap-1"
         style={{ flexBasis: "40%", flexGrow: 1, flexShrink: 1 }}
       >
         <div>
@@ -47,6 +47,7 @@ export default function MachineController({
             step={0.1}
             onChange={(_, v) => onTemperatureChange(v)}
             valueLabelDisplay="auto"
+            size="small"
           />
         </div>
         <div>
@@ -58,6 +59,7 @@ export default function MachineController({
             step={0.01}
             onChange={(_, v) => onVibrationChange(v)}
             valueLabelDisplay="auto"
+            size="small"
           />
         </div>
       </div>

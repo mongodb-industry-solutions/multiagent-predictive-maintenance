@@ -53,9 +53,9 @@ export default function Page() {
           {/* Left Section */}
           <section className="flex flex-col w-1/2 border border-gray-200 rounded-xl bg-white p-4 m-2 overflow-hidden min-w-[320px] min-h-[320px]">
             {/* Continue Workflow Button centered */}
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-start mb-4">
               <Button
-                className="self-center w-auto min-w-0"
+                className="self-start w-auto min-w-0"
                 disabled={!canContinue}
                 variant="primary"
                 onClick={handleContinueWorkflow}

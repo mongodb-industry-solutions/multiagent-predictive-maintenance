@@ -9,7 +9,6 @@ import CardList from "@/components/cardList/CardList";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
 import IncidentResponseForm from "@/components/forms/IncidentResponseForm/IncidentResponseForm";
 import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
-import AgentLogs from "@/components/agentLogs/AgentLogs";
 
 const Code = dynamic(
   () => import("@leafygreen-ui/code").then((mod) => mod.Code),
@@ -28,7 +27,9 @@ export default function Page() {
     modalContent,
     handleStart,
     handleStop,
-    agentLogs, // <-- Make sure to get logs from the hook if available
+    agentLogs,
+    showTelemetry,
+    setShowTelemetry,
   } = useFailureDetectionPage();
 
   return (
@@ -44,56 +45,89 @@ export default function Page() {
         <div className="flex flex-1 min-h-0 w-full gap-6 px-2 pb-4">
           {/* Left Section: Machine Simulation */}
           <section className="flex flex-col w-1/2 border border-gray-200 rounded-xl bg-white p-4 m-2 overflow-hidden min-w-[320px] min-h-[320px]">
-            {/* Start/Stop Button centered */}
-            <div className="flex justify-center mb-4">
-              {sim.isRunning ? (
-                <Button variant="default" onClick={handleStop}>
-                  Stop Simulator
-                </Button>
-              ) : (
-                <Button variant="primary" onClick={handleStart}>
-                  Start Simulator
-                </Button>
-              )}
-            </div>
-            {/* Horizontal split: Code card (left), Controls+Alerts (right) */}
-            <div className="flex flex-1 gap-4 min-h-0 overflow-hidden">
-              {/* Machine Telemetry JSON */}
-              <div className="w-1/2 flex flex-col min-w-[180px]">
-                <div className="font-semibold mb-2">Machine Telemetry</div>
-                <Code
-                  language="json"
-                  className="flex-1 min-h-[200px] max-h-[400px] h-full"
-                  style={{ minHeight: 0 }}
+            {/* Top part: Buttons (30%) and MachineController (70%) */}
+            <div className="flex flex-row w-full gap-4 mb-4 min-h-[100px] max-h-[120px]">
+              {/* Left: Buttons */}
+              <div
+                className="flex flex-col gap-2 items-center justify-center h-full"
+                style={{ flexBasis: "30%", minWidth: 120 }}
+              >
+                <Button
+                  variant={sim.isRunning ? "danger" : "primary"}
+                  onClick={sim.isRunning ? handleStop : handleStart}
+                  className="mb-2 w-full"
                 >
-                  {sim.machineData
-                    ? JSON.stringify(sim.machineData, null, 2)
-                    : {}}
-                </Code>
+                  {sim.isRunning ? "Stop Simulator" : "Start Simulator"}
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={() => setShowTelemetry((v) => !v)}
+                  className="w-full"
+                >
+                  {showTelemetry ? "Hide Telemetry" : "Show Telemetry"}
+                </Button>
               </div>
-              {/* Controls and Alerts */}
-              <div className="w-1/2 flex flex-col gap-4 h-full min-w-[180px]">
-                <div className="flex flex-row items-stretch">
-                  <MachineController
-                    status={sim.status}
-                    temperature={sim.temperature}
-                    vibration={sim.vibration}
-                    onTemperatureChange={sim.onTemperatureChange}
-                    onVibrationChange={sim.onVibrationChange}
-                  />
+              {/* Right: MachineController */}
+              <div className="flex-1 flex items-center min-w-0">
+                <MachineController
+                  status={sim.status}
+                  temperature={sim.temperature}
+                  vibration={sim.vibration}
+                  onTemperatureChange={sim.onTemperatureChange}
+                  onVibrationChange={sim.onVibrationChange}
+                />
+              </div>
+            </div>
+            {/* Bottom part: Alerts and (optionally) Telemetry */}
+            {showTelemetry ? (
+              <div className="flex flex-1 gap-4 min-h-0 overflow-hidden">
+                {/* Left: Machine Telemetry */}
+                <div className="w-1/2 flex flex-col min-w-[180px] h-full">
+                  <div className="font-semibold mb-2">Machine Telemetry</div>
+                  <div className="flex-1 min-h-0 max-h-full overflow-y-auto">
+                    <Code
+                      language="json"
+                      className="flex-1 min-h-0 max-h-full h-full overflow-y-auto"
+                      style={{ minHeight: 0 }}
+                    >
+                      {sim.machineData
+                        ? JSON.stringify(
+                            Object.fromEntries(
+                              Object.entries(sim.machineData).filter(
+                                ([key]) => key !== "_id"
+                              )
+                            ),
+                            null,
+                            2
+                          )
+                        : {}}
+                    </Code>
+                  </div>
                 </div>
-                <div className="mt-2">
+                {/* Right: Alerts */}
+                <div className="w-1/2 flex flex-col min-w-[180px] h-full">
                   <CardList
                     items={sim.alerts}
                     idField="_id"
                     cardType="alerts"
-                    maxHeight="max-h-[calc(100vh-420px)] mb-8"
+                    maxHeight="max-h-full"
                     emptyText="No alerts"
                     listTitle="Alerts"
                   />
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <CardList
+                  items={sim.alerts}
+                  idField="_id"
+                  cardType="alerts"
+                  maxHeight="max-h-full"
+                  emptyText="No alerts"
+                  listTitle="Alerts"
+                />
+              </div>
+            )}
           </section>
           {/* Right Section: Agent Response */}
           <section className="flex flex-col w-1/2 border border-gray-200 rounded-xl bg-white p-4 m-2 overflow-hidden min-w-[320px] min-h-[320px]">
