@@ -3,22 +3,6 @@ import { fetchIncidentReports } from "@/lib/api/incidentReports";
 import { fetchWorkOrders } from "@/lib/api/workOrders";
 import { callWorkOrderAgent } from "@/lib/api/agent";
 
-const inventorySample = {
-  _id: "inv123",
-  partName: "Bearing",
-  quantity: 42,
-  location: "Warehouse A",
-  supplier: "Acme Parts Co.",
-};
-
-const staffSample = {
-  _id: "staff456",
-  name: "Alex Johnson",
-  role: "Maintenance Technician",
-  shift: "Day",
-  skills: ["Electrical", "Mechanical"],
-};
-
 export function useWorkOrderGenerationPage() {
   const [incidentReports, setIncidentReports] = useState([]);
   const [selectedIncidentId, setSelectedIncidentId] = useState(null);
@@ -132,8 +116,6 @@ export function useWorkOrderGenerationPage() {
     setShowModal,
     modalContent,
     incidentReports,
-    inventorySample,
-    staffSample,
     emptyIncidentText,
     agentLogs,
   };

@@ -35,6 +35,7 @@
     "@leafygreen-ui/leafygreen-provider": "^4.0.7",
     "@leafygreen-ui/loading-indicator": "^3.0.12",
     "@leafygreen-ui/modal": "^17.1.7",
+    "@leafygreen-ui/segmented-control": "^10.0.13",
     "@leafygreen-ui/select": "^14.1.8",
     "@leafygreen-ui/text-area": "^10.0.12",
     "@leafygreen-ui/text-input": "^14.0.13",

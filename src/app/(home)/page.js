@@ -6,36 +6,28 @@ import Icon from "@leafygreen-ui/icon";
 
 export default function Page() {
   return (
-    <main className="flex flex-col items-center w-full max-h-[calc(100vh-4rem)] overflow-hidden">
-      {/* Top Section: Title + Image */}
-      <section className="flex flex-col items-center w-full flex-grow mb-4 min-h-0">
-        <H1 className="mt-8 mb-4 text-center text-3xl md:text-4xl lg:text-5xl">
-          Agentic Predictive Maintenance Demo
-        </H1>
-        <div className="flex-1 flex items-center justify-center w-full min-h-0">
-          <div
-            className="flex items-center justify-center w-full max-w-4xl"
-            style={{ aspectRatio: "7 / 4", minHeight: 120 }}
-          >
-            <Image
-              src="/img/high-level-architecture.svg"
-              alt="Predictive Maintenance Demo"
-              fill={false}
-              width={700}
-              height={400}
-              className="object-contain w-full h-auto max-h-[30vh] sm:max-h-[220px] md:max-h-[320px] lg:max-h-[400px]"
-              priority
-              sizes="(max-width: 768px) 100vw, 80vw"
-            />
-          </div>
-        </div>
-      </section>
+    <main className="flex flex-col items-center w-full max-h-[calc(100vh-4rem)] h-[calc(100vh-4rem)] overflow-hidden mt-8 mb-8">
+      {/* Title */}
+      <H1 className="mt-8 mb-4 text-center text-3xl md:text-4xl lg:text-5xl">
+        Agentic Predictive Maintenance Demo
+      </H1>
+      {/* Image Section */}
+      <div className="relative flex-grow w-full flex items-center justify-center min-h-[180px] mb-2">
+        <Image
+          src="/img/high-level-architecture.svg"
+          alt="Predictive Maintenance Demo"
+          fill
+          className="object-contain w-full h-full"
+          priority
+          sizes="(max-width: 768px) 100vw, 80vw"
+        />
+      </div>
       {/* Related Resources */}
       <section className="w-full flex-shrink-0 mb-6">
-        <H3 className="mb-2 text-center text-xl">Related Resources</H3>
-        <div className="w-full flex flex-col md:flex-row gap-3 md:gap-4 justify-center items-stretch">
+        <H3 className="mb-5 text-center text-xl">Related Resources</H3>
+        <div className="w-full flex flex-col md:flex-row justify-center items-stretch">
           {/* Card 1 */}
-          <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto">
+          <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto mt-4 md:mx-3">
             <Image
               src="/img/github.png"
               alt="GitHub Repository"
@@ -56,14 +48,14 @@ export default function Page() {
             >
               Try the demo
               <Icon
-                glyph="ChevronRight"
-                size={10}
+                glyph="ArrowRight"
+                size={12}
                 className="ml-1 text-blue-600"
               />
             </a>
           </Card>
           {/* Card 2 */}
-          <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto">
+          <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto mt-4 md:mx-3">
             <Image
               src="/img/deck.png"
               alt="Slides Deck"
@@ -84,14 +76,14 @@ export default function Page() {
             >
               View the deck
               <Icon
-                glyph="ChevronRight"
-                size={10}
+                glyph="ArrowRight"
+                size={12}
                 className="ml-1 text-blue-600"
               />
             </a>
           </Card>
           {/* Card 3 */}
-          <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto">
+          <Card className="flex flex-col items-center p-3 w-full md:w-1/3 max-w-xs mx-auto mt-4 md:mx-3">
             <Image
               src="/img/read.png"
               alt="MongoDB Atlas"
@@ -113,8 +105,8 @@ export default function Page() {
             >
               Read the blog
               <Icon
-                glyph="ChevronRight"
-                size={10}
+                glyph="ArrowRight"
+                size={12}
                 className="ml-1 text-blue-600"
               />
             </a>

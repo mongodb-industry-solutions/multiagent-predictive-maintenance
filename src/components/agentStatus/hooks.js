@@ -1,23 +1,40 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useRef, useEffect } from "react";
+
+// Process logs for display: chronological, tool_start shows loading, tool_end shows check, only reset on new agent call
+function processAgentLogs(logs = []) {
+  const result = [];
+  let lastTool = null;
+  logs.forEach((log) => {
+    if (log.name === "tool_start") {
+      lastTool = {
+        toolName: log.values?.name || log.values?.kwargs?.name || "Tool",
+        loading: true,
+        key: log.ts || Math.random(),
+      };
+      result.push(lastTool);
+    } else if (log.name === "tool_end" && lastTool) {
+      lastTool.loading = false;
+      lastTool = null;
+    }
+  });
+  return result;
+}
 
 export function useAgentStatus({
   isActive,
   showModal,
   onCloseModal,
   setShowModal,
-  logs = [], // Accept logs as a prop
+  logs = [],
 }) {
-  // Image source based on agent status
-  const agentImgSrc = isActive ? "/img/agent-color.png" : "/img/agent-gray.png";
-
-  // Text color for agent name and status
-  const agentTextColor = isActive ? "text-black" : "text-gray-400";
-
-  // Status bubble color
+  // Always use color agent icon and text
+  const agentImgSrc = "/img/agent-color.png";
+  const agentTextColor = "text-black";
+  // Status bubble and label
   const statusBubbleColor = isActive ? "bg-green-400" : "bg-gray-300";
-
-  // Status label
-  const statusLabel = isActive ? "Active" : "Inactive";
+  const statusLabel = isActive ? "Active" : "Idle";
+  // Glow only if active
+  const showGlow = isActive;
 
   // Handler for bubble click (open modal)
   const handleBubbleClick = useCallback(
@@ -35,46 +52,18 @@ export function useAgentStatus({
     [setShowModal]
   );
 
-  // Streaming logs logic
-  const latestToolLog = useMemo(() => {
-    if (!isActive) return null;
-    if (!logs || !Array.isArray(logs) || logs.length === 0) return null;
-    // Find the last tool_start or tool_end event
-    let lastToolEvent = null;
-    for (let i = logs.length - 1; i >= 0; i--) {
-      const log = logs[i];
-      if (log.name === "tool_start" || log.name === "tool_end") {
-        lastToolEvent = log;
-        break;
-      }
-      // If another event, treat last start_tool as done
-      if (
-        lastToolEvent &&
-        log.name !== "tool_start" &&
-        log.name !== "tool_end"
-      ) {
-        lastToolEvent = { ...lastToolEvent, name: "tool_end" };
-        break;
-      }
+  // Logs for display
+  const agentLogs = useMemo(() => processAgentLogs(logs), [logs]);
+  // Ref for scrolling to last log
+  const logsEndRef = useRef(null);
+  useEffect(() => {
+    if (logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
     }
-    if (!lastToolEvent) return null;
-    // Tool name formatting
-    let toolName =
-      lastToolEvent.values?.name ||
-      lastToolEvent.values?.kwargs?.name ||
-      "Tool";
-    toolName = toolName
-      .replace(/_/g, " ")
-      .replace(/^\w/, (c) => c.toUpperCase());
-    // Status: loading if tool_start, done if tool_end
-    const isLoading = lastToolEvent.name === "tool_start";
-    return { toolName, isLoading };
-  }, [logs, isActive]);
-
-  // Logs area
-  const logsLabel = "See full logs";
-  const logsArrow = "→";
-  const logsPlaceholder = "";
+  }, [agentLogs.length]);
 
   // Logs Drawer State
   const [logsDrawerOpen, setLogsDrawerOpen] = useState(false);
@@ -87,10 +76,9 @@ export function useAgentStatus({
     agentTextColor,
     statusBubbleColor,
     statusLabel,
-    logsLabel,
-    logsArrow,
-    logsPlaceholder,
-    latestToolLog,
+    showGlow,
+    agentLogs,
+    logsEndRef,
     logsDrawerOpen,
     openLogsDrawer,
     closeLogsDrawer,

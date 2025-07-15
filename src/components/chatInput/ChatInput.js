@@ -1,5 +1,4 @@
 import React from "react";
-import Image from "next/image";
 import { useAgentGraph } from "./hooks";
 import { Option, Select } from "@leafygreen-ui/select";
 import TextArea from "@leafygreen-ui/text-area";
@@ -50,15 +49,15 @@ export default function ChatInput({
           )}
           {imageUrl && (
             <div className="relative w-full h-full max-h-full flex items-center justify-center">
-              <Image
+              <img
                 src={imageUrl}
                 alt="Agent Graph"
-                fill
-                style={{ objectFit: "contain", width: "100%", height: "100%" }}
-                unoptimized
-                sizes="100vw"
-                priority
-                className="p-5"
+                style={{
+                  objectFit: "contain",
+                  width: "80%",
+                  height: "80%",
+                  padding: 20,
+                }}
               />
             </div>
           )}
