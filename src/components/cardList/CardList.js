@@ -2,6 +2,14 @@ import React from "react";
 import { useCardList } from "./hooks";
 import ExpandableCard from "@leafygreen-ui/expandable-card";
 import dynamic from "next/dynamic";
+import Icon from "@leafygreen-ui/icon";
+import { Description, Subtitle } from "@leafygreen-ui/typography";
+import {
+  SegmentedControl,
+  SegmentedControlOption,
+} from "@leafygreen-ui/segmented-control";
+import IncidentResponseForm from "@/components/forms/IncidentResponseForm/IncidentResponseForm";
+import WorkOrderForm from "@/components/forms/workOrderForm/WorkOrderForm";
 
 const Code = dynamic(
   () => import("@leafygreen-ui/code").then((mod) => mod.Code),
@@ -18,12 +26,23 @@ export default function CardList({
   maxHeight = "max-h-96",
   emptyText = "No items",
   listTitle = "",
+  listDescription = "",
 }) {
   const {
     cardConfigs,
     selectedId: selectedRadioId,
     handleRadioSelect,
-  } = useCardList(items, cardType, selectable, selectedId, onSelect);
+    getView,
+    setView,
+    cardListDescription,
+  } = useCardList(
+    items,
+    cardType,
+    selectable,
+    selectedId,
+    onSelect,
+    listDescription
+  );
 
   return (
     <div
@@ -31,9 +50,14 @@ export default function CardList({
       style={{ minHeight: 0 }}
     >
       {listTitle && (
-        <h3 className="font-semibold text-lg mb-2 text-gray-800 flex-shrink-0">
+        <Subtitle className="mb-1 text-gray-800 flex-shrink-0">
           {listTitle}
-        </h3>
+        </Subtitle>
+      )}
+      {cardListDescription && (
+        <Description className="pb-4 text-gray-600">
+          {cardListDescription}
+        </Description>
       )}
       <div
         className="flex flex-col gap-3 flex-1 overflow-y-auto cardlist-scrollbar"
@@ -46,7 +70,7 @@ export default function CardList({
           const id = item[idField];
           const config = cardConfigs[index];
           const isSelected = selectable && selectedRadioId === id;
-
+          const view = config.hasForm ? getView(id) : "json";
           return (
             <div key={id} className="flex items-center w-full">
               {selectable && (
@@ -63,20 +87,103 @@ export default function CardList({
               )}
               <div className="flex-1">
                 <ExpandableCard
-                  title={config.title}
-                  description={config.description}
-                  flagText={config.flagText}
+                  title={
+                    <span className="flex items-center gap-2">
+                      {config.icon && (
+                        <Icon
+                          glyph={config.icon}
+                          size={20}
+                          style={
+                            config.iconColor ? { color: config.iconColor } : {}
+                          }
+                        />
+                      )}
+                      <span
+                        style={
+                          config.titleColor ? { color: config.titleColor } : {}
+                        }
+                      >
+                        {config.title}
+                      </span>
+                    </span>
+                  }
+                  description={
+                    config.description ? (
+                      <span
+                        style={
+                          config.descColor ? { color: config.descColor } : {}
+                        }
+                      >
+                        {config.description}
+                      </span>
+                    ) : null
+                  }
+                  flagText={
+                    config.flagText ? (
+                      <span
+                        style={
+                          config.flagTextColor
+                            ? { color: config.flagTextColor }
+                            : {}
+                        }
+                      >
+                        {config.flagText}
+                      </span>
+                    ) : undefined
+                  }
                   style={isSelected ? { backgroundColor: "#f3f4f6" } : {}}
                 >
-                  <div className="w-full">
-                    <Code
-                      language="json"
-                      className="w-full"
-                      style={{ width: "100%" }}
-                    >
-                      {JSON.stringify(item, null, 2)}
-                    </Code>
-                  </div>
+                  {/* Segmented control for form/json view if form is available */}
+                  {config.hasForm ? (
+                    <div className="mb-2">
+                      <SegmentedControl
+                        name={`view-${id}`}
+                        label="View"
+                        followFocus={true}
+                        defaultValue="form"
+                        value={view}
+                        onChange={(value) => setView(id, value)}
+                      >
+                        <SegmentedControlOption value="form">
+                          Form
+                        </SegmentedControlOption>
+                        <SegmentedControlOption value="json">
+                          JSON
+                        </SegmentedControlOption>
+                      </SegmentedControl>
+                    </div>
+                  ) : null}
+                  {/* Form or JSON view */}
+                  {config.hasForm && view === "form" ? (
+                    cardType === "incident-reports" ? (
+                      <IncidentResponseForm
+                        rootCause={item.root_cause || item.Root_cause || ""}
+                        repairInstructions={
+                          Array.isArray(item.repair_instructions)
+                            ? item.repair_instructions
+                                .map(
+                                  (step) =>
+                                    `- Step ${step.step}: ${step.description}`
+                                )
+                                .join("\n")
+                            : item.repair_instructions || ""
+                        }
+                        className="flex-1"
+                      />
+                    ) : cardType === "workorders" ? (
+                      <WorkOrderForm form={item} handleFormChange={() => {}} />
+                    ) : null
+                  ) : (
+                    <div className="w-full">
+                      <Code
+                        language="json"
+                        className="w-full"
+                        style={{ width: "100%" }}
+                      >
+                        {JSON.stringify(item, null, 2)}
+                      </Code>
+                    </div>
+                  )}
                 </ExpandableCard>
               </div>
             </div>

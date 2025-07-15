@@ -24,3 +24,10 @@ body {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f8fafc; /* thumb and track */
 }
+
+.agent-logs-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.agent-logs-scrollbar {
+  scrollbar-width: thin;
+}

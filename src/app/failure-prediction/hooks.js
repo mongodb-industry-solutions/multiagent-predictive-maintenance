@@ -24,6 +24,7 @@ export function useFailureDetectionPage() {
   const temperatureRef = useRef(temperature);
   const vibrationRef = useRef(vibration);
   const lastGeneratedAlertRef = useRef(null);
+  const [showTelemetry, setShowTelemetry] = useState(false);
 
   useEffect(() => {
     temperatureRef.current = temperature;
@@ -249,5 +250,7 @@ export function useFailureDetectionPage() {
     handleStart,
     handleStop,
     agentLogs, // <-- pass logs to page
+    showTelemetry,
+    setShowTelemetry,
   };
 }
