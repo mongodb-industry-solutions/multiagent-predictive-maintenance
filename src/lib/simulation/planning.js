@@ -114,47 +114,59 @@ export function assignStaffToWorkorder(staffDocs, requiredSkills) {
 export function findProductionSlot(calendarTasks, duration, delayFactor) {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
-  // Only consider tasks after today
-  const tasks = calendarTasks.filter(
-    (t) => new Date(t.planned_end_date || t.deadline_date) > today
-  );
-  // Sort by planned_start_date ascending
-  tasks.sort(
-    (a, b) => new Date(a.planned_start_date) - new Date(b.planned_start_date)
-  );
-
-  // Find the first task with a higher delay factor
-  const firstHigherDelayIdx = tasks.findIndex(
-    (t) => t.delay_factor > delayFactor
-  );
-  // If all tasks have delay_factor <= new, we can start today if no tasks, or after the last one
-  let slotStart = today;
-  if (firstHigherDelayIdx === 0 || tasks.length === 0) {
-    slotStart = today;
-  } else if (firstHigherDelayIdx > 0) {
-    // Start after the last task with delay_factor <= new
-    const prevTask = tasks[firstHigherDelayIdx - 1];
-    slotStart = new Date(prevTask.planned_end_date || prevTask.deadline_date);
-    slotStart.setUTCHours(0, 0, 0, 0);
-    slotStart = new Date(slotStart.getTime() + 24 * 60 * 60 * 1000); // next day
+  const now = today;
+  // Identify not-movable tasks: active/past or delay_factor <= new
+  const notMovable = calendarTasks.filter((t) => {
+    const start = new Date(t.planned_start_date);
+    const end = new Date(start);
+    end.setUTCDate(start.getUTCDate() + (t.duration || 1));
+    // Active or past: end < today OR (today >= start && today < end)
+    const isPast = end < now;
+    const isActive = start <= now && now < end;
+    const isLowPriority = t.delay_factor <= delayFactor;
+    return isPast || isActive || isLowPriority;
+  });
+  // Movable: future and delay_factor > new
+  const movable = calendarTasks.filter((t) => !notMovable.includes(t));
+  // Find the last not-movable task's end date (planned_start_date + duration)
+  let lastNotMovableEnd = today;
+  if (notMovable.length > 0) {
+    lastNotMovableEnd = new Date(
+      Math.max(
+        ...notMovable.map((t) => {
+          const start = new Date(t.planned_start_date);
+          const end = new Date(start);
+          end.setUTCDate(start.getUTCDate() + (t.duration || 1));
+          return end.getTime();
+        })
+      )
+    );
+    lastNotMovableEnd.setUTCHours(0, 0, 0, 0);
+  }
+  // Earliest possible slot is the end date of the latest not-movable task, or today if that is in the past
+  let slotStart;
+  if (lastNotMovableEnd >= today) {
+    slotStart = new Date(lastNotMovableEnd);
   } else {
-    // All tasks have delay_factor <= new, so start after the last one
-    const lastTask = tasks[tasks.length - 1];
-    slotStart = new Date(lastTask.planned_end_date || lastTask.deadline_date);
-    slotStart.setUTCHours(0, 0, 0, 0);
-    slotStart = new Date(slotStart.getTime() + 24 * 60 * 60 * 1000);
+    slotStart = today;
   }
 
-  // Now, simulate inserting the new workorder and count affected tasks
+  // Now, simulate inserting the new workorder and count affected movable tasks
   let affected = 0;
   let currentStart = new Date(slotStart);
   let currentEnd = new Date(currentStart);
   currentEnd.setUTCDate(currentEnd.getUTCDate() + duration);
-  for (let i = 0; i < tasks.length; i++) {
-    const t = tasks[i];
+  // Only consider movable tasks, sorted by planned_start_date
+  const movableSorted = [...movable].sort(
+    (a, b) => new Date(a.planned_start_date) - new Date(b.planned_start_date)
+  );
+  for (let i = 0; i < movableSorted.length; i++) {
+    const t = movableSorted[i];
     const tStart = new Date(t.planned_start_date);
+    const tEnd = new Date(tStart);
+    tEnd.setUTCDate(tStart.getUTCDate() + (t.duration || 1));
     if (tStart < currentEnd) {
-      // This task would be pushed
+      // This movable task would be pushed
       affected++;
       // Move this task to after the new workorder
       currentStart = new Date(currentEnd);
@@ -162,7 +174,7 @@ export function findProductionSlot(calendarTasks, duration, delayFactor) {
       currentEnd.setUTCDate(currentEnd.getUTCDate() + (t.duration || 1));
     } else {
       // There is a gap, so the rest can stay
-      currentStart = new Date(t.planned_end_date || t.deadline_date);
+      currentStart = new Date(tEnd);
       currentEnd = new Date(currentStart);
       currentEnd.setUTCDate(currentEnd.getUTCDate() + (t.duration || 1));
     }
@@ -195,15 +207,36 @@ export async function scheduleMaintenanceWorkOrder(
   const newStart = new Date(result.start_date);
   const newEnd = new Date(newStart);
   newEnd.setUTCDate(newEnd.getUTCDate() + duration);
-  // Simulate the rearrangement and collect affected task ids and new dates
+
+  // Identify not-movable and movable tasks
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const now = today;
+  const notMovable = tasks.filter((t) => {
+    const start = new Date(t.planned_start_date);
+    const end = new Date(start);
+    end.setUTCDate(start.getUTCDate() + (t.duration || 1));
+    const isPast = end < now;
+    const isActive = start <= now && now < end;
+    const isLowPriority = t.delay_factor <= delayFactor;
+    return isPast || isActive || isLowPriority;
+  });
+  const movable = tasks.filter((t) => !notMovable.includes(t));
+  // Only reschedule movable tasks that overlap with the new maintenance task
   let currentStart = new Date(newEnd);
   let currentEnd = new Date(currentStart);
   let affectedTaskIds = [];
-  for (let i = 0; i < tasks.length; i++) {
-    const t = tasks[i];
+  // Sort movable by planned_start_date
+  const movableSorted = [...movable].sort(
+    (a, b) => new Date(a.planned_start_date) - new Date(b.planned_start_date)
+  );
+  for (let i = 0; i < movableSorted.length; i++) {
+    const t = movableSorted[i];
     const tStart = new Date(t.planned_start_date);
-    // If this task starts before the current available slot, it must be pushed
-    if (tStart < currentStart) {
+    const tEnd = new Date(tStart);
+    tEnd.setUTCDate(tStart.getUTCDate() + (t.duration || 1));
+    if (tStart < currentEnd) {
+      // This movable task would be pushed
       affectedTaskIds.push(t._id);
       t.planned_start_date = new Date(currentStart);
       t.planned_end_date = new Date(currentStart);
@@ -216,7 +249,7 @@ export async function scheduleMaintenanceWorkOrder(
       currentEnd.setUTCDate(currentEnd.getUTCDate() + (t.duration || 1));
     } else {
       // If this task is already after the current slot, move the slot forward to after this task
-      currentStart = new Date(t.planned_end_date || t.deadline_date);
+      currentStart = new Date(tEnd);
       currentEnd = new Date(currentStart);
       currentEnd.setUTCDate(currentEnd.getUTCDate() + (t.duration || 1));
     }

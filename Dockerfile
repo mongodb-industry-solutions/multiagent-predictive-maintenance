@@ -15,7 +15,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN rm -f .env.local
+RUN rm -f .env.local .env
 
 RUN npm run build
 
