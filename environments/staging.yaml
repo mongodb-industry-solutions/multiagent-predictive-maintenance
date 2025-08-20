@@ -1,0 +1,17 @@
+env:
+  NODE_ENV: staging
+
+# Secret environment variables (references to K8s secrets)
+envSecrets:
+  MONGODB_URI: multiagent-pred-maint
+  DATABASE_NAME: multiagent-pred-maint
+  AWS_REGION: multiagent-pred-maint
+  AWS_PROFILE: multiagent-pred-maint
+  COMPLETION_MODEL: multiagent-pred-maint
+  EMBEDDING_MODEL: multiagent-pred-maint
+  NEXT_PUBLIC_ENV: multiagent-pred-maint
+
+serviceAccount:
+  enabled: true
+  create: false # Don't create a new service account
+  name: irsa
