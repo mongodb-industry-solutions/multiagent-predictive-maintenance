@@ -1,6 +1,6 @@
 import { tool } from "@langchain/core/tools";
 import { vectorSearch } from "@/integrations/mongodb/vectorSearch";
-import { clientPromise } from "@/integrations/mongodb/client";
+import getMongoClientPromise from "@/integrations/mongodb/client";
 import { generateEmbedding } from "@/integrations/bedrock/embeddings";
 
 export const retrieveWorkOrders = tool(
@@ -70,8 +70,13 @@ export const generateWorkOrder = tool(
       embedding,
     };
     // Insert into MongoDB
-    const client = await clientPromise;
-    const db = client.db(process.env.DATABASE_NAME);
+    const client = await getMongoClientPromise();
+    const dbName = process.env.DATABASE_NAME;
+    if (!dbName)
+      throw new Error(
+        "DATABASE_NAME environment variable is required but not set"
+      );
+    const db = client.db(dbName);
     const result = await db.collection("workorders").insertOne(doc);
     return JSON.stringify(result);
   },

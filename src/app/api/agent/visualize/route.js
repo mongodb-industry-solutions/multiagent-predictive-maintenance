@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { getAgentById } from "@/agents/config";
-import { clientPromise } from "@/integrations/mongodb/client";
+import getMongoClientPromise from "@/integrations/mongodb/client";
 
 export async function POST(req) {
   try {
     const { agentId } = await req.json();
     const dbName = process.env.DATABASE_NAME;
-    const client = await clientPromise;
+    if (!dbName)
+      throw new Error(
+        "DATABASE_NAME environment variable is required but not set"
+      );
+    const client = await getMongoClientPromise();
     const agentConfig = getAgentById(agentId);
     if (!agentConfig) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
