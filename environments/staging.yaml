@@ -1,6 +1,3 @@
-env:
-  NODE_ENV: staging
-
 # Secret environment variables (references to K8s secrets)
 envSecrets:
   MONGODB_URI: multiagent-pred-maint
