@@ -13,7 +13,7 @@ steps:
     settings:
       create_repository: true
       registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-      repo: industrysolutions/multiagent-pred-maint #Chenge to demo name
+      repo: industrysolutions/multiagent-pred-maint # Change to demo name (short)
       tags:
         - git-${DRONE_COMMIT_SHA:0:7}
         - latest
@@ -32,12 +32,12 @@ steps:
       chart_version: 4.25.0
       add_repos: [mongodb=https://10gen.github.io/helm-charts]
       namespace: industrysolutions
-      release: demo-portal
+      release: multiagent-predictive-maintenance # Change to demo name (full)
       values:
         - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
-        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/multiagent-pred-maint"
+        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/multiagent-pred-maint" # Change to demo name (short)
         - "ingress.enabled=true"
-        - "ingress.hosts[0]=multiagent-predictive-maintenance.industrysolutions.staging.corp.mongodb.com"
+        - "ingress.hosts[0]=multiagent-predictive-maintenance.industrysolutions.staging.corp.mongodb.com" # Change to demo name (full)
         - "mesh.enabled=true"
         - "resources.limits.cpu=1000m"
         - "resources.limits.memory=2048Mi"
