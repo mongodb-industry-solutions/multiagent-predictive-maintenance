@@ -1,6 +1,6 @@
 import { tool } from "@langchain/core/tools";
 import { vectorSearch } from "@/integrations/mongodb/vectorSearch";
-import { clientPromise } from "@/integrations/mongodb/client";
+import getMongoClientPromise from "@/integrations/mongodb/client";
 
 export const retrieveManual = tool(
   async ({ query, n = 3 }) => {
@@ -126,8 +126,13 @@ export const generateIncidentReport = tool(
     const doc = { ...rest, ts: new Date() };
 
     // Insert into MongoDB
-    const client = await clientPromise;
-    const db = client.db(process.env.DATABASE_NAME);
+    const client = await getMongoClientPromise();
+    const dbName = process.env.DATABASE_NAME;
+    if (!dbName)
+      throw new Error(
+        "DATABASE_NAME environment variable is required but not set"
+      );
+    const db = client.db(dbName);
     const result = await db.collection("incident_reports").insertOne(doc);
     return JSON.stringify(result);
   },

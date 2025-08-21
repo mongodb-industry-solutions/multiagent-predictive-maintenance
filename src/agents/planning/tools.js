@@ -1,5 +1,5 @@
 import { tool } from "@langchain/core/tools";
-import { clientPromise } from "@/integrations/mongodb/client";
+import getMongoClientPromise from "@/integrations/mongodb/client";
 import {
   inventoryAvailabilityCheck,
   assignStaffToWorkorder,
@@ -12,8 +12,13 @@ export const checkInventoryAvailability = tool(
     if (!Array.isArray(items) || items.length === 0) {
       return JSON.stringify({ error: "No items provided." });
     }
-    const client = await clientPromise;
-    const db = client.db(process.env.DATABASE_NAME);
+    const client = await getMongoClientPromise();
+    const dbName = process.env.DATABASE_NAME;
+    if (!dbName)
+      throw new Error(
+        "DATABASE_NAME environment variable is required but not set"
+      );
+    const db = client.db(dbName);
     const collection = db.collection("inventory");
     // Find all inventory docs for the requested items
     const docs = await collection.find({ name: { $in: items } }).toArray();
@@ -59,8 +64,13 @@ export const checkStaffAvailability = tool(
     if (!Array.isArray(required_skills) || required_skills.length === 0) {
       return JSON.stringify({ error: "No required skills provided." });
     }
-    const client = await clientPromise;
-    const db = client.db(process.env.DATABASE_NAME);
+    const client = await getMongoClientPromise();
+    const dbName = process.env.DATABASE_NAME;
+    if (!dbName)
+      throw new Error(
+        "DATABASE_NAME environment variable is required but not set"
+      );
+    const db = client.db(dbName);
     const collection = db.collection("maintenance_staff");
     // Find all staff with at least one of the required skills
     const staffDocs = await collection
@@ -122,8 +132,13 @@ export const scheduleWorkOrder = tool(
     const maintenance_task = {
       task_id,
     };
-    const client = await clientPromise;
-    const db = client.db(process.env.DATABASE_NAME);
+    const client = await getMongoClientPromise();
+    const dbName = process.env.DATABASE_NAME;
+    if (!dbName)
+      throw new Error(
+        "DATABASE_NAME environment variable is required but not set"
+      );
+    const db = client.db(dbName);
     const collection = db.collection("production_calendar");
     // Get all tasks with planned_end_date after today, for the next 2 months
     today.setUTCHours(0, 0, 0, 0);

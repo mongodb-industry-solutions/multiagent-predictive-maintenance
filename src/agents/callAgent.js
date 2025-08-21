@@ -1,5 +1,5 @@
 import { HumanMessage } from "@langchain/core/messages";
-import { clientPromise } from "@/integrations/mongodb/client.js";
+import getMongoClientPromise from "@/integrations/mongodb/client.js";
 import { getAgentById } from "./config.js";
 
 /**
@@ -89,7 +89,11 @@ export async function callAgent(message, threadId, agentId = "test", writer) {
   try {
     // Initialize MongoDB client
     const dbName = process.env.DATABASE_NAME;
-    const client = await clientPromise;
+    if (!dbName)
+      throw new Error(
+        "DATABASE_NAME environment variable is required but not set"
+      );
+    const client = await getMongoClientPromise();
 
     // Get the agent config
     const agentConfig = getAgentById(agentId);
