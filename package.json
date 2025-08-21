@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack --port 8080",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port 8080",
     "lint": "next lint",
     "embed": "node scripts/embed_collections.mjs",
     "generate_calendar": "node scripts/generate_production_calendar.mjs"
