@@ -1,7 +1,9 @@
 import "dotenv/config";
 import fs from "fs/promises";
 import path from "path";
-import { clientPromise } from "../src/integrations/mongodb/client.js";
+import getMongoClientPromise, {
+  closeMongoClient,
+} from "../src/integrations/mongodb/client.js";
 
 async function logStep(msg) {
   process.stdout.write(`\n[seed] ${msg}\n`);
@@ -57,7 +59,7 @@ async function runScript(command, args = []) {
 
 async function main() {
   logStep("Connecting to MongoDB...");
-  const client = await clientPromise;
+  const client = await getMongoClientPromise();
   const db = client.db(process.env.DATABASE_NAME);
   logStep(`Checking if database '${process.env.DATABASE_NAME}' is empty...`);
   const isEmpty = await checkDbEmpty(db);
@@ -65,7 +67,7 @@ async function main() {
     logStep(
       "Database already contains documents. This script is for first-time setup only.\nIf you want to reinitialize, please remove existing collections or use the embed/generate_calendar scripts individually."
     );
-    await client.close();
+    await closeMongoClient();
     process.exit(1);
   }
   logStep("Database is empty. Seeding collections from data/...");
@@ -87,14 +89,14 @@ async function main() {
         "Calendar generation failed. You can retry with: npm run generate_calendar 6"
       );
     }
-    await client.close();
+    await closeMongoClient();
     process.exit(1);
   }
-  await client.close();
+  await closeMongoClient();
   process.exit(0);
 }
 
 main().catch((err) => {
   logStep(`Fatal error: ${err.message}`);
-  process.exit(1);
+  closeMongoClient().finally(() => process.exit(1));
 });
