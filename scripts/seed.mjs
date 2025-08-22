@@ -1,7 +1,7 @@
 import "dotenv/config";
 import fs from "fs/promises";
 import path from "path";
-import execa from "execa";
+import { execa } from "execa";
 import getMongoClientPromise, {
   closeMongoClient,
 } from "../src/integrations/mongodb/client.js";
