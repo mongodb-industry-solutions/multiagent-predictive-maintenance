@@ -1,6 +1,7 @@
 import "dotenv/config";
 import fs from "fs/promises";
 import path from "path";
+import execa from "execa";
 import getMongoClientPromise, {
   closeMongoClient,
 } from "../src/integrations/mongodb/client.js";
@@ -44,17 +45,13 @@ async function createCollectionsFromData(db) {
 }
 
 async function runScript(command, args = []) {
-  return new Promise((resolve, reject) => {
-    const { spawn } = require("child_process");
-    const proc = spawn(command, args, { stdio: "inherit", shell: true });
-    proc.on("close", (code) => {
-      if (code === 0) resolve();
-      else
-        reject(
-          new Error(`${command} ${args.join(" ")} failed with code ${code}`)
-        );
-    });
-  });
+  try {
+    await execa(command, args, { stdio: "inherit" });
+  } catch (err) {
+    throw new Error(
+      `${command} ${args.join(" ")} failed with code ${err.exitCode}`
+    );
+  }
 }
 
 async function main() {
@@ -73,21 +70,25 @@ async function main() {
   logStep("Database is empty. Seeding collections from data/...");
   await createCollectionsFromData(db);
   logStep("Collections seeded. Running embedding script...");
+  let currentStep = "embed";
   try {
     await runScript("npm", ["run", "embed"]);
     logStep(
       "Embedding completed. Running production calendar generation (6 months)..."
     );
+    currentStep = "generate_calendar";
     await runScript("npm", ["run", "generate_calendar", "6"]);
     logStep("Production calendar generated. Initial setup complete!");
   } catch (err) {
     logStep(`Error: ${err.message}`);
-    if (err.message.includes("embed")) {
+    if (currentStep === "embed") {
       logStep("Embedding failed. You can retry with: npm run embed");
-    } else if (err.message.includes("generate_calendar")) {
+    } else if (currentStep === "generate_calendar") {
       logStep(
         "Calendar generation failed. You can retry with: npm run generate_calendar 6"
       );
+    } else {
+      logStep("You can try running the failed step manually.");
     }
     await closeMongoClient();
     process.exit(1);
