@@ -1,4 +1,4 @@
-FROM node:22.14.0-alpine AS base 
+FROM node:22-alpine AS base 
 
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
@@ -15,8 +15,6 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN rm -f .env.local .env
-
 RUN npm run build
 
 FROM base AS runner
@@ -32,12 +30,11 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/.env.production ./.env.production
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 8080 
 
-ENV PORT=3000
+ENV PORT=8080
 
-CMD ["npm", "start"]
+CMD ["npm", "run", "start"]
