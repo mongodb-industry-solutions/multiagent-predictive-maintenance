@@ -5,6 +5,7 @@ import { execa } from "execa";
 import getMongoClientPromise, {
   closeMongoClient,
 } from "../src/integrations/mongodb/client.js";
+import { createTimeSeriesCollection } from "../src/integrations/mongodb/timeSeries.js";
 
 async function logStep(msg) {
   process.stdout.write(`\n[seed] ${msg}\n`);
@@ -69,6 +70,16 @@ async function main() {
   }
   logStep("Database is empty. Seeding collections from data/...");
   await createCollectionsFromData(db);
+  logStep("Creating telemetry time series collection...");
+  await createTimeSeriesCollection("telemetry", {
+    expireAfterSeconds: 86400,
+    timeseries: {
+      timeField: "ts",
+      metaField: "metadata",
+      granularity: "minutes",
+      bucketMaxSpanSeconds: 86400,
+    },
+  });
   logStep("Collections seeded. Running embedding script...");
   let currentStep = "embed";
   try {
