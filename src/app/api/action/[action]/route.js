@@ -1,14 +1,15 @@
-import { clientPromise } from "@/integrations/mongodb/client.js";
+import getMongoClientPromise from "@/integrations/mongodb/client.js";
 import { NextResponse } from "next/server";
 import { EJSON } from "bson";
 
 export async function POST(req, { params }) {
   try {
-    if (!process.env.DATABASE_NAME) {
-      throw new Error('Invalid/Missing environment variable: "DATABASE_NAME"');
-    }
-
     const database = process.env.DATABASE_NAME;
+    if (!database) {
+      throw new Error(
+        "DATABASE_NAME environment variable is required but not set"
+      );
+    }
 
     const { action } = await params;
     const requestText = await req.text();
@@ -46,7 +47,7 @@ export async function POST(req, { params }) {
       );
     }
 
-    const client = await clientPromise;
+    const client = await getMongoClientPromise();
     const db = client.db(database);
     const col = db.collection(collection);
 

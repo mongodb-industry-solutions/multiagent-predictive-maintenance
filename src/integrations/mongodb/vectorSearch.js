@@ -1,4 +1,4 @@
-import { clientPromise } from "./client.js";
+import getMongoClientPromise from "./client.js";
 import { generateEmbedding } from "../bedrock/embeddings.js";
 
 /**
@@ -19,8 +19,13 @@ export async function vectorSearch(query, dbConfig, n = 10, options = {}) {
   if (!dbConfig || !dbConfig.collection) {
     throw new Error("dbConfig with a valid collection string is required");
   }
-  const client = await clientPromise;
-  const db = client.db(process.env.DATABASE_NAME);
+  const client = await getMongoClientPromise();
+  const dbName = process.env.DATABASE_NAME;
+  if (!dbName)
+    throw new Error(
+      "DATABASE_NAME environment variable is required but not set"
+    );
+  const db = client.db(dbName);
   const collection = db.collection(dbConfig.collection);
 
   // Generate embedding for the query
@@ -89,8 +94,13 @@ export async function createVectorSearchIndex(
   similarity = "dotProduct",
   numDimensions = 1536
 ) {
-  const client = await clientPromise;
-  const db = client.db(process.env.DATABASE_NAME);
+  const client = await getMongoClientPromise();
+  const dbName = process.env.DATABASE_NAME;
+  if (!dbName)
+    throw new Error(
+      "DATABASE_NAME environment variable is required but not set"
+    );
+  const db = client.db(dbName);
   const collection = db.collection(collectionName);
   const index = {
     name: indexName,

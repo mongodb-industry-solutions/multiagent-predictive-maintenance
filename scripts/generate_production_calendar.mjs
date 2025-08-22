@@ -1,5 +1,7 @@
 import "dotenv/config";
-import { clientPromise } from "../src/integrations/mongodb/client.js";
+import getMongoClientPromise, {
+  closeMongoClient,
+} from "../src/integrations/mongodb/client.js";
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -35,7 +37,7 @@ async function main() {
     process.exit(1);
   }
 
-  const client = await clientPromise;
+  const client = await getMongoClientPromise();
   const db = client.db(process.env.DATABASE_NAME);
   const collection = db.collection("production_calendar");
 
@@ -123,11 +125,11 @@ async function main() {
     console.log("No tasks generated.");
   }
 
-  await client.close();
+  await closeMongoClient();
   process.exit(0);
 }
 
 main().catch((err) => {
   console.error("Fatal error in generate_production_calendar script:", err);
-  process.exit(1);
+  closeMongoClient().finally(() => process.exit(1));
 });

@@ -1,55 +1,49 @@
-import { MongoClient } from "mongodb";
-
-if (!process.env.MONGODB_URI) {
-  throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
-}
-if (!process.env.DATABASE_NAME) {
-  throw new Error('Invalid/Missing environment variable: "DATABASE_NAME"');
-}
-
-const uri = process.env.MONGODB_URI;
-const database = process.env.DATABASE_NAME;
-const options = { appName: "genai-inventory-optimization" };
+import { MongoClient, ServerApiVersion } from "mongodb";
 
 let client;
 let clientPromise;
 
-if (!global._mongoClientPromise) {
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
-  global._mongoClientPromise = clientPromise;
-} else {
-  clientPromise = global._mongoClientPromise;
+function createMongoClient() {
+  if (!process.env.MONGODB_URI) {
+    throw new Error("MONGODB_URI environment variable is required but not set");
+  }
+  const uri = process.env.MONGODB_URI;
+  const options = {
+    appName: "genai-inventory-optimization",
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: false,
+      deprecationErrors: true,
+    },
+  };
+  return new MongoClient(uri, options);
 }
 
-// export async function vectorSearch(queryEmbedding, collection) {
-//   try {
-//     const client = await clientPromise;
-//     const db = client.db(database);
+function getMongoClientPromise() {
+  if (process.env.NODE_ENV === "development") {
+    if (!global._mongoClientPromise) {
+      client = createMongoClient();
+      global._mongoClientPromise = client.connect();
+    }
+    clientPromise = global._mongoClientPromise;
+  } else {
+    if (!clientPromise) {
+      client = createMongoClient();
+      clientPromise = client.connect();
+    }
+  }
+  return clientPromise;
+}
 
-//     const chunks = await db
-//       .collection(collection)
-//       .aggregate([
-//         {
-//           $vectorSearch: {
-//             index: "default",
-//             path: "emb",
-//             queryVector: queryEmbedding,
-//             numCandidates: 50,
-//             limit: 5,
-//           },
-//         },
-//       ])
-//       .toArray();
+export async function closeMongoClient() {
+  if (client) {
+    await client.close();
+    client = undefined;
+    clientPromise = undefined;
+    if (global._mongoClientPromise) {
+      global._mongoClientPromise = undefined;
+    }
+  }
+}
 
-//     return chunks;
-//   } catch (error) {
-//     console.error(
-//       `Error performing vector search for product ${productId}:`,
-//       error
-//     );
-//     throw error;
-//   }
-// }
-
-export { clientPromise };
+export default getMongoClientPromise;
