@@ -9,7 +9,8 @@
     "start": "next start --port 8080",
     "lint": "next lint",
     "embed": "node scripts/embed_collections.mjs",
-    "generate_calendar": "node scripts/generate_production_calendar.mjs"
+    "generate_calendar": "node scripts/generate_production_calendar.mjs",
+    "seed": "node scripts/seed.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.828.0",
@@ -43,6 +44,7 @@
     "@mui/material": "^7.1.1",
     "bson": "^6.10.4",
     "dotenv": "^16.5.0",
+    "execa": "^9.6.0",
     "i": "^0.3.7",
     "mongodb": "^6.17.0",
     "next": "15.3.3",

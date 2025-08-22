@@ -94,7 +94,7 @@ export async function createVectorSearchIndex(
   similarity = "dotProduct",
   numDimensions = 1536
 ) {
-  const client = await clientPromise;
+  const client = await getMongoClientPromise();
   const dbName = process.env.DATABASE_NAME;
   if (!dbName)
     throw new Error(

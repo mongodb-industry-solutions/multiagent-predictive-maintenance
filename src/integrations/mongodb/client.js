@@ -35,4 +35,15 @@ function getMongoClientPromise() {
   return clientPromise;
 }
 
+export async function closeMongoClient() {
+  if (client) {
+    await client.close();
+    client = undefined;
+    clientPromise = undefined;
+    if (global._mongoClientPromise) {
+      global._mongoClientPromise = undefined;
+    }
+  }
+}
+
 export default getMongoClientPromise;

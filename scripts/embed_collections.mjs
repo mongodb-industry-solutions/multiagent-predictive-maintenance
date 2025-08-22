@@ -1,7 +1,9 @@
 import "dotenv/config";
 import path from "path";
 import config from "./config.js";
-import { clientPromise } from "../src/integrations/mongodb/client.js";
+import getMongoClientPromise, {
+  closeMongoClient,
+} from "../src/integrations/mongodb/client.js";
 import { generateEmbedding } from "../src/integrations/bedrock/embeddings.js";
 import { createVectorSearchIndex } from "../src/integrations/mongodb/vectorSearch.js";
 
@@ -13,7 +15,7 @@ async function embedCollection({
   similarity,
   numDimensions,
 }) {
-  const client = await clientPromise;
+  const client = await getMongoClientPromise();
   const db = client.db(process.env.DATABASE_NAME);
   const collection = db.collection(collectionName);
   const cursor = collection.find({});
@@ -73,12 +75,11 @@ async function main() {
   }
   console.log("All collections processed.");
   // Close MongoDB connection and exit
-  const client = await clientPromise;
-  await client.close();
+  await closeMongoClient();
   process.exit(0);
 }
 
 main().catch((err) => {
   console.error("Fatal error in embedding script:", err);
-  process.exit(1);
+  closeMongoClient().finally(() => process.exit(1));
 });
