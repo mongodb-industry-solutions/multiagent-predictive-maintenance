@@ -155,4 +155,4 @@ This demo is designed to be flexible and extensible. Here are some ways you can 
 
 Thank you for exploring the Agentic Predictive Maintenance demo! This repository is maintained by MongoDB Industry Solutions. We encourage you to experiment, extend, and adapt the system to your own use cases. If you have questions or feedback, please reach out at industry.solutions@mongodb.com or open an issue.
 
-Enjoy building the future of autonomous manufacturing!
+Enjoy building the future of modern manufacturing!
