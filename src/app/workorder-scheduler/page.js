@@ -114,20 +114,26 @@ export default function WorkorderSchedulerPage() {
               />
             </div>
             {/* Calendar directly under AgentStatus with margin */}
-            <div className="w-full mt-2 flex-1 overflow-hidden">
+            <div
+              className="w-full mt-2 flex-1 min-h-0 flex flex-col"
+              style={{ minHeight: 320, maxHeight: "calc(100vh - 340px)" }}
+            >
               {calendarLoading && <div>Loading calendar...</div>}
               {calendarError && (
                 <div className="text-red-500">
                   Error: {calendarError.message}
                 </div>
               )}
-              <FullCalendar
-                plugins={[dayGridPlugin]}
-                initialView="dayGridMonth"
-                weekends={true}
-                events={calendarEvents}
-                eventContent={renderEventContent}
-              />
+              <div className="flex-1 min-h-0" style={{ minHeight: 240 }}>
+                <FullCalendar
+                  plugins={[dayGridPlugin]}
+                  initialView="dayGridMonth"
+                  weekends={true}
+                  events={calendarEvents}
+                  eventContent={renderEventContent}
+                  height="100%"
+                />
+              </div>
             </div>
             {/* Reset Button below calendar, right aligned */}
             <div className="flex justify-end mt-2">
