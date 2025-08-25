@@ -97,7 +97,7 @@ export default function Page() {
               operations excellence.
             </Description>
             <a
-              href="https://www.mongodb.com/blog/post/multi-agent-collaboration-for-manufacturing-operations-optimization"
+              href="https://www.mongodb.com/company/blog/innovation/unlock-multi-agent-ai-predictive-maintenance"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center self-center text-blue-600 hover:underline hover:decoration-gray-200 hover:underline-offset-4 hover:decoration-2 mt-1"
