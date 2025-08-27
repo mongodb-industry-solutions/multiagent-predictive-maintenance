@@ -41,6 +41,7 @@
     "@leafygreen-ui/text-area": "^10.0.12",
     "@leafygreen-ui/text-input": "^14.0.13",
     "@leafygreen-ui/typography": "^20.1.9",
+    "@leafygreen-ui/tabs": "^14.2.5",
     "@mui/material": "^7.1.1",
     "bson": "^6.10.4",
     "dotenv": "^16.5.0",

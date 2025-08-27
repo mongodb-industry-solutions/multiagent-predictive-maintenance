@@ -31,3 +31,36 @@ body {
 .agent-logs-scrollbar {
   scrollbar-width: thin;
 }
+
+/* Overrides for FullCalendar header (month/year text and buttons) */
+.fc-toolbar-title {
+  font-size: 1rem !important; /* Tailwind text-base */
+  font-weight: 600 !important; /* Tailwind font-semibold */
+  color: #112733 !important;
+}
+.fc-button, .fc-button-primary {
+  font-size: 0.85rem !important; /* Tailwind text-xs */
+  padding: 0.25rem 0.5rem !important; /* Tailwind px-2 py-1 */
+  border-radius: 0.375rem !important; /* Tailwind rounded-md */
+  background-color: #112733 !important;
+  color: #fff !important;
+  border: none !important;
+}
+.fc-button-group > .fc-button {
+  font-size: 0.85rem !important;
+  padding: 0.25rem 0.5rem !important;
+  background-color: #112733 !important;
+  color: #fff !important;
+  border: none !important;
+}
+/* Color for calendar month row (days of week header) */
+.fc-col-header-cell {
+  color: #023430 !important;
+}
+/* Reduce font size for calendar cells and events */
+.fc-daygrid-day-number,
+.fc-daygrid-event,
+.fc-col-header-cell,
+.fc-daygrid-day {
+  font-size: 0.85rem !important; /* Tailwind text-xs/sm */
+}
