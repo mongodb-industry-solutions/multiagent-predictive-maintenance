@@ -1,36 +1,39 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Modal from "@leafygreen-ui/modal";
 import { H3, Body } from "@leafygreen-ui/typography";
 import Icon from "@leafygreen-ui/icon";
 import PropTypes from "prop-types";
-import styles from "./infowizard.module.css";
+import Image from "next/image";
 import Button from "@leafygreen-ui/button";
 import { Tabs, Tab } from "@leafygreen-ui/tabs";
+import { useInfoWizard } from "./hooks";
 
-const InfoWizard = ({
-  open,
-  setOpen,
-  tooltipText = "Learn more",
-  iconGlyph = "Wizard",
-  sections = [],
-}) => {
-  const [selected, setSelected] = useState(0);
+const InfoWizard = (props) => {
+  const {
+    open,
+    setOpen,
+    tooltipText,
+    iconGlyph,
+    sections,
+    selected,
+    setSelected,
+  } = useInfoWizard(props);
 
   return (
     <>
       {/* Bigger button for navbars */}
       <Button
-        className={styles.button}
+        style={{ margin: "5px" }}
         onClick={() => setOpen((prev) => !prev)}
         leftGlyph={<Icon glyph={iconGlyph} />}
       >
         Tell me more!
       </Button>
 
-      <Modal open={open} setOpen={setOpen} className={styles.modal}>
-        <div className={styles.modalContent}>
+      <Modal open={open} setOpen={setOpen} size={"large"} className="z-2">
+        <div className="overflow-y-auto h-[500px]">
           <Tabs
             aria-label="info wizard tabs"
             setSelected={setSelected}
@@ -39,18 +42,20 @@ const InfoWizard = ({
             {sections.map((tab, tabIndex) => (
               <Tab key={tabIndex} name={tab.heading}>
                 {tab.content.map((section, sectionIndex) => (
-                  <div key={sectionIndex} className={styles.section}>
+                  <div key={sectionIndex} className="mb-4">
                     {section.heading && (
-                      <H3 className={styles.modalH3}>{section.heading}</H3>
+                      <H3 style={{ marginTop: "20px", marginBottom: "10px" }}>
+                        {section.heading}
+                      </H3>
                     )}
                     {section.body &&
                       (Array.isArray(section.body) ? (
-                        <ul className={styles.list}>
+                        <ul className="list-disc pl-6">
                           {section.body.map((item, idx) =>
                             typeof item == "object" ? (
-                              <li>
+                              <li key={idx}>
                                 {item.heading}
-                                <ul className={styles.list}>
+                                <ul className="list-disc pl-6">
                                   {item.body?.map((subItem, idx) => (
                                     <li key={idx}>
                                       <Body>{subItem}</Body>
@@ -70,13 +75,17 @@ const InfoWizard = ({
                       ))}
 
                     {section.image && (
-                      <div className={styles.imageWrapper}>
-                      <img
-                        src={section.image.src}
-                        alt={section.image.alt}
-                        width={section.image.width || 550}
-                        className={styles.modalImage}
-                      />
+                      <div className="relative w-full h-[400px] flex justify-center items-center">
+                        <Image
+                          src={section.image.src}
+                          alt={section.image.alt}
+                          fill
+                          sizes="(max-width: 768px) 90vw, 700px"
+                          style={{
+                            objectFit: "contain",
+                            objectPosition: "center",
+                          }}
+                        />
                       </div>
                     )}
                   </div>

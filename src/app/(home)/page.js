@@ -8,13 +8,13 @@ export default function Page() {
   return (
     <main className="flex flex-col items-center w-full max-h-[calc(100vh-4rem)] h-[calc(100vh-4rem)] overflow-hidden mt-8 mb-8">
       {/* Title */}
-      <H1 className="mt-8 mb-4 text-center text-3xl md:text-4xl lg:text-5xl">
+      <H1 className="mt-8 mb-4 text-center">
         Multi-Agent Predictive Maintenance Demo
       </H1>
       {/* Image Section */}
       <div className="relative flex-grow w-full flex items-center justify-center min-h-[180px] mb-2">
         <Image
-          src="/img/high-level-architecture.svg"
+          src="/img/steps.svg"
           alt="Predictive Maintenance Demo"
           fill
           className="object-contain w-full h-full"
