@@ -6,6 +6,7 @@ import AgentStatus from "@/components/agentStatus/AgentStatus";
 import dynamic from "next/dynamic";
 import Button from "@leafygreen-ui/button";
 import FullCalendar from "@fullcalendar/react";
+import "@/app/globals.css";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import { useWorkorderSchedulerPage } from "./hooks";
 import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
@@ -114,17 +115,14 @@ export default function WorkorderSchedulerPage() {
               />
             </div>
             {/* Calendar directly under AgentStatus with margin */}
-            <div
-              className="w-full mt-2 flex-1 min-h-0 flex flex-col"
-              style={{ minHeight: 320, maxHeight: "calc(100vh - 340px)" }}
-            >
+            <div className="w-full flex-1 flex flex-col">
               {calendarLoading && <div>Loading calendar...</div>}
               {calendarError && (
                 <div className="text-red-500">
                   Error: {calendarError.message}
                 </div>
               )}
-              <div className="flex-1 min-h-0" style={{ minHeight: 240 }}>
+              <div className="flex-1">
                 <FullCalendar
                   plugins={[dayGridPlugin]}
                   initialView="dayGridMonth"

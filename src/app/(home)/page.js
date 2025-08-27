@@ -8,13 +8,13 @@ export default function Page() {
   return (
     <main className="flex flex-col items-center w-full max-h-[calc(100vh-4rem)] h-[calc(100vh-4rem)] overflow-hidden mt-8 mb-8">
       {/* Title */}
-      <H1 className="mt-8 mb-4 text-center text-3xl md:text-4xl lg:text-5xl">
-        Agentic Predictive Maintenance Demo
+      <H1 className="mt-8 mb-4 text-center">
+        Multi-Agent Predictive Maintenance Demo
       </H1>
       {/* Image Section */}
       <div className="relative flex-grow w-full flex items-center justify-center min-h-[180px] mb-2">
         <Image
-          src="/img/high-level-architecture.svg"
+          src="/img/steps.svg"
           alt="Predictive Maintenance Demo"
           fill
           className="object-contain w-full h-full"
@@ -68,7 +68,7 @@ export default function Page() {
               Discover how agentic AI is transforming predictive maintenance.
             </Description>
             <a
-              href="https://mongodb.highspot.com/items/6079a342c79c5260a535141a"
+              href="https://docs.google.com/presentation/d/1nmPBEksW-BUtazLByXd7O04CdrYNLRu9UyEgje_Vf3c/edit?slide=id.g373ea525438_0_2759#slide=id.g373ea525438_0_2759"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center self-center text-blue-600 hover:underline hover:decoration-gray-200 hover:underline-offset-4 hover:decoration-2 mt-1"
@@ -97,7 +97,7 @@ export default function Page() {
               operations excellence.
             </Description>
             <a
-              href="https://www.mongodb.com/blog/post/multi-agent-collaboration-for-manufacturing-operations-optimization"
+              href="https://www.mongodb.com/company/blog/innovation/unlock-multi-agent-ai-predictive-maintenance"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center self-center text-blue-600 hover:underline hover:decoration-gray-200 hover:underline-offset-4 hover:decoration-2 mt-1"
