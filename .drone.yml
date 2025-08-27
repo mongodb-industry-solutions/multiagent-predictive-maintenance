@@ -39,10 +39,10 @@ steps:
         - "ingress.enabled=true"
         - "ingress.hosts[0]=multiagent-predictive-maintenance.industrysolutions.staging.corp.mongodb.com" # Change to demo name (full)
         - "mesh.enabled=true"
-        - "resources.limits.cpu=1000m"
-        - "resources.limits.memory=2048Mi"
-        - "resources.requests.cpu=500m"
-        - "resources.requests.memory=1024Mi"
+        - "resources.limits.cpu=500m"
+        - "resources.limits.memory=1024Mi"
+        - "resources.requests.cpu=250m"
+        - "resources.requests.memory=512Mi"
       api_server: https://api.staging.corp.mongodb.com
       kubernetes_token:
         from_secret: staging_kubernetes_token
@@ -50,55 +50,55 @@ steps:
     when:
       event:
         - push
-# ---
-# kind: pipeline
-# type: kubernetes
-# name: production
+---
+kind: pipeline
+type: kubernetes
+name: production
 
-# trigger:
-#   branch:
-#     - main
+trigger:
+  branch:
+    - main
 
-# steps:
-#   - name: publish
-#     image: plugins/kaniko-ecr
-#     settings:
-#       create_repository: true
-#       registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-#       repo: industrysolutions/demos
-#       tags:
-#         - git-${DRONE_COMMIT_SHA:0:7}
-#         - latest
-#       access_key:
-#         from_secret: ecr_access_key
-#       secret_key:
-#         from_secret: ecr_secret_key
-#     when:
-#       event:
-#         - push
+steps:
+  - name: publish
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/multiagent-pred-maint
+      tags:
+        - git-${DRONE_COMMIT_SHA:0:7}
+        - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
 
-#   - name: deploy-prod
-#     image: public.ecr.aws/kanopy/drone-helm:v3
-#     settings:
-#       chart: mongodb/web-app
-#       chart_version: 4.25.0
-#       add_repos: [mongodb=https://10gen.github.io/helm-charts]
-#       namespace: industrysolutions
-#       release: demo-portal
-#       values:
-#         - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
-#         - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/demos"
-#         - "ingress.enabled=true"
-#         - "ingress.hosts[0]=demo-portal.industrysolutions.prod.corp.mongodb.com"
-#         - "mesh.enabled=true"
-#         - "resources.limits.cpu=1000m"
-#         - "resources.limits.memory=1024Mi"
-#         - "resources.requests.cpu=250m"
-#         - "resources.requests.memory=256Mi"
-#       api_server: https://api.prod.corp.mongodb.com
-#       kubernetes_token:
-#         from_secret: prod_kubernetes_token
-#       values_files: ["environments/production.yaml"]
-#     when:
-#       event:
-#         - push
+  - name: deploy-prod
+    image: public.ecr.aws/kanopy/drone-helm:v3
+    settings:
+      chart: mongodb/web-app
+      chart_version: 4.25.0
+      add_repos: [mongodb=https://10gen.github.io/helm-charts]
+      namespace: industrysolutions
+      release: multiagent-predictive-maintenance
+      values:
+        - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
+        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/multiagent-pred-maint"
+        - "ingress.enabled=true"
+        - "ingress.hosts[0]=multiagent-predictive-maintenance.industrysolutions.prod.corp.mongodb.com"
+        - "mesh.enabled=true"
+        - "resources.limits.cpu=500m"
+        - "resources.limits.memory=1024Mi"
+        - "resources.requests.cpu=250m"
+        - "resources.requests.memory=512Mi"
+      api_server: https://api.prod.corp.mongodb.com
+      kubernetes_token:
+        from_secret: prod_kubernetes_token
+      values_files: ["environments/production.yaml"]
+    when:
+      event:
+        - push
