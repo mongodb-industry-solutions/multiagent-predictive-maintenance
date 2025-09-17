@@ -60,7 +60,20 @@ export async function resetProductionCalendar() {
       filter: {
         $expr: { $ne: ["$planned_start_date", "$initial_start_date"] },
       },
-      update: [{ $set: { planned_start_date: "$initial_start_date" } }],
+      update: [
+        {
+          $set: {
+            planned_start_date: "$initial_start_date",
+            planned_end_date: {
+              $dateAdd: {
+                startDate: "$initial_start_date",
+                unit: "day",
+                amount: "$duration",
+              },
+            },
+          },
+        },
+      ],
     }),
   });
 }

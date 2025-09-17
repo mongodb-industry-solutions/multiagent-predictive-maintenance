@@ -74,10 +74,9 @@ async function main() {
     const initialStartDate = setToUTCMidnight(currentDate);
     const plannedStartDate = setToUTCMidnight(currentDate);
     const plannedEndDate = addDaysUTC(plannedStartDate, duration);
-    const deadlineBase = addDaysUTC(initialStartDate, duration * 2);
-    const deadlineDate = setToUTCMidnight(
-      addDaysUTC(deadlineBase, getRandomInt(0, 3))
-    );
+    const randomFactor = 2 + Math.random() * 2;
+    const deadlineOffsetDays = Math.round(duration * randomFactor);
+    const deadlineDate = addDaysUTC(plannedStartDate, deadlineOffsetDays);
     const piecesToProduce = getRandomInt(500, 5000);
 
     let delayFactor, priority;
