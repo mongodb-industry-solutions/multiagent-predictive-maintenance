@@ -42,9 +42,10 @@ Makefile
 .drone.yml
 LICENSE
 THIRD-PARTY-NOTICES.md
+third-party-licenses.json
 
-# Ignore README (optional, comment out if needed)
-# README.md
+# Ignore README and other docs files
+README.md
 
 # Ignore other folders not needed for build
 /data/
