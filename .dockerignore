@@ -43,8 +43,11 @@ Makefile
 LICENSE
 THIRD-PARTY-NOTICES.md
 
-# Ignore README (optional, comment out if needed)
-# README.md
+# Ignore README and other docs files
+README.md
+THIRD-PARTY-NOTICES.md
+third-party-licenses.json
+
 
 # Ignore other folders not needed for build
 /data/

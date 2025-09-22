@@ -45,3 +45,4 @@ next-env.d.ts
 policy.json
 task-def.json
 Makefile
+third-party-licenses.json
