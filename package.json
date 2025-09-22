@@ -10,7 +10,8 @@
     "lint": "next lint",
     "embed": "node scripts/embed_collections.mjs",
     "generate_calendar": "node scripts/generate_production_calendar.mjs",
-    "seed": "node scripts/seed.mjs"
+    "seed": "node scripts/seed.mjs",
+    "tpn": "npx --no-install license-checker --production --json > third-party-licenses.json && node scripts/generate_third_party_notices.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.828.0",
