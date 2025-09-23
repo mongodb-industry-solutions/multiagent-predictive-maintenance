@@ -6,6 +6,15 @@ name: staging
 trigger:
   branch:
     - staging
+  paths:
+    exclude:
+      - README.md
+      - THIRD-PARTY-NOTICES.md
+      - .gitignore
+      - .env.example
+      - LICENSE
+      - scripts/**
+      - data/**
 
 steps:
   - name: publish
@@ -58,6 +67,15 @@ name: production
 trigger:
   branch:
     - main
+  paths:
+    exclude:
+      - README.md
+      - THIRD-PARTY-NOTICES.md
+      - .gitignore
+      - .env.example
+      - LICENSE
+      - scripts/**
+      - data/**
 
 steps:
   - name: publish
