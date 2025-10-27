@@ -23,11 +23,10 @@ async function checkDbEmpty(db) {
 async function createCollectionsFromData(db) {
   const dataDir = path.resolve("data");
   const files = [
-    "interviews.json",
-    "inventory.json",
-    "maintenance_staff.json",
-    "manuals.json",
-    "workorders.json",
+    "shipments.json",
+    "warehouses.json",
+    "carriers.json",
+    "incidents.json",
   ];
   for (const file of files) {
     const colName = path.basename(file, ".json");
@@ -80,6 +79,15 @@ async function main() {
       bucketMaxSpanSeconds: 86400,
     },
   });
+  
+  logStep("Logistics data seeded successfully! 🚚📦");
+  logStep("Note: Embeddings and calendar generation skipped for now.");
+  logStep("You can run them separately when needed:");
+  logStep("  npm run embed");
+  logStep("  npm run generate_calendar 6");
+  
+  /*
+  // Commenting out embeddings and calendar for now - will configure later
   logStep("Collections seeded. Running embedding script...");
   let currentStep = "embed";
   try {
@@ -104,6 +112,7 @@ async function main() {
     await closeMongoClient();
     process.exit(1);
   }
+  */
   await closeMongoClient();
   process.exit(0);
 }

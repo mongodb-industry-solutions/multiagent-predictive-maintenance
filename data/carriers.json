@@ -1,0 +1,221 @@
+[
+  {
+    "carrier_id": "CAR-001",
+    "name": "Cross-Border Express",
+    "type": "ground",
+    "headquarters": {
+      "city": "San Antonio",
+      "state": "TX",
+      "country": "US"
+    },
+    "service_areas": ["US-West", "US-South", "MX-North"],
+    "specialties": ["cross_border", "electronics", "expedited"],
+    "fleet": {
+      "total_vehicles": 85,
+      "truck_types": ["standard", "refrigerated", "flatbed"],
+      "capacity_per_vehicle_kg": 15000,
+      "average_speed_kmh": 80
+    },
+    "performance_metrics": {
+      "on_time_delivery_rate": 0.92,
+      "damage_rate": 0.003,
+      "average_delivery_time_hours": 48,
+      "customer_satisfaction": 4.2
+    },
+    "routes": [
+      { "from": "LAX", "to": "MTY", "frequency": "daily" },
+      { "from": "ATL", "to": "MTY", "frequency": "3x_week" },
+      { "from": "ORD", "to": "MEX", "frequency": "daily" }
+    ],
+    "contact": {
+      "phone": "+1-210-555-1001",
+      "email": "dispatch@crossborderexpress.com",
+      "website": "www.crossborderexpress.com"
+    },
+    "certifications": ["C-TPAT", "FAST", "DOT", "SCT"],
+    "active": true,
+    "created_at": { "$date": "2023-01-15T10:00:00Z" }
+  },
+  {
+    "carrier_id": "CAR-002",
+    "name": "Northern Freight",
+    "type": "ground",
+    "headquarters": {
+      "city": "Buffalo",
+      "state": "NY",
+      "country": "US"
+    },
+    "service_areas": ["US-Midwest", "US-Northeast", "CA-Ontario"],
+    "specialties": ["us_canada_corridor", "automotive", "manufacturing"],
+    "fleet": {
+      "total_vehicles": 65,
+      "truck_types": ["standard", "heavy_haul", "enclosed"],
+      "capacity_per_vehicle_kg": 18000,
+      "average_speed_kmh": 75
+    },
+    "performance_metrics": {
+      "on_time_delivery_rate": 0.89,
+      "damage_rate": 0.002,
+      "average_delivery_time_hours": 36,
+      "customer_satisfaction": 4.0
+    },
+    "routes": [
+      { "from": "ORD", "to": "YYZ", "frequency": "daily" },
+      { "from": "DTW", "to": "YYZ", "frequency": "5x_week" },
+      { "from": "YYZ", "to": "ORD", "frequency": "daily" }
+    ],
+    "contact": {
+      "phone": "+1-716-555-2002",
+      "email": "operations@northernfreight.com",
+      "website": "www.northernfreight.com"
+    },
+    "certifications": ["PIP", "CTPAT", "CDRP", "DOT"],
+    "active": true,
+    "created_at": { "$date": "2022-11-20T10:00:00Z" }
+  },
+  {
+    "carrier_id": "CAR-003",
+    "name": "NAFTA Logistics",
+    "type": "ground",
+    "headquarters": {
+      "city": "Laredo",
+      "state": "TX",
+      "country": "US"
+    },
+    "service_areas": ["US-South", "MX-All", "Central_America"],
+    "specialties": ["mexico_specialist", "textiles", "manufacturing"],
+    "fleet": {
+      "total_vehicles": 120,
+      "truck_types": ["standard", "dry_van", "container"],
+      "capacity_per_vehicle_kg": 16000,
+      "average_speed_kmh": 70
+    },
+    "performance_metrics": {
+      "on_time_delivery_rate": 0.87,
+      "damage_rate": 0.004,
+      "average_delivery_time_hours": 60,
+      "customer_satisfaction": 3.8
+    },
+    "routes": [
+      { "from": "MEX", "to": "DTW", "frequency": "3x_week" },
+      { "from": "ATL", "to": "MEX", "frequency": "daily" },
+      { "from": "MEX", "to": "ORD", "frequency": "4x_week" }
+    ],
+    "contact": {
+      "phone": "+1-956-555-3003",
+      "email": "info@naftalogistics.com",
+      "website": "www.naftalogistics.com"
+    },
+    "certifications": ["C-TPAT", "NEEC", "SCT", "OEA"],
+    "active": true,
+    "created_at": { "$date": "2021-08-10T10:00:00Z" }
+  },
+  {
+    "carrier_id": "CAR-004",
+    "name": "Fresh Express",
+    "type": "refrigerated",
+    "headquarters": {
+      "city": "Salinas",
+      "state": "CA",
+      "country": "US"
+    },
+    "service_areas": ["US-West", "US-South", "MX-North"],
+    "specialties": ["perishables", "food_grade", "temperature_controlled"],
+    "fleet": {
+      "total_vehicles": 45,
+      "truck_types": ["refrigerated", "frozen", "multi_temp"],
+      "capacity_per_vehicle_kg": 12000,
+      "average_speed_kmh": 85
+    },
+    "performance_metrics": {
+      "on_time_delivery_rate": 0.94,
+      "damage_rate": 0.001,
+      "average_delivery_time_hours": 30,
+      "customer_satisfaction": 4.5
+    },
+    "routes": [
+      { "from": "ATL", "to": "MTY", "frequency": "daily" },
+      { "from": "LAX", "to": "MEX", "frequency": "daily" }
+    ],
+    "contact": {
+      "phone": "+1-831-555-4004",
+      "email": "dispatch@freshexpress.com",
+      "website": "www.freshexpress.com"
+    },
+    "certifications": ["FDA", "HACCP", "SQF", "USDA"],
+    "active": true,
+    "created_at": { "$date": "2023-03-22T10:00:00Z" }
+  },
+  {
+    "carrier_id": "CAR-005",
+    "name": "MedTrans International",
+    "type": "specialized",
+    "headquarters": {
+      "city": "Memphis",
+      "state": "TN",
+      "country": "US"
+    },
+    "service_areas": ["North_America", "Global"],
+    "specialties": ["pharmaceuticals", "medical_devices", "regulated"],
+    "fleet": {
+      "total_vehicles": 35,
+      "truck_types": ["climate_controlled", "security", "validation"],
+      "capacity_per_vehicle_kg": 8000,
+      "average_speed_kmh": 90
+    },
+    "performance_metrics": {
+      "on_time_delivery_rate": 0.98,
+      "damage_rate": 0.0005,
+      "average_delivery_time_hours": 24,
+      "customer_satisfaction": 4.8
+    },
+    "routes": [
+      { "from": "YYZ", "to": "LAX", "frequency": "daily" },
+      { "from": "ORD", "to": "MTY", "frequency": "3x_week" }
+    ],
+    "contact": {
+      "phone": "+1-901-555-5005",
+      "email": "medical@medtrans.com",
+      "website": "www.medtransinternational.com"
+    },
+    "certifications": ["GDP", "FDA", "Health_Canada", "COFEPRIS"],
+    "active": true,
+    "created_at": { "$date": "2020-05-14T10:00:00Z" }
+  },
+  {
+    "carrier_id": "CAR-006",
+    "name": "TechShip Global",
+    "type": "air_ground",
+    "headquarters": {
+      "city": "Seattle",
+      "state": "WA",
+      "country": "US"
+    },
+    "service_areas": ["North_America", "Global"],
+    "specialties": ["high_value", "technology", "express"],
+    "fleet": {
+      "total_vehicles": 25,
+      "truck_types": ["armored", "GPS_tracked", "climate_controlled"],
+      "capacity_per_vehicle_kg": 5000,
+      "average_speed_kmh": 95
+    },
+    "performance_metrics": {
+      "on_time_delivery_rate": 0.96,
+      "damage_rate": 0.0008,
+      "average_delivery_time_hours": 18,
+      "customer_satisfaction": 4.6
+    },
+    "routes": [
+      { "from": "LAX", "to": "YYZ", "frequency": "daily" },
+      { "from": "ORD", "to": "MEX", "frequency": "daily" }
+    ],
+    "contact": {
+      "phone": "+1-206-555-6006",
+      "email": "priority@techshipglobal.com",
+      "website": "www.techshipglobal.com"
+    },
+    "certifications": ["TSA", "IATA", "TAPA", "ISO_27001"],
+    "active": true,
+    "created_at": { "$date": "2022-07-08T10:00:00Z" }
+  }
+]
