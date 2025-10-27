@@ -13,9 +13,7 @@ export default function Navbar() {
   const [infoOpen, setInfoOpen] = useState(false);
   const navLinks = [
     { href: "/", label: "Demo Overview" },
-    { href: "/failure-prediction", label: "Failure Prediction" },
-    { href: "/workorder-generation", label: "Work Order Generation" },
-    { href: "/workorder-scheduler", label: "Work Order Scheduler" },
+    { href: "/root-cause-analysis", label: "Root Cause Analysis" },
     { href: "/agent-sandbox", label: "Agent Sandbox" },
   ];
 
@@ -29,14 +27,15 @@ export default function Navbar() {
             className="flex items-center"
             style={{ width: 175, height: 40, position: "relative" }}
           >
-            <Image
+            {/* <Image
               src="/img/logo.png"
               alt="Logo"
               fill
               style={{ objectFit: "contain" }}
               sizes="500px"
               priority
-            />
+            /> */}
+            <h2>Leafy Logistics</h2>
           </Link>
         </div>
         {/* Main navbar content centered horizontally */}
