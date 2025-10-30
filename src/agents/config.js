@@ -4,6 +4,7 @@ import { createAgentGraph as createSupervisorAgentGraph } from "./supervisor/gra
 import { createAgentGraph as createFailureAgentGraph } from "./failure/graph.js";
 import { createAgentGraph as createWorkorderAgentGraph } from "./workorder/graph.js";
 import { createAgentGraph as createPlanningAgentGraph } from "./planning/graph.js";
+import { createAgentGraph as createRootCauseAgentGraph } from "./root-cause-analysis/graph.js";
 
 export const AGENTS = [
   {
@@ -37,6 +38,12 @@ export const AGENTS = [
     name: "Planning Agent",
     createGraph: createPlanningAgentGraph,
     description: "Schedules workorder execution based on context.",
+  },
+  {
+    id: "root-cause-analysis",
+    name: "Root Cause Analysis Agent",
+    createGraph: createRootCauseAgentGraph,
+    description: "Analyzes delayed shipments and generates detailed incident reports with root cause analysis.",
   },
 ];
 
