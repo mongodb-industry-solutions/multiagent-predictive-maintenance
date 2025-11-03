@@ -4,10 +4,16 @@ import { useIncidentResponseForm } from "./hooks";
 
 export default function IncidentResponseForm({
   rootCause,
-  repairInstructions,
+  recommendations = [],
   className = "",
 }) {
   useIncidentResponseForm(); // For future extensibility
+  
+  // Format recommendations array as string
+  const formattedRecommendations = Array.isArray(recommendations) 
+    ? recommendations.map((rec, index) => `${index + 1}. ${rec}`).join('\n')
+    : recommendations;
+  
   return (
     <div
       className={`flex flex-col w-full h-full gap-2 ${className}`}
@@ -15,7 +21,7 @@ export default function IncidentResponseForm({
     >
       <div className="flex flex-col flex-[1_1_0%] min-h-0">
         <TextArea
-          label="Root cause"
+          label="Root Cause Analysis"
           value={rootCause}
           readOnly
           className="resize-none mb-1 h-full"
@@ -25,8 +31,8 @@ export default function IncidentResponseForm({
       </div>
       <div className="flex flex-col flex-[3_3_0%] min-h-0">
         <TextArea
-          label="Repair instructions"
-          value={repairInstructions}
+          label="Recommendations"
+          value={formattedRecommendations}
           readOnly
           className="resize-none h-full"
           rows={8}
