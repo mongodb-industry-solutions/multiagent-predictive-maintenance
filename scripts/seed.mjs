@@ -27,6 +27,7 @@ async function createCollectionsFromData(db) {
     "warehouses.json",
     "carriers.json",
     "incidents.json",
+    "shipment_qa_reports.json",
   ];
   for (const file of files) {
     const colName = path.basename(file, ".json");

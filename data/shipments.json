@@ -49,9 +49,9 @@
       "weight_kg": 15.8,
       "value_usd": 850
     },
-    "carrier": "Northern Freight",
+    "carrier": "TransMexico Freight",
     "estimated_delivery": { "$date": "2025-10-28T16:00:00Z" },
-    "delay_reason": "Border inspection hold",
+    "delay_reason": "Documentation issues at border",
     "created_at": { "$date": "2025-10-24T11:15:00Z" }
   },
   {
@@ -132,9 +132,9 @@
       "weight_kg": 3.7,
       "value_usd": 2400
     },
-    "carrier": "MedTrans International",
+    "carrier": "North Star Logistics",
     "estimated_delivery": { "$date": "2025-10-29T12:00:00Z" },
-    "delay_reason": "Weather conditions",
+    "delay_reason": "Vehicle mechanical failure",
     "special_handling": ["fragile", "regulated"],
     "created_at": { "$date": "2025-10-25T14:20:00Z" }
   },
@@ -216,9 +216,9 @@
       "weight_kg": 28.6,
       "value_usd": 8900
     },
-    "carrier": "TechShip Global",
+    "carrier": "Pacific Shipping Lines",
     "estimated_delivery": { "$date": "2025-10-29T11:00:00Z" },
-    "delay_reason": "Vehicle breakdown",
+    "delay_reason": "Port scheduling conflicts",
     "special_handling": ["fragile", "high_value"],
     "created_at": { "$date": "2025-10-25T12:00:00Z" }
   },
