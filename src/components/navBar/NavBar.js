@@ -14,6 +14,7 @@ export default function Navbar() {
   const navLinks = [
     { href: "/", label: "Demo Overview" },
     { href: "/root-cause-analysis", label: "Root Cause Analysis" },
+    { href: "/transportation-planning", label: "Transportation Planning" },
     { href: "/agent-sandbox", label: "Agent Sandbox" },
   ];
 

@@ -6,9 +6,25 @@
     "headquarters": {
       "city": "San Antonio",
       "state": "TX",
-      "country": "US"
+      "country": "US",
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [-98.4936, 29.4241]
+      }
     },
     "service_areas": ["US-West", "US-South", "MX-North"],
+    "service_area_geometry": {
+      "type": "Polygon",
+      "coordinates": [[
+        [-118.2437, 33.7701],
+        [-106.4869, 31.7619],
+        [-100.3161, 25.6866],
+        [-99.1332, 19.4326],
+        [-95.3698, 29.7604],
+        [-97.7431, 30.2672],
+        [-118.2437, 33.7701]
+      ]]
+    },
     "specialties": ["cross_border", "electronics", "expedited"],
     "fleet": {
       "total_vehicles": 85,
@@ -20,7 +36,10 @@
       "on_time_delivery_rate": 0.92,
       "damage_rate": 0.003,
       "average_delivery_time_hours": 48,
-      "customer_satisfaction": 4.2
+      "customer_satisfaction": 4.2,
+      "cost_per_mile": 2.85,
+      "emission_factor_kg_co2_per_mile": 1.2,
+      "reliability_score": 8.5
     },
     "routes": [
       { "from": "LAX", "to": "MTY", "frequency": "daily" },
@@ -43,9 +62,25 @@
     "headquarters": {
       "city": "Buffalo",
       "state": "NY",
-      "country": "US"
+      "country": "US",
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [-78.8784, 42.8864]
+      }
     },
     "service_areas": ["US-Midwest", "US-Northeast", "CA-Ontario"],
+    "service_area_geometry": {
+      "type": "Polygon",
+      "coordinates": [[
+        [-87.8661, 41.9742],
+        [-83.2718, 42.2431],
+        [-79.6248, 43.6777],
+        [-73.7400, 45.4700],
+        [-75.6919, 45.4215],
+        [-84.5120, 46.5197],
+        [-87.8661, 41.9742]
+      ]]
+    },
     "specialties": ["us_canada_corridor", "automotive", "manufacturing"],
     "fleet": {
       "total_vehicles": 65,
@@ -57,7 +92,10 @@
       "on_time_delivery_rate": 0.89,
       "damage_rate": 0.002,
       "average_delivery_time_hours": 36,
-      "customer_satisfaction": 4.0
+      "customer_satisfaction": 4.0,
+      "cost_per_mile": 3.20,
+      "emission_factor_kg_co2_per_mile": 1.4,
+      "reliability_score": 7.8
     },
     "routes": [
       { "from": "ORD", "to": "YYZ", "frequency": "daily" },
@@ -80,9 +118,27 @@
     "headquarters": {
       "city": "Laredo",
       "state": "TX",
-      "country": "US"
+      "country": "US",
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [-99.5075, 27.5306]
+      }
     },
     "service_areas": ["US-South", "MX-All", "Central_America"],
+    "service_area_geometry": {
+      "type": "Polygon",
+      "coordinates": [[
+        [-99.1332, 19.4326],
+        [-100.3161, 25.6866],
+        [-106.4869, 31.7619],
+        [-109.0500, 27.0000],
+        [-117.1611, 32.7157],
+        [-116.9325, 14.0910],
+        [-86.8515, 17.9756],
+        [-97.4000, 25.8756],
+        [-99.1332, 19.4326]
+      ]]
+    },
     "specialties": ["mexico_specialist", "textiles", "manufacturing"],
     "fleet": {
       "total_vehicles": 120,
@@ -94,7 +150,10 @@
       "on_time_delivery_rate": 0.87,
       "damage_rate": 0.004,
       "average_delivery_time_hours": 60,
-      "customer_satisfaction": 3.8
+      "customer_satisfaction": 3.8,
+      "cost_per_mile": 1.95,
+      "emission_factor_kg_co2_per_mile": 1.8,
+      "reliability_score": 6.2
     },
     "routes": [
       { "from": "MEX", "to": "DTW", "frequency": "3x_week" },
@@ -117,9 +176,24 @@
     "headquarters": {
       "city": "Salinas",
       "state": "CA",
-      "country": "US"
+      "country": "US",
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [-121.6555, 36.6777]
+      }
     },
     "service_areas": ["US-West", "US-South", "MX-North"],
+    "service_area_geometry": {
+      "type": "Polygon",
+      "coordinates": [[
+        [-124.4096, 41.9981],
+        [-114.1312, 32.5343],
+        [-100.3161, 25.6866],
+        [-99.1332, 19.4326],
+        [-117.1611, 32.7157],
+        [-124.4096, 41.9981]
+      ]]
+    },
     "specialties": ["perishables", "food_grade", "temperature_controlled"],
     "fleet": {
       "total_vehicles": 45,
@@ -131,7 +205,10 @@
       "on_time_delivery_rate": 0.94,
       "damage_rate": 0.001,
       "average_delivery_time_hours": 30,
-      "customer_satisfaction": 4.5
+      "customer_satisfaction": 4.5,
+      "cost_per_mile": 3.50,
+      "emission_factor_kg_co2_per_mile": 1.6,
+      "reliability_score": 9.1
     },
     "routes": [
       { "from": "ATL", "to": "MTY", "frequency": "daily" },
@@ -153,9 +230,23 @@
     "headquarters": {
       "city": "Memphis",
       "state": "TN",
-      "country": "US"
+      "country": "US",
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [-90.0490, 35.1495]
+      }
     },
     "service_areas": ["North_America", "Global"],
+    "service_area_geometry": {
+      "type": "Polygon",
+      "coordinates": [[
+        [-124.4096, 48.9993],
+        [-66.9346, 44.6928],
+        [-81.2546, 24.5465],
+        [-117.1611, 32.7157],
+        [-124.4096, 48.9993]
+      ]]
+    },
     "specialties": ["pharmaceuticals", "medical_devices", "regulated"],
     "fleet": {
       "total_vehicles": 35,
@@ -167,7 +258,10 @@
       "on_time_delivery_rate": 0.98,
       "damage_rate": 0.0005,
       "average_delivery_time_hours": 24,
-      "customer_satisfaction": 4.8
+      "customer_satisfaction": 4.8,
+      "cost_per_mile": 6.50,
+      "emission_factor_kg_co2_per_mile": 0.9,
+      "reliability_score": 9.7
     },
     "routes": [
       { "from": "YYZ", "to": "LAX", "frequency": "daily" },
@@ -189,9 +283,23 @@
     "headquarters": {
       "city": "Seattle",
       "state": "WA",
-      "country": "US"
+      "country": "US",
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [-122.3321, 47.6062]
+      }
     },
     "service_areas": ["North_America", "Global"],
+    "service_area_geometry": {
+      "type": "Polygon",
+      "coordinates": [[
+        [-124.4096, 48.9993],
+        [-66.9346, 44.6928],
+        [-81.2546, 24.5465],
+        [-117.1611, 32.7157],
+        [-124.4096, 48.9993]
+      ]]
+    },
     "specialties": ["high_value", "technology", "express"],
     "fleet": {
       "total_vehicles": 25,
@@ -203,7 +311,10 @@
       "on_time_delivery_rate": 0.96,
       "damage_rate": 0.0008,
       "average_delivery_time_hours": 18,
-      "customer_satisfaction": 4.6
+      "customer_satisfaction": 4.6,
+      "cost_per_mile": 5.80,
+      "emission_factor_kg_co2_per_mile": 0.7,
+      "reliability_score": 9.4
     },
     "routes": [
       { "from": "LAX", "to": "YYZ", "frequency": "daily" },
