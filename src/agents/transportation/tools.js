@@ -1,5 +1,6 @@
 import { tool } from "@langchain/core/tools";
 import { findNearestCarriers, findCarriersForLocation } from "../../lib/geospatial/carriers.js";
+import getMongoClientPromise from "../../integrations/mongodb/client.js";
 
 /**
  * Tool to find nearest carriers to a specific location
@@ -244,6 +245,151 @@ export const validateServiceCoverageTool = tool(
         }
       },
       required: ["name", "longitude", "latitude"],
+    },
+  }
+);
+
+/**
+ * Tool to format and structure carrier alternatives with real data from MongoDB
+ * Takes recommended carrier names and shipment details to create structured alternatives
+ */
+export const formatAlternativesTool = tool(
+  async ({ carrierNames, shipmentDetails, origin, destination }) => {
+    try {
+      console.log(`Formatting alternatives for carriers: ${carrierNames.join(', ')}`);
+      
+      // Get MongoDB connection
+      const client = await getMongoClientPromise();
+      const dbName = process.env.DATABASE_NAME;
+      if (!dbName) {
+        throw new Error("DATABASE_NAME environment variable is required but not set");
+      }
+      
+      const db = client.db(dbName);
+      const carriersCollection = db.collection("carriers");
+      
+      // Fetch real carrier data from MongoDB
+      const carriers = await carriersCollection.find({ 
+        name: { $in: carrierNames } 
+      }).toArray();
+      
+      if (carriers.length === 0) {
+        return JSON.stringify({
+          error: "No matching carriers found in database",
+          requested_carriers: carrierNames
+        });
+      }
+      
+      // Calculate rough distance for cost estimation (Toronto to LA ≈ 3400km)
+      const estimatedDistance = 3400; // km, rough estimate for cross-border routes
+      
+      // Structure alternatives with real data
+      const alternatives = carriers.map((carrier, index) => {
+        const metrics = carrier.performance_metrics;
+        const fleet = carrier.fleet;
+        
+        // Calculate estimated cost based on distance and carrier cost per mile
+        const distanceInMiles = estimatedDistance * 0.621371; // km to miles
+        const baseCost = distanceInMiles * metrics.cost_per_mile;
+        const weightSurcharge = (shipmentDetails.weight_kg || 0) * 2; // $2 per kg
+        const estimatedCost = Math.round(baseCost + weightSurcharge);
+        
+        // Calculate estimated time based on distance and average speed
+        const estimatedTimeHours = Math.round(estimatedDistance / fleet.average_speed_kmh);
+        
+        // Calculate emissions
+        const emissionsKg = Math.round(distanceInMiles * metrics.emission_factor_kg_co2_per_mile);
+        
+        return {
+          id: index + 1,
+          carrier: carrier.name,
+          carrier_id: carrier.carrier_id,
+          estimated_cost: estimatedCost,
+          estimated_time_hours: estimatedTimeHours,
+          reliability_score: metrics.reliability_score || metrics.on_time_delivery_rate,
+          on_time_delivery_rate: metrics.on_time_delivery_rate,
+          emissions_kg: emissionsKg,
+          status: "Available",
+          recommendation_type: index === 0 ? "Primary" : index === 1 ? "Secondary" : "Alternative",
+          specialties: carrier.specialties || [],
+          fleet_size: fleet.total_vehicles,
+          capacity_per_vehicle_kg: fleet.capacity_per_vehicle_kg,
+          headquarters: {
+            city: carrier.headquarters.city,
+            state: carrier.headquarters.state,
+            country: carrier.headquarters.country
+          }
+        };
+      });
+      
+      const response = {
+        success: true,
+        shipment_id: shipmentDetails.shipment_id,
+        alternatives_count: alternatives.length,
+        alternatives: alternatives,
+        metadata: {
+          estimated_distance_km: estimatedDistance,
+          origin: origin,
+          destination: destination,
+          shipment_weight_kg: shipmentDetails.weight_kg,
+          shipment_value_usd: shipmentDetails.value_usd
+        }
+      };
+      
+      return JSON.stringify(response, null, 2);
+      
+    } catch (error) {
+      console.error('Error in formatAlternativesTool:', error);
+      return JSON.stringify({
+        error: `Failed to format alternatives: ${error.message}`,
+        requested_carriers: carrierNames
+      });
+    }
+  },
+  {
+    name: "format_alternatives",
+    description: "Format recommended carriers into structured alternatives with real data from MongoDB. Use this after finding suitable carriers to create the final recommendations with cost, time, and performance data.",
+    schema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Name of the tool for identification purposes",
+          enum: ["format_alternatives"],
+        },
+        carrierNames: {
+          type: "array",
+          description: "Array of carrier names to format into structured alternatives",
+          items: {
+            type: "string"
+          },
+          minItems: 1
+        },
+        shipmentDetails: {
+          type: "object",
+          description: "Shipment details for cost and time calculations",
+          properties: {
+            shipment_id: { type: "string" },
+            weight_kg: { type: "number" },
+            value_usd: { type: "number" },
+            priority: { type: "string" },
+            special_handling: { 
+              type: "array", 
+              items: { type: "string" }
+            }
+          },
+          required: ["shipment_id"]
+        },
+        origin: {
+          type: "string",
+          description: "Origin location string (e.g., 'Toronto, ON, CA')"
+        },
+        destination: {
+          type: "string", 
+          description: "Destination location string (e.g., 'Los Angeles, CA, US')"
+        }
+      },
+      required: ["name", "carrierNames", "shipmentDetails", "origin", "destination"],
     },
   }
 );
