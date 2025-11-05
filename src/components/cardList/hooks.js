@@ -37,6 +37,31 @@ export function useCardList(
             icon: "Guide",
             hasForm: true,
           };
+        case "delayed-shipments":
+          const originText = item.origin?.city || item.origin?.name || "Unknown Origin";
+          const destinationText = item.destination?.city || item.destination?.name || "Unknown Destination";
+          const delayHours = item.delay_hours || item.delay || 0;
+          return {
+            title: `${item.shipment_id || "Unknown Shipment"} - ${item.carrier || "Unknown Carrier"}`,
+            flagText: `${delayHours}h delayed`,
+            description: `From ${originText} to ${destinationText}`,
+            icon: "Warning",
+            iconColor: "#FF6B00",
+            titleColor: "#B91C1C",
+            flagTextColor: "#DC2626",
+            hasForm: false,
+          };
+        case "alternative-routes":
+          return {
+            title: `${item.carrier || "Unknown Carrier"}`,
+            flagText: item.status || "Available",
+            description: `$${item.estimated_cost} • ${item.estimated_time_hours}h • ${item.reliability_score * 100}% reliable`,
+            icon: "Checkmark",
+            iconColor: "#059669",
+            titleColor: "#065F46",
+            flagTextColor: "#059669",
+            hasForm: false,
+          };
         default:
           return {
             title: item.title || item.name || "Item",

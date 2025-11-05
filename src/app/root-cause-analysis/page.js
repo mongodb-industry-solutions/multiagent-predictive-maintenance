@@ -2,22 +2,43 @@
 import React from "react";
 import Button from "@leafygreen-ui/button";
 import { H3, Description } from "@leafygreen-ui/typography";
-import ShipmentCard from "../../components/shipmentCard/ShipmentCard";
+import { useRouter } from "next/navigation";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
 import CardList from "@/components/cardList/CardList";
 import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
 import { useRootCauseAnalysis } from "./hooks";
 
 export default function RootCauseAnalysis() {
+  const router = useRouter();
   const {
     isSimulationRunning,
     delayedShipments,
     agentActive,
     incidentReports,
     agentLogs,
+    selectedShipmentId,
+    setSelectedShipmentId,
     handleStartSimulation,
     handleStopSimulation,
+    handleAnalyzeSelectedShipment,
   } = useRootCauseAnalysis();
+
+  // Navigate to Transportation Planning with inherited shipment
+  const handleFindAlternatives = (incidentReport) => {
+    const shipmentData = {
+      shipment_id: incidentReport.shipment_id,
+      carrier: incidentReport.carrier,
+      root_cause: incidentReport.root_cause,
+      delay_impact: incidentReport.delay_impact,
+      // Add any other relevant data for TP
+    };
+    
+    // Store in sessionStorage for TP to pick up
+    sessionStorage.setItem('inherited_shipment', JSON.stringify(shipmentData));
+    
+    // Navigate to Transportation Planning
+    router.push('/transportation-planning');
+  };
 
   return (
     <LeafyGreenProvider baseFontSize={16}>
@@ -53,18 +74,31 @@ export default function RootCauseAnalysis() {
             
             {/* Bottom: Delayed Shipments */}
             <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="font-semibold mb-2">Delayed Shipments</div>
-              <div className="flex-1 min-h-0 max-h-full overflow-y-auto space-y-4">
-                {delayedShipments.length > 0 ? (
-                  delayedShipments.map((shipment) => (
-                    <ShipmentCard key={shipment.shipment_id} shipment={shipment} />
-                  ))
-                ) : (
-                  <div className="text-gray-500 text-center py-8">
-                    {isSimulationRunning ? "Loading delayed shipments..." : "No delayed shipments"}
-                  </div>
-                )}
-              </div>
+              {/* Action Button */}
+              {selectedShipmentId && delayedShipments.length > 0 && (
+                <div className="flex justify-end mb-2 flex-shrink-0">
+                  <Button
+                    variant="primary"
+                    size="small"
+                    disabled={agentActive}
+                    onClick={() => handleAnalyzeSelectedShipment(selectedShipmentId)}
+                  >
+                    {agentActive ? "Analyzing..." : "Analyze Selected Shipment"}
+                  </Button>
+                </div>
+              )}
+              <CardList
+                items={delayedShipments}
+                idField="shipment_id"
+                cardType="delayed-shipments"
+                maxHeight="max-h-full"
+                emptyText={isSimulationRunning ? "Loading delayed shipments..." : "No delayed shipments"}
+                listTitle="Delayed Shipments"
+                listDescription="Select a delayed shipment to analyze for root cause."
+                selectable={true}
+                selectedId={selectedShipmentId}
+                onSelect={setSelectedShipmentId}
+              />
             </div>
           </section>
 
@@ -84,7 +118,19 @@ export default function RootCauseAnalysis() {
             </div>
             
             {/* Incident Reports */}
-            <div className="flex flex-1 min-h-0 overflow-hidden">
+            <div className="flex flex-1 min-h-0 overflow-hidden flex-col">
+              {/* Transportation Planning Button */}
+              {incidentReports.length > 0 && (
+                <div className="flex justify-end mb-2 flex-shrink-0">
+                  <Button
+                    variant="primary"
+                    size="small"
+                    onClick={() => handleFindAlternatives(incidentReports[0])}
+                  >
+                    Find Alternative Routes →
+                  </Button>
+                </div>
+              )}
               <CardList
                 items={incidentReports}
                 idField="_id"
