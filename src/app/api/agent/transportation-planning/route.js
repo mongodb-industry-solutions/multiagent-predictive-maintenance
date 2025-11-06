@@ -74,26 +74,61 @@ Please use your geospatial tools to find suitable alternative carriers near the 
     const messages = finalState.messages;
     const lastMessage = messages[messages.length - 1];
     
+    // DEBUG: Log all messages to understand what the agent is doing
+    console.log('🔍 ALL AGENT MESSAGES:');
+    messages.forEach((msg, i) => {
+      const contentPreview = typeof msg.content === 'string' 
+        ? msg.content.substring(0, 100) + '...'
+        : Array.isArray(msg.content)
+        ? `[Array with ${msg.content.length} items]`
+        : `[${typeof msg.content}]`;
+        
+      console.log(`${i}: ${msg.constructor.name}`, {
+        content: contentPreview,
+        tool_calls: msg.tool_calls?.map(tc => tc.name),
+        name: msg.name
+      });
+    });
+    
     // Look for format_alternatives tool results in the messages
     let structuredAlternatives = null;
+    let foundFormatAlternatives = false;
+    
     for (const message of messages) {
       if (message.tool_calls) {
+        console.log('🔧 Found tool calls:', message.tool_calls.map(tc => tc.name));
         for (const toolCall of message.tool_calls) {
           if (toolCall.name === 'format_alternatives') {
+            foundFormatAlternatives = true;
+            console.log('✅ Found format_alternatives tool call!', { toolCallId: toolCall.id });
+            
             // Find the corresponding tool result
             const toolResult = messages.find(m => 
-              m.type === 'tool' && m.tool_call_id === toolCall.id
+              m.name === 'format_alternatives' && m.content
             );
+            
+            console.log('🔍 Looking for tool result with name format_alternatives');
+            console.log('🔍 Available tool messages:', messages.filter(m => m.name).map(m => ({ name: m.name, hasContent: !!m.content })));
+            
             if (toolResult) {
               try {
                 structuredAlternatives = JSON.parse(toolResult.content);
+                console.log('✅ Parsed structured alternatives:', structuredAlternatives);
               } catch (e) {
-                console.error('Failed to parse tool result:', e);
+                console.error('❌ Failed to parse tool result:', e);
+                console.log('Raw tool result content:', toolResult.content);
               }
+            } else {
+              console.log('⚠️ No tool result found for format_alternatives call');
             }
           }
         }
       }
+    }
+    
+    if (!foundFormatAlternatives) {
+      console.log('❌ Agent did NOT call format_alternatives tool');
+      console.log('🔍 Available tools in agent response:', messages.filter(m => m.tool_calls).map(m => m.tool_calls.map(tc => tc.name)));
     }
 
     return Response.json({

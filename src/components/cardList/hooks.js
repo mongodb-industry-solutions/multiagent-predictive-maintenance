@@ -52,13 +52,23 @@ export function useCardList(
             hasForm: false,
           };
         case "alternative-routes":
+          // Format cost with commas (e.g., $13,764)
+          const formattedCost = item.estimated_cost 
+            ? `$${item.estimated_cost.toLocaleString()}` 
+            : 'N/A';
+            
+          // Format reliability as percentage (handle both 0-1 and 0-10 scales)
+          const formattedReliability = item.reliability_score 
+            ? `${Math.round(item.reliability_score > 1 ? item.reliability_score * 10 : item.reliability_score * 100)}%`
+            : 'N/A';
+            
           return {
             title: `${item.carrier || "Unknown Carrier"}`,
-            flagText: item.status || "Available",
-            description: `$${item.estimated_cost} • ${item.estimated_time_hours}h • ${item.reliability_score * 100}% reliable`,
+            flagText: item.status || "Available", 
+            description: `${formattedCost} • ${item.estimated_time_hours}h • ${formattedReliability} reliable`,
             icon: "Checkmark",
             iconColor: "#059669",
-            titleColor: "#065F46",
+            titleColor: "#065F46", 
             flagTextColor: "#059669",
             hasForm: false,
           };

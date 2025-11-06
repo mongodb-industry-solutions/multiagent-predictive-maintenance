@@ -5,6 +5,7 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
     const collection = searchParams.get('collection')
+    const filterParam = searchParams.get('filter')
     
     if (!collection) {
       return NextResponse.json(
@@ -16,7 +17,20 @@ export async function GET(request) {
     const client = await getMongoClientPromise()
     const db = client.db(process.env.DATABASE_NAME)
     
-    const data = await db.collection(collection).find({}).toArray()
+    // Parse filter if provided
+    let filter = {}
+    if (filterParam) {
+      try {
+        filter = JSON.parse(filterParam)
+      } catch (parseError) {
+        return NextResponse.json(
+          { error: 'Invalid filter JSON format' }, 
+          { status: 400 }
+        )
+      }
+    }
+    
+    const data = await db.collection(collection).find(filter).toArray()
     
     return NextResponse.json(data)
   } catch (error) {
