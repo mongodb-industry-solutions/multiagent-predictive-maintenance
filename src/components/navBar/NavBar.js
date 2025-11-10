@@ -28,15 +28,14 @@ export default function Navbar() {
             className="flex items-center"
             style={{ width: 175, height: 40, position: "relative" }}
           >
-            {/* <Image
+            <Image
               src="/img/logo.png"
-              alt="Logo"
+              alt="Multiagent Supply Chain Logo"
               fill
               style={{ objectFit: "contain" }}
               sizes="500px"
               priority
-            /> */}
-            <h2>Leafy Logistics</h2>
+            />
           </Link>
         </div>
         {/* Main navbar content centered horizontally */}
