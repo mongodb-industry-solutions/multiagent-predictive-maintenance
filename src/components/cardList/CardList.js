@@ -55,7 +55,7 @@ export default function CardList({
         </Subtitle>
       )}
       {cardListDescription && (
-        <Description className="pb-4 text-gray-600">
+        <Description className="pb-4 text-gray-500">
           {cardListDescription}
         </Description>
       )}
