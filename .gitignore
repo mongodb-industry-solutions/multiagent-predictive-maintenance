@@ -56,3 +56,7 @@ ENV/
 env.bak/
 venv.bak/
 
+# Security files (not to be committed)
+security_check.sh
+SECURITY_CHECK_README.md
+
