@@ -15,6 +15,7 @@ export default function Navbar() {
     { href: "/", label: "Demo Overview" },
     { href: "/root-cause-analysis", label: "Root Cause Analysis" },
     { href: "/transportation-planning", label: "Transportation Planning" },
+    { href: "/risk-analysis", label: "Risk Analysis" },
     { href: "/agent-sandbox", label: "Agent Sandbox" },
   ];
 

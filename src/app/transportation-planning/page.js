@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
+import { useRouter } from 'next/navigation'
 import Button from "@leafygreen-ui/button"
 import { H3, Description, Subtitle } from "@leafygreen-ui/typography"
 import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider"
@@ -22,6 +23,7 @@ const LogisticsMap = dynamic(() => import('../../components/logisticsMap/Logisti
 })
 
 export default function TransportationPlanningPage() {
+  const router = useRouter()
   const [warehouses, setWarehouses] = useState([])
   const [carriers, setCarriers] = useState([])
   const [feasibleCarriers, setFeasibleCarriers] = useState([])
@@ -30,6 +32,7 @@ export default function TransportationPlanningPage() {
   const [agentActive, setAgentActive] = useState(false)
   const [agentLogs, setAgentLogs] = useState([])
   const [alternativeRoutes, setAlternativeRoutes] = useState([])
+  const [selectedRoute, setSelectedRoute] = useState(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -240,6 +243,37 @@ export default function TransportationPlanningPage() {
     }
   }
 
+  // Handle route selection
+  const handleRouteSelection = (selectedId) => {
+    const route = alternativeRoutes.find(r => r.id === selectedId)
+    console.log('Selected route:', route)
+    setSelectedRoute(route)
+  }
+
+  // Navigate to Risk Analysis with selected route
+  const handleAnalyzeRisk = () => {
+    if (selectedRoute && inheritedShipment) {
+      const riskAnalysisData = {
+        carrier: selectedRoute.carrier,
+        route: {
+          origin: inheritedShipment.origin,
+          destination: inheritedShipment.destination
+        },
+        shipment_id: inheritedShipment.shipment_id,
+        cost: selectedRoute.estimated_cost,
+        time_hours: selectedRoute.estimated_time_hours,
+        reliability_score: selectedRoute.reliability_score,
+        emissions_kg: selectedRoute.emissions_kg
+      }
+      
+      // Store selected route for Risk Analysis
+      sessionStorage.setItem('selected_route_for_risk', JSON.stringify(riskAnalysisData))
+      
+      // Navigate to Risk Analysis
+      router.push('/risk-analysis')
+    }
+  }
+
   return (
     <LeafyGreenProvider baseFontSize={16}>
       <main className="flex flex-col w-full h-full">
@@ -320,16 +354,34 @@ export default function TransportationPlanningPage() {
             
             {/* Alternative Routes */}
             {alternativeRoutes.length > 0 && (
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <CardList
-                  items={alternativeRoutes}
-                  idField="id"
-                  cardType="alternative-routes"
-                  maxHeight="max-h-full"
-                  emptyText="No alternative routes found"
-                  listTitle="Alternative Routes"
-                  listDescription="AI-recommended alternative carriers and routes."
-                />
+              <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <CardList
+                    items={alternativeRoutes}
+                    idField="id"
+                    cardType="alternative-routes"
+                    maxHeight="max-h-full"
+                    emptyText="No alternative routes found"
+                    listTitle="Alternative Routes"
+                    listDescription="AI-recommended alternative carriers and routes. Select one to analyze risks."
+                    selectable={true}
+                    onSelect={handleRouteSelection}
+                    selectedId={selectedRoute?.id}
+                  />
+                </div>
+                
+                {/* Analyze Risk Button */}
+                {selectedRoute && (
+                  <div className="mt-4 pt-3 border-t border-gray-200">
+                    <Button
+                      variant="primary"
+                      onClick={handleAnalyzeRisk}
+                      className="w-full"
+                    >
+                      🎯 Analyze Risk for {selectedRoute.carrier}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
             
