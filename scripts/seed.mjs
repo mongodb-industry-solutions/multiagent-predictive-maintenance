@@ -5,7 +5,6 @@ import { execa } from "execa";
 import getMongoClientPromise, {
   closeMongoClient,
 } from "../src/integrations/mongodb/client.js";
-import { createTimeSeriesCollection } from "../src/integrations/mongodb/timeSeries.js";
 
 async function logStep(msg) {
   process.stdout.write(`\n[seed] ${msg}\n`);
@@ -70,50 +69,12 @@ async function main() {
   }
   logStep("Database is empty. Seeding collections from data/...");
   await createCollectionsFromData(db);
-  logStep("Creating telemetry time series collection...");
-  await createTimeSeriesCollection("telemetry", {
-    expireAfterSeconds: 86400,
-    timeseries: {
-      timeField: "ts",
-      metaField: "metadata",
-      granularity: "minutes",
-      bucketMaxSpanSeconds: 86400,
-    },
-  });
+
   
   logStep("Logistics data seeded successfully! 🚚📦");
-  logStep("Note: Embeddings and calendar generation skipped for now.");
-  logStep("You can run them separately when needed:");
-  logStep("  npm run embed");
-  logStep("  npm run generate_calendar 6");
   
-  /*
-  // Commenting out embeddings and calendar for now - will configure later
-  logStep("Collections seeded. Running embedding script...");
-  let currentStep = "embed";
-  try {
-    await runScript("npm", ["run", "embed"]);
-    logStep(
-      "Embedding completed. Running production calendar generation (6 months)..."
-    );
-    currentStep = "generate_calendar";
-    await runScript("npm", ["run", "generate_calendar", "6"]);
-    logStep("Production calendar generated. Initial setup complete!");
-  } catch (err) {
-    logStep(`Error: ${err.message}`);
-    if (currentStep === "embed") {
-      logStep("Embedding failed. You can retry with: npm run embed");
-    } else if (currentStep === "generate_calendar") {
-      logStep(
-        "Calendar generation failed. You can retry with: npm run generate_calendar 6"
-      );
-    } else {
-      logStep("You can try running the failed step manually.");
-    }
-    await closeMongoClient();
-    process.exit(1);
-  }
-  */
+  // TODO: Add vector embeddings for supply chain data when search functionality is needed
+  // Run manually if needed: npm run embed
   await closeMongoClient();
   process.exit(0);
 }

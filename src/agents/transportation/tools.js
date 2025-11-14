@@ -2,6 +2,10 @@ import { tool } from "@langchain/core/tools";
 import { findNearestCarriers, findCarriersForLocation } from "../../lib/geospatial/carriers.js";
 import getMongoClientPromise from "../../integrations/mongodb/client.js";
 
+// Constants for cost calculations
+const KM_TO_MILES_CONVERSION = 0.621371;
+const WEIGHT_SURCHARGE_PER_KG = 2; // $2 per kg
+
 /**
  * Tool to find nearest carriers to a specific location
  * Wraps our geospatial function with intelligent AI-friendly interface
@@ -289,9 +293,9 @@ export const formatAlternativesTool = tool(
         const fleet = carrier.fleet;
         
         // Calculate estimated cost based on distance and carrier cost per mile
-        const distanceInMiles = estimatedDistance * 0.621371; // km to miles
+        const distanceInMiles = estimatedDistance * KM_TO_MILES_CONVERSION;
         const baseCost = distanceInMiles * metrics.cost_per_mile;
-        const weightSurcharge = (shipmentDetails.weight_kg || 0) * 2; // $2 per kg
+        const weightSurcharge = (shipmentDetails.weight_kg || 0) * WEIGHT_SURCHARGE_PER_KG;
         const estimatedCost = Math.round(baseCost + weightSurcharge);
         
         // Calculate estimated time based on distance and average speed

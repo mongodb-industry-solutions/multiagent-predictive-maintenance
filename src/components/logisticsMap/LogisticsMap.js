@@ -5,9 +5,7 @@ import 'leaflet/dist/leaflet.css'
 import { useEffect } from 'react'
 
 export default function LogisticsMap({ warehouses = [], carriers = [], feasibleCarriers = [], inheritedShipment = null }) {
-  // Debug: Check what we receive
-  console.log('🗺️ LogisticsMap received inheritedShipment:', inheritedShipment);
-  console.log('🚛 LogisticsMap received feasibleCarriers:', feasibleCarriers);
+
   
   // Simple city coordinates lookup
   const getCityCoordinates = (city, state, country) => {

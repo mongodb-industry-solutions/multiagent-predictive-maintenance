@@ -8,6 +8,7 @@ import { H3, Description, Subtitle } from "@leafygreen-ui/typography"
 import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider"
 import AgentStatus from "@/components/agentStatus/AgentStatus"
 import CardList from "@/components/cardList/CardList"
+import { parseFallbackCarriers } from "@/lib/const/fallbackCarriers"
 
 // Import LogisticsMap dynamically to avoid SSR issues with Leaflet
 const LogisticsMap = dynamic(() => import('../../components/logisticsMap/LogisticsMap'), {
@@ -41,7 +42,7 @@ export default function TransportationPlanningPage() {
         const shipmentData = sessionStorage.getItem('inherited_shipment')
         if (shipmentData) {
           const parsedShipment = JSON.parse(shipmentData)
-          console.log('Inherited shipment from RCA:', parsedShipment)
+
           
           // Fetch complete shipment details from MongoDB if we have a shipment_id
           if (parsedShipment.shipment_id) {
@@ -57,7 +58,7 @@ export default function TransportationPlanningPage() {
                   delay_impact: parsedShipment.delay_impact
                 }
                 setInheritedShipment(completeShipment)
-                console.log('Complete shipment with RCA data:', completeShipment)
+
               } else {
                 // Fallback to RCA data only if full shipment not found
                 setInheritedShipment(parsedShipment)
@@ -161,63 +162,8 @@ export default function TransportationPlanningPage() {
           await fetchFeasibleCarrierData(carrierNames);
         } else {
           // Fallback: parse from text if no structured data available
-          console.log('No structured alternatives, parsing from text');
-          const agentText = result.agent_response
-          const alternativeRoutes = []
-          
-          // Look for "Northern Freight" recommendation
-          if (agentText.includes("Northern Freight")) {
-            alternativeRoutes.push({
-              id: 1,
-              carrier: "Northern Freight",
-              estimated_cost: 950,
-              estimated_time_hours: 20,
-              reliability_score: 0.78,
-              emissions_kg: 45,
-              status: "Available",
-              recommendation_type: "Primary",
-              specialties: ["fragile", "regulated"]
-            })
-          }
-          
-          // Look for "Fresh Express" recommendation  
-          if (agentText.includes("Fresh Express")) {
-            alternativeRoutes.push({
-              id: 2,
-              carrier: "Fresh Express", 
-              estimated_cost: 1020,
-              estimated_time_hours: 18,
-              reliability_score: 0.91,
-              emissions_kg: 38,
-              status: "Available",
-              recommendation_type: "Secondary",
-              specialties: ["temperature_controlled", "medical_supplies"]
-            })
-          }
-          
-          // Fallback alternatives if parsing fails
-          if (alternativeRoutes.length === 0) {
-            alternativeRoutes.push(
-              {
-                id: 1,
-                carrier: "Recommended Carrier A",
-                estimated_cost: 850,
-                estimated_time_hours: 18,
-                reliability_score: 0.88,
-                emissions_kg: 42,
-                status: "Available"
-              },
-              {
-                id: 2,
-                carrier: "Recommended Carrier B",
-                estimated_cost: 920,
-                estimated_time_hours: 16,
-                reliability_score: 0.92,
-                emissions_kg: 38,
-                status: "Available"
-              }
-            )
-          }
+          const agentText = result.agent_response;
+          const alternativeRoutes = parseFallbackCarriers(agentText);
           
           setAlternativeRoutes(alternativeRoutes)
           
@@ -246,7 +192,7 @@ export default function TransportationPlanningPage() {
   // Handle route selection
   const handleRouteSelection = (selectedId) => {
     const route = alternativeRoutes.find(r => r.id === selectedId)
-    console.log('Selected route:', route)
+
     setSelectedRoute(route)
   }
 
