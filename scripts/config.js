@@ -1,24 +1,8 @@
-// Example configuration for embedding and vector search indexing
+// Configuration for embedding and vector search indexing for logistics demo
 const config = [
   {
-    collection: "interviews",
+    collection: "shipment_qa_reports",
     textFields: ["text"],
-    embeddingField: "embedding",
-    indexName: "default",
-    similarity: "cosine",
-    numDimensions: 1024,
-  },
-  {
-    collection: "manuals",
-    textFields: ["section", "text"],
-    embeddingField: "embedding",
-    indexName: "default",
-    similarity: "cosine",
-    numDimensions: 1024,
-  },
-  {
-    collection: "workorders",
-    textFields: ["title", "instructions", "root_cause", "observations"],
     embeddingField: "embedding",
     indexName: "default",
     similarity: "cosine",
