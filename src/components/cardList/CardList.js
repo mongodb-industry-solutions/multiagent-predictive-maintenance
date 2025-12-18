@@ -157,17 +157,8 @@ export default function CardList({
                   {config.hasForm && view === "form" ? (
                     cardType === "incident-reports" ? (
                       <IncidentResponseForm
-                        rootCause={item.root_cause || item.Root_cause || ""}
-                        repairInstructions={
-                          Array.isArray(item.repair_instructions)
-                            ? item.repair_instructions
-                                .map(
-                                  (step) =>
-                                    `- Step ${step.step}: ${step.description}`
-                                )
-                                .join("\n")
-                            : item.repair_instructions || ""
-                        }
+                        rootCause={item.root_cause || ""}
+                        recommendations={item.recommendations || []}
                         className="flex-1"
                       />
                     ) : cardType === "workorders" ? (

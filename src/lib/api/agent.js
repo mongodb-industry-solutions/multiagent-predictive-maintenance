@@ -84,3 +84,25 @@ export async function callWorkOrderAgent(incidentReport, { onEvent } = {}) {
   }
   return fullText;
 }
+
+export async function callRootCauseAgent(shipment, { onEvent } = {}) {
+  // Use /api/chat for root cause analysis agent
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: `Analyze delayed shipment:\n${JSON.stringify(shipment, null, 2)}`,
+      agentId: "root-cause-analysis",
+    }),
+  });
+  if (!response.body) throw new Error("No response body");
+  let fullText = "";
+  for await (const evt of streamAgentEvents(response.body)) {
+    if (onEvent) onEvent(evt);
+    if (evt.type === "update" || evt.type === "final") {
+      fullText += evt.values?.content || "";
+    }
+    // handle errors or other event types as needed
+  }
+  return fullText;
+}
