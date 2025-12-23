@@ -22,7 +22,7 @@
     "@fullcalendar/daygrid": "^6.1.17",
     "@fullcalendar/react": "^6.1.17",
     "@langchain/aws": "^0.1.10",
-    "@langchain/core": "^0.3.57",
+    "@langchain/core": "^0.3.80",
     "@langchain/langgraph": "^0.3.1",
     "@langchain/langgraph-checkpoint-mongodb": "^0.0.6",
     "@langchain/mongodb": "^0.1.0",
