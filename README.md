@@ -71,7 +71,7 @@ This architecture lets manufacturers automate not just prediction, but coordinat
    DATABASE_NAME="agentic_predictive_maintenance"
    AWS_REGION="us-east-1"
    AWS_PROFILE="default"
-   COMPLETION_MODEL="us.anthropic.claude-3-5-haiku-20241022-v1:0"
+   COMPLETION_MODEL="us.anthropic.claude-haiku-4-5-20251001-v1:0"
    EMBEDDING_MODEL="cohere.embed-english-v3"
    ```
 
