@@ -14,8 +14,8 @@
     "tpn": "npx --no-install license-checker --production --json > third-party-licenses.json && node scripts/generate_third_party_notices.mjs"
   },
   "dependencies": {
-    "@aws-sdk/client-bedrock-runtime": "^3.828.0",
-    "@aws-sdk/credential-provider-node": "^3.835.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.984.0",
+    "@aws-sdk/credential-provider-node": "^3.972.5",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@fullcalendar/core": "^6.1.17",
