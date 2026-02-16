@@ -5,7 +5,6 @@ import { execa } from "execa";
 import getMongoClientPromise, {
   closeMongoClient,
 } from "../src/integrations/mongodb/client.js";
-import { createTimeSeriesCollection } from "../src/integrations/mongodb/timeSeries.js";
 
 async function logStep(msg) {
   process.stdout.write(`\n[seed] ${msg}\n`);
@@ -23,11 +22,11 @@ async function checkDbEmpty(db) {
 async function createCollectionsFromData(db) {
   const dataDir = path.resolve("data");
   const files = [
-    "interviews.json",
-    "inventory.json",
-    "maintenance_staff.json",
-    "manuals.json",
-    "workorders.json",
+    "shipments.json",
+    "warehouses.json",
+    "carriers.json",
+    "incidents.json",
+    "shipment_qa_reports.json",
   ];
   for (const file of files) {
     const colName = path.basename(file, ".json");
@@ -70,40 +69,12 @@ async function main() {
   }
   logStep("Database is empty. Seeding collections from data/...");
   await createCollectionsFromData(db);
-  logStep("Creating telemetry time series collection...");
-  await createTimeSeriesCollection("telemetry", {
-    expireAfterSeconds: 86400,
-    timeseries: {
-      timeField: "ts",
-      metaField: "metadata",
-      granularity: "minutes",
-      bucketMaxSpanSeconds: 86400,
-    },
-  });
-  logStep("Collections seeded. Running embedding script...");
-  let currentStep = "embed";
-  try {
-    await runScript("npm", ["run", "embed"]);
-    logStep(
-      "Embedding completed. Running production calendar generation (6 months)..."
-    );
-    currentStep = "generate_calendar";
-    await runScript("npm", ["run", "generate_calendar", "6"]);
-    logStep("Production calendar generated. Initial setup complete!");
-  } catch (err) {
-    logStep(`Error: ${err.message}`);
-    if (currentStep === "embed") {
-      logStep("Embedding failed. You can retry with: npm run embed");
-    } else if (currentStep === "generate_calendar") {
-      logStep(
-        "Calendar generation failed. You can retry with: npm run generate_calendar 6"
-      );
-    } else {
-      logStep("You can try running the failed step manually.");
-    }
-    await closeMongoClient();
-    process.exit(1);
-  }
+
+  
+  logStep("Logistics data seeded successfully! 🚚📦");
+  
+  // TODO: Add vector embeddings for supply chain data when search functionality is needed
+  // Run manually if needed: npm run embed
   await closeMongoClient();
   process.exit(0);
 }

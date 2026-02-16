@@ -1,0 +1,206 @@
+[
+  {
+    "incident_id": "INC-2025-001",
+    "shipment_id": "LL-2025-002",
+    "type": "delay",
+    "severity": "medium",
+    "title": "Border Inspection Hold - Toronto Delivery",
+    "description": "Shipment LL-2025-002 held at US-Canada border for extended customs inspection. Auto parts require additional documentation verification.",
+    "location": {
+      "checkpoint": "Peace Bridge Border Crossing",
+      "address": "Rainbow Blvd, Niagara Falls, NY 14303",
+      "coordinates": { "lat": 43.0896, "lng": -78.9192 }
+    },
+    "reported_by": "carrier",
+    "reported_at": { "$date": "2025-10-27T08:30:00Z" },
+    "affected_carrier": "Northern Freight",
+    "estimated_delay_hours": 8,
+    "status": "open",
+    "customer_notified": true,
+    "tags": ["border_crossing", "documentation", "customs"]
+  },
+  {
+    "incident_id": "INC-2025-002",
+    "shipment_id": "LL-2025-005",
+    "type": "delay",
+    "severity": "high",
+    "title": "Severe Weather Impact - Medical Supplies",
+    "description": "Heavy snowstorm affecting Toronto-Los Angeles route. Medical supplies shipment experiencing significant delays due to unsafe driving conditions.",
+    "location": {
+      "region": "Northern Ontario",
+      "address": "Highway 17, Thunder Bay, ON",
+      "coordinates": { "lat": 48.3809, "lng": -89.2477 }
+    },
+    "reported_by": "carrier",
+    "reported_at": { "$date": "2025-10-26T14:15:00Z" },
+    "affected_carrier": "MedTrans International",
+    "estimated_delay_hours": 12,
+    "weather_conditions": {
+      "condition": "heavy_snow",
+      "visibility": "poor",
+      "temperature": -8,
+      "wind_speed": 45
+    },
+    "status": "open",
+    "customer_notified": true,
+    "tags": ["weather", "safety", "medical", "priority"]
+  },
+  {
+    "incident_id": "INC-2025-003",
+    "shipment_id": "LL-2025-008",
+    "type": "mechanical",
+    "severity": "high",
+    "title": "Vehicle Breakdown - High-Value Tech Cargo",
+    "description": "Primary transport vehicle experienced engine failure on I-5 near Bakersfield. High-value server hardware requires immediate transfer to backup vehicle.",
+    "location": {
+      "highway": "Interstate 5",
+      "address": "I-5 Mile Marker 145, Bakersfield, CA",
+      "coordinates": { "lat": 35.3733, "lng": -119.0187 }
+    },
+    "reported_by": "driver",
+    "reported_at": { "$date": "2025-10-25T16:45:00Z" },
+    "affected_carrier": "TechShip Global",
+    "estimated_delay_hours": 6,
+    "mechanical_details": {
+      "issue": "engine_failure",
+      "vehicle_id": "TG-truck-042",
+      "repair_estimate": "major",
+      "tow_required": true
+    },
+    "status": "investigating",
+    "customer_notified": true,
+    "tags": ["mechanical", "high_value", "highway", "emergency"]
+  },
+  {
+    "incident_id": "INC-2025-004",
+    "shipment_id": "LL-2025-004",
+    "type": "quality",
+    "severity": "medium",
+    "title": "Temperature Deviation - Organic Produce",
+    "description": "Refrigeration unit malfunction detected during Atlanta to Monterrey route. Temperature exceeded acceptable range for organic produce shipment.",
+    "location": {
+      "facility": "Fresh Express Atlanta Hub",
+      "address": "6000 Tara Blvd, Jonesboro, GA 30236",
+      "coordinates": { "lat": 33.5679, "lng": -84.4214 }
+    },
+    "reported_by": "system",
+    "reported_at": { "$date": "2025-10-26T11:20:00Z" },
+    "affected_carrier": "Fresh Express",
+    "temperature_log": {
+      "required_range": "2-4°C",
+      "recorded_max": "8°C",
+      "duration_minutes": 145,
+      "equipment_id": "REF-unit-78"
+    },
+    "status": "resolved",
+    "resolution": "Produce quality inspected and approved. Delivered with temperature log documentation.",
+    "customer_notified": true,
+    "tags": ["temperature", "perishable", "equipment", "quality"]
+  },
+  {
+    "incident_id": "INC-2025-005",
+    "shipment_id": "LL-2025-007",
+    "type": "route",
+    "severity": "low",
+    "title": "Construction Detour - Detroit to CDMX",
+    "description": "Major highway construction on I-35 causing significant route changes. Engine parts shipment rerouted through alternative path.",
+    "location": {
+      "highway": "Interstate 35",
+      "address": "I-35 Near Austin, TX",
+      "coordinates": { "lat": 30.2672, "lng": -97.7431 }
+    },
+    "reported_by": "traffic_system",
+    "reported_at": { "$date": "2025-10-26T09:30:00Z" },
+    "affected_carrier": "Motor City Logistics",
+    "estimated_delay_hours": 3,
+    "detour_info": {
+      "original_route": "I-35 South",
+      "alternative_route": "US-183 to US-190",
+      "additional_distance_km": 85,
+      "reason": "bridge_construction"
+    },
+    "status": "resolved",
+    "resolution": "Alternative route completed successfully with minimal delay.",
+    "customer_notified": false,
+    "tags": ["construction", "detour", "highway", "minor"]
+  },
+  {
+    "incident_id": "INC-2025-006",
+    "shipment_id": "LL-2025-009",
+    "type": "documentation",
+    "severity": "medium",
+    "title": "Missing HAZMAT Permits - Chemical Shipment",
+    "description": "Industrial chemicals shipment from Atlanta to CDMX missing required Mexican environmental permits. Shipment held pending documentation.",
+    "location": {
+      "facility": "HazMat Transport Atlanta Terminal",
+      "address": "4500 Jimmy Carter Blvd, Norcross, GA 30093",
+      "coordinates": { "lat": 33.9304, "lng": -84.2132 }
+    },
+    "reported_by": "compliance_officer",
+    "reported_at": { "$date": "2025-10-27T07:45:00Z" },
+    "affected_carrier": "HazMat Transport",
+    "estimated_delay_hours": 24,
+    "compliance_details": {
+      "missing_documents": ["SEMARNAT_permit", "import_license"],
+      "regulation": "Mexican_Environmental_Law",
+      "urgency": "medium",
+      "fine_risk": "high"
+    },
+    "status": "open",
+    "customer_notified": true,
+    "tags": ["hazmat", "compliance", "documentation", "mexico"]
+  },
+  {
+    "incident_id": "INC-2025-007",
+    "shipment_id": "LL-2025-001",
+    "type": "security",
+    "severity": "low",
+    "title": "GPS Tracking Interruption - Electronics Shipment",
+    "description": "Temporary GPS signal loss on smartphone components shipment from LA to Monterrey. Signal restored after 2-hour gap.",
+    "location": {
+      "region": "Sonoran Desert",
+      "address": "Highway 8, Yuma County, AZ",
+      "coordinates": { "lat": 32.4587, "lng": -114.6151 }
+    },
+    "reported_by": "tracking_system",
+    "reported_at": { "$date": "2025-10-25T22:15:00Z" },
+    "affected_carrier": "Cross-Border Express",
+    "tracking_gap": {
+      "start_time": { "$date": "2025-10-25T20:30:00Z" },
+      "end_time": { "$date": "2025-10-25T22:30:00Z" },
+      "duration_minutes": 120,
+      "cause": "cellular_dead_zone"
+    },
+    "status": "resolved",
+    "resolution": "GPS signal restored. Shipment location confirmed and on schedule.",
+    "customer_notified": false,
+    "tags": ["tracking", "gps", "electronics", "desert"]
+  },
+  {
+    "incident_id": "INC-2025-008",
+    "shipment_id": "LL-2025-010",
+    "type": "capacity",
+    "severity": "low",
+    "title": "Warehouse Congestion - Furniture Delivery",
+    "description": "Office furniture shipment delayed due to warehouse capacity constraints at Chicago distribution center. Extra handling time required.",
+    "location": {
+      "facility": "Leafy Logistics Chicago Distribution Center",
+      "address": "9800 W Higgins Rd, Rosemont, IL 60018",
+      "coordinates": { "lat": 41.9742, "lng": -87.8661 }
+    },
+    "reported_by": "warehouse_manager",
+    "reported_at": { "$date": "2025-10-26T13:00:00Z" },
+    "affected_carrier": "Bulk Freight Solutions",
+    "estimated_delay_hours": 4,
+    "warehouse_status": {
+      "current_utilization": 0.98,
+      "available_dock_doors": 2,
+      "processing_backlog_hours": 6,
+      "staff_shortage": false
+    },
+    "status": "resolved",
+    "resolution": "Extra shift scheduled. Furniture processed and dispatched on revised schedule.",
+    "customer_notified": true,
+    "tags": ["warehouse", "capacity", "furniture", "logistics"]
+  }
+]

@@ -13,9 +13,9 @@ export default function Navbar() {
   const [infoOpen, setInfoOpen] = useState(false);
   const navLinks = [
     { href: "/", label: "Demo Overview" },
-    { href: "/failure-prediction", label: "Failure Prediction" },
-    { href: "/workorder-generation", label: "Work Order Generation" },
-    { href: "/workorder-scheduler", label: "Work Order Scheduler" },
+    { href: "/root-cause-analysis", label: "Root Cause Analysis" },
+    { href: "/transportation-planning", label: "Transportation Planning" },
+    { href: "/risk-analysis", label: "Risk Analysis" },
     { href: "/agent-sandbox", label: "Agent Sandbox" },
   ];
 
@@ -31,7 +31,7 @@ export default function Navbar() {
           >
             <Image
               src="/img/logo.png"
-              alt="Logo"
+              alt="Multiagent Supply Chain Logo"
               fill
               style={{ objectFit: "contain" }}
               sizes="500px"

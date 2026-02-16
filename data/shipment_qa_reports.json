@@ -1,0 +1,122 @@
+[
+  {
+    "report_id": "QA-MC-2025-002",
+    "shipment_id": "LL-2025-002", 
+    "warehouse": "Mexico City Distribution Center",
+    "inspector": "Maria Rodriguez",
+    "report_date": { "$date": "2025-10-28T16:30:00Z" },
+    "text": "Quality Assessment Report - Shipment LL-2025-002. Arrived 48 hours behind scheduled delivery time. Packaging shows water damage on approximately 3 out of 15 boxes, likely due to exposure during border crossing delays. Driver mentioned severe congestion at Tijuana border checkpoint and incomplete customs documentation requiring additional processing time. TransMexico Freight has exhibited similar documentation preparation issues on 4 other cross-border shipments this month. Recommendation: Implement stricter documentation review process for TransMexico carrier."
+  },
+  {
+    "report_id": "QA-TO-2025-005",
+    "shipment_id": "LL-2025-005",
+    "warehouse": "Toronto Processing Facility", 
+    "inspector": "James Chen",
+    "report_date": { "$date": "2025-10-29T09:15:00Z" },
+    "text": "Incident Report - Shipment LL-2025-005. Vehicle breakdown occurred 50km south of Toronto on Highway 401. North Star Logistics driver reported unusual engine sounds and overheating issues. Replacement truck was dispatched but resulted in 24-hour delay. Upon inspection, several North Star vehicles in their fleet show similar maintenance issues. Their preventive maintenance schedule appears inadequate. Driver also mentioned that the company has been cutting costs on vehicle maintenance recently. Suggest reviewing carrier reliability metrics and considering alternative logistics partners for critical shipments."
+  },
+  {
+    "report_id": "QA-LA-2025-008", 
+    "shipment_id": "LL-2025-008",
+    "warehouse": "Los Angeles Port Facility",
+    "inspector": "Sarah Johnson", 
+    "report_date": { "$date": "2025-10-30T14:45:00Z" },
+    "text": "Warehouse Quality Report - Shipment LL-2025-008. Significant delays caused by port congestion and vessel scheduling conflicts. Pacific Shipping Lines vessel arrived 3 days late due to weather conditions in Pacific. However, our analysis shows this carrier has had 6 late arrivals in the past 2 months, indicating systemic scheduling issues rather than isolated weather events. Port operations also noted that Pacific Shipping frequently arrives without proper advance notice, causing additional bottlenecks in unloading procedures. Recommend implementing stricter SLA requirements and penalty clauses for repeat late arrivals."
+  },
+  {
+    "report_id": "QA-MC-2025-1001",
+    "shipment_id": "LL-2025-001",
+    "warehouse": "Mexico City Distribution Center",
+    "inspector": "Carlos Mendez",
+    "report_date": { "$date": "2025-09-15T11:20:00Z" },
+    "text": "Historical Report - TransMexico Freight shipment LL-2025-001. Major documentation discrepancies discovered at customs inspection. Missing commercial invoice and incorrect HS codes caused 6-hour delay at border. This is the third consecutive shipment from TransMexico with documentation errors. Driver admitted their dispatch office has been rushing paperwork preparation. Company appears to lack proper quality control processes for international shipping documentation. Strong recommendation to audit TransMexico's document preparation workflow."
+  },
+  {
+    "report_id": "QA-TO-2025-1002", 
+    "shipment_id": "LL-2024-089",
+    "warehouse": "Toronto Processing Facility",
+    "inspector": "Jennifer Walsh",
+    "report_date": { "$date": "2025-09-22T08:45:00Z" },
+    "text": "Fleet Inspection Report - North Star Logistics vehicle breakdown on shipment LL-2024-089. Truck experienced brake failure 15km from destination. Emergency repair required and cargo had to be transferred to backup vehicle, causing 18-hour delay. Maintenance records show this vehicle was 2 months overdue for brake inspection. North Star's fleet manager acknowledged they've been deferring non-critical maintenance to reduce costs. This is a serious safety concern beyond just delivery delays."
+  },
+  {
+    "report_id": "QA-MC-2025-1003",
+    "shipment_id": "LL-2024-077", 
+    "warehouse": "Mexico City Distribution Center",
+    "inspector": "Maria Rodriguez",
+    "report_date": { "$date": "2025-08-30T16:10:00Z" },
+    "text": "Border Crossing Analysis - TransMexico Freight shipment LL-2024-077. Severe delays at Tijuana crossing due to incomplete USMCA certificate of origin. TransMexico driver was unaware of new requirements despite policy changes being communicated 3 months prior. Customs officials noted that TransMexico has the highest documentation error rate among regular carriers at this crossing point. Their training program appears inadequate for regulatory compliance. Customs supervisor suggested we consider alternative carriers for time-sensitive shipments."
+  },
+  {
+    "report_id": "QA-TO-2025-1004",
+    "shipment_id": "LL-2024-065",
+    "warehouse": "Toronto Processing Facility",
+    "inspector": "Michael Zhang",
+    "report_date": { "$date": "2025-08-18T13:30:00Z" },
+    "text": "Maintenance Audit Report - North Star Logistics has experienced their fourth vehicle breakdown this quarter on shipment LL-2024-065. Transmission failure stranded cargo for 12 hours on Highway 400. Investigation reveals North Star has reduced their maintenance budget by 40% compared to last year. Several drivers have complained about being assigned aging vehicles with known mechanical issues. Their fleet average age is now 8.2 years compared to industry average of 5.1 years. Reliability concerns are escalating."
+  },
+  {
+    "report_id": "QA-LA-2025-1005",
+    "shipment_id": "LL-2024-052",
+    "warehouse": "Los Angeles Port Facility", 
+    "inspector": "David Kim",
+    "report_date": { "$date": "2025-07-25T10:15:00Z" },
+    "text": "Pacific Shipping Lines Performance Review - Shipment LL-2024-052 arrived 5 days late due to vessel engine problems. However, post-incident investigation shows the engine issues were known 2 weeks prior but Pacific Shipping failed to arrange alternative vessel or notify customers. This pattern of poor communication and inadequate contingency planning has occurred on 8 of their last 15 shipments. Port authority has flagged Pacific Shipping for repeated schedule violations. Consider diversifying ocean freight carriers."
+  },
+  {
+    "report_id": "QA-MC-2025-1006",
+    "shipment_id": "LL-2024-041",
+    "warehouse": "Mexico City Distribution Center",
+    "inspector": "Ana Gutierrez", 
+    "report_date": { "$date": "2025-07-12T14:50:00Z" },
+    "text": "Cargo Damage Assessment - TransMexico Freight shipment LL-2024-041. Extensive water damage to 40% of cargo due to trailer roof leak during monsoon season. Driver was aware of roof damage but failed to report it or request alternative trailer. TransMexico's vehicle inspection protocols appear severely lacking. Damage totaled $47,000 in electronics inventory. Insurance claim revealed this is TransMexico's 12th cargo damage incident this year, well above industry norms. Their risk management processes need immediate review."
+  },
+  {
+    "report_id": "QA-TO-2025-1007",
+    "shipment_id": "LL-2024-033",
+    "warehouse": "Toronto Processing Facility",
+    "inspector": "Robert Taylor",
+    "report_date": { "$date": "2025-06-28T09:25:00Z" },
+    "text": "Driver Competency Review - North Star Logistics driver on shipment LL-2024-033 got lost for 4 hours despite GPS guidance, claiming unfamiliarity with Toronto area routes. This driver has been employed for 6 months but apparently lacks basic route knowledge. Investigation shows North Star has reduced driver training from 2 weeks to 3 days to cut costs. Several recent hires lack experience with cross-border procedures and urban delivery challenges. Training deficiencies are impacting service quality significantly."
+  },
+  {
+    "report_id": "QA-LA-2025-1008",
+    "shipment_id": "LL-2024-029",
+    "warehouse": "Los Angeles Port Facility",
+    "inspector": "Emily Chen",
+    "report_date": { "$date": "2025-06-15T15:40:00Z" },
+    "text": "Swift Transport Excellence Report - Shipment LL-2024-029 delivered 2 hours ahead of schedule with zero damage. Driver was professional, well-trained, and proactive in communicating delivery status. Vehicle was in excellent condition with recent maintenance records. Swift Transport consistently demonstrates superior performance with 99.2% on-time delivery rate and industry-leading cargo protection standards. Their investment in fleet modernization and driver training clearly shows positive results. Recommend increasing volume allocation to Swift Transport."
+  },
+  {
+    "report_id": "QA-MC-2025-1009", 
+    "shipment_id": "LL-2024-018",
+    "warehouse": "Mexico City Distribution Center",
+    "inspector": "Luis Hernandez",
+    "report_date": { "$date": "2025-05-20T11:55:00Z" },
+    "text": "TransMexico Freight Critical Incident - Shipment LL-2024-018 held at customs for 72 hours due to fraudulent certificate of origin. Document had forged signatures and incorrect manufacturer details. Mexican customs officials launched investigation and temporarily banned TransMexico driver from border crossings. Company management claimed it was an isolated incident, but subsequent audit revealed systemic issues with document verification processes. This incident damaged our company's reputation with customs authorities. Immediate remedial action required."
+  },
+  {
+    "report_id": "QA-TO-2025-1010",
+    "shipment_id": "LL-2024-007", 
+    "warehouse": "Toronto Processing Facility",
+    "inspector": "Sandra Lee",
+    "report_date": { "$date": "2025-04-30T12:30:00Z" },
+    "text": "North Star Logistics Safety Violation - Shipment LL-2024-007 involved serious traffic incident when North Star truck rear-ended passenger vehicle due to faulty brake lights. Driver had not conducted pre-trip inspection as required. Provincial transportation authority issued safety violation and temporary suspension of driver's commercial license. Investigation revealed North Star's safety compliance program is minimal compared to industry standards. Their incident rate is 3.2x higher than peer carriers. Safety concerns now outweigh cost savings."
+  },
+  {
+    "report_id": "QA-LA-2025-1011",
+    "shipment_id": "LL-2023-095",
+    "warehouse": "Los Angeles Port Facility", 
+    "inspector": "Thomas Wu",
+    "report_date": { "$date": "2025-03-18T16:20:00Z" },
+    "text": "Global Express Outstanding Performance - Shipment LL-2023-095 exemplifies premium logistics service. Despite unexpected port strike, Global Express proactively rerouted through alternative port and maintained original delivery schedule. Their crisis management and customer communication was exceptional. Driver went above and beyond to ensure cargo security during route changes. Global Express invested in redundant logistics networks that provide remarkable resilience. Premium pricing is justified by superior reliability and service quality."
+  },
+  {
+    "report_id": "QA-MC-2025-1012",
+    "shipment_id": "LL-2023-082",
+    "warehouse": "Mexico City Distribution Center", 
+    "inspector": "Patricia Morales",
+    "report_date": { "$date": "2025-02-14T10:10:00Z" },
+    "text": "TransMexico Freight Pattern Analysis - Historical review of 24 shipments shows concerning trends. TransMexico has 47% late delivery rate, 23% documentation error rate, and 15% cargo damage rate - all significantly worse than industry benchmarks. Root cause appears to be systematic cost-cutting measures including deferred vehicle maintenance, reduced training, and inadequate quality control systems. Their low pricing comes at the expense of service reliability. Recommend phasing out TransMexico for critical shipments and implementing strict performance improvement requirements for continued partnership."
+  }
+]

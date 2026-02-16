@@ -1,0 +1,274 @@
+[
+  {
+    "warehouse_id": "LL-WH-LAX",
+    "name": "Leafy Logistics Los Angeles Hub",
+    "location": {
+      "city": "Los Angeles",
+      "state": "CA",
+      "country": "US",
+      "address": "15420 Terminal Island Freeway, Los Angeles, CA 90731",
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [-118.2437, 33.7701]
+      },
+      "hub_code": "LAX"
+    },
+    "capacity": {
+      "max_volume_sqft": 125000,
+      "current_utilization": 0.78,
+      "dock_doors": 24,
+      "truck_spaces": 40
+    },
+    "capabilities": ["cross_docking", "temperature_controlled", "hazmat", "customs_clearance"],
+    "operating_hours": {
+      "open": "05:00",
+      "close": "23:00",
+      "timezone": "PST"
+    },
+    "staff_count": 45,
+    "manager": "Maria Rodriguez",
+    "contact": {
+      "phone": "+1-310-555-0101",
+      "email": "lax@leafylogistics.com"
+    },
+    "created_at": { "$date": "2024-03-15T10:00:00Z" }
+  },
+  {
+    "warehouse_id": "LL-WH-ORD",
+    "name": "Leafy Logistics Chicago Distribution Center",
+    "location": {
+      "city": "Chicago",
+      "state": "IL",
+      "country": "US",
+      "address": "9800 W Higgins Rd, Rosemont, IL 60018",
+      "coordinates": {
+        "type": "Point", 
+        "coordinates": [-87.8661, 41.9742]
+      },
+      "hub_code": "ORD"
+    },
+    "capacity": {
+      "max_volume_sqft": 98000,
+      "current_utilization": 0.65,
+      "dock_doors": 18,
+      "truck_spaces": 32
+    },
+    "capabilities": ["automotive_parts", "manufacturing", "rail_intermodal"],
+    "operating_hours": {
+      "open": "06:00",
+      "close": "22:00",
+      "timezone": "CST"
+    },
+    "staff_count": 38,
+    "manager": "James Sullivan",
+    "contact": {
+      "phone": "+1-773-555-0202",
+      "email": "ord@leafylogistics.com"
+    },
+    "created_at": { "$date": "2024-05-20T10:00:00Z" }
+  },
+  {
+    "warehouse_id": "LL-WH-MTY",
+    "name": "Leafy Logistics Monterrey Centro",
+    "location": {
+      "city": "Monterrey",
+      "state": "Nuevo León",
+      "country": "MX",
+      "address": "Av. Lincoln 1000, Mitras Centro, 64460 Monterrey, N.L.",
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [-100.3161, 25.6866]
+      },
+      "hub_code": "MTY"
+    },
+    "capacity": {
+      "max_volume_sqft": 75000,
+      "current_utilization": 0.82,
+      "dock_doors": 16,
+      "truck_spaces": 28
+    },
+    "capabilities": ["maquiladora_support", "cross_border", "manufacturing", "food_grade"],
+    "operating_hours": {
+      "open": "07:00",
+      "close": "21:00",
+      "timezone": "CST"
+    },
+    "staff_count": 32,
+    "manager": "Carlos Hernández",
+    "contact": {
+      "phone": "+52-81-555-0303",
+      "email": "mty@leafylogistics.com"
+    },
+    "created_at": { "$date": "2024-07-10T10:00:00Z" }
+  },
+  {
+    "warehouse_id": "LL-WH-MEX",
+    "name": "Leafy Logistics Ciudad de México",
+    "location": {
+      "city": "CDMX",
+      "state": "Ciudad de México",
+      "country": "MX",
+      "address": "Circuito Interior Río Churubusco 601, Iztacalco, 08930 CDMX",
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [-99.1332, 19.4326]
+      },
+      "hub_code": "MEX"
+    },
+    "capacity": {
+      "max_volume_sqft": 110000,
+      "current_utilization": 0.71,
+      "dock_doors": 20,
+      "truck_spaces": 35
+    },
+    "capabilities": ["urban_distribution", "e_commerce", "pharmaceuticals", "textiles"],
+    "operating_hours": {
+      "open": "06:00",
+      "close": "20:00",
+      "timezone": "CST"
+    },
+    "staff_count": 42,
+    "manager": "Ana Guadalupe Morales",
+    "contact": {
+      "phone": "+52-55-555-0404",
+      "email": "mex@leafylogistics.com"
+    },
+    "created_at": { "$date": "2024-04-18T10:00:00Z" }
+  },
+  {
+    "warehouse_id": "LL-WH-DTW",
+    "name": "Leafy Logistics Detroit Motor Hub",
+    "location": {
+      "city": "Detroit",
+      "state": "MI",
+      "country": "US",
+      "address": "21000 Ecorse Rd, Taylor, MI 48180",
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [-83.2718, 42.2431]
+      },
+      "hub_code": "DTW"
+    },
+    "capacity": {
+      "max_volume_sqft": 88000,
+      "current_utilization": 0.69,
+      "dock_doors": 15,
+      "truck_spaces": 30
+    },
+    "capabilities": ["automotive", "heavy_machinery", "steel_handling"],
+    "operating_hours": {
+      "open": "06:00",
+      "close": "22:00",
+      "timezone": "EST"
+    },
+    "staff_count": 35,
+    "manager": "Robert Thompson",
+    "contact": {
+      "phone": "+1-313-555-0505",
+      "email": "dtw@leafylogistics.com"
+    },
+    "created_at": { "$date": "2024-06-05T10:00:00Z" }
+  },
+  {
+    "warehouse_id": "LL-WH-ATL",
+    "name": "Leafy Logistics Atlanta Southeast Gateway",
+    "location": {
+      "city": "Atlanta",
+      "state": "GA",
+      "country": "US",
+      "address": "6000 Tara Blvd, Jonesboro, GA 30236",
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [-84.4214, 33.5679]
+      },
+      "hub_code": "ATL"
+    },
+    "capacity": {
+      "max_volume_sqft": 95000,
+      "current_utilization": 0.74,
+      "dock_doors": 19,
+      "truck_spaces": 34
+    },
+    "capabilities": ["perishables", "food_distribution", "chemicals", "southeast_corridor"],
+    "operating_hours": {
+      "open": "05:00",
+      "close": "23:00",
+      "timezone": "EST"
+    },
+    "staff_count": 40,
+    "manager": "Sarah Mitchell",
+    "contact": {
+      "phone": "+1-404-555-0606",
+      "email": "atl@leafylogistics.com"
+    },
+    "created_at": { "$date": "2024-08-12T10:00:00Z" }
+  },
+  {
+    "warehouse_id": "LL-WH-YYZ",
+    "name": "Leafy Logistics Toronto International",
+    "location": {
+      "city": "Toronto",
+      "state": "ON",
+      "country": "CA",
+      "address": "5995 Avebury Rd, Mississauga, ON L5R 3T8",
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [-79.6248, 43.6777]
+      },
+      "hub_code": "YYZ"
+    },
+    "capacity": {
+      "max_volume_sqft": 92000,
+      "current_utilization": 0.66,
+      "dock_doors": 17,
+      "truck_spaces": 31
+    },
+    "capabilities": ["international_gateway", "customs_bonded", "technology", "healthcare"],
+    "operating_hours": {
+      "open": "06:00",
+      "close": "22:00",
+      "timezone": "EST"
+    },
+    "staff_count": 37,
+    "manager": "Michael Chen",
+    "contact": {
+      "phone": "+1-416-555-0707",
+      "email": "yyz@leafylogistics.com"
+    },
+    "created_at": { "$date": "2024-09-03T10:00:00Z" }
+  },
+  {
+    "warehouse_id": "LL-WH-YUL",
+    "name": "Leafy Logistics Montréal Aéroport",
+    "location": {
+      "city": "Montreal",
+      "state": "QC",
+      "country": "CA",
+      "address": "7500 Côte de Liesse Rd, Saint-Laurent, QC H4T 1E7",
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [-73.7400, 45.4700]
+      },
+      "hub_code": "YUL"
+    },
+    "capacity": {
+      "max_volume_sqft": 105000,
+      "current_utilization": 0.68,
+      "dock_doors": 22,
+      "truck_spaces": 38
+    },
+    "capabilities": ["aerospace", "international_gateway", "customs_bonded", "rail_intermodal", "cold_storage"],
+    "operating_hours": {
+      "open": "05:30",
+      "close": "22:30",
+      "timezone": "EST"
+    },
+    "staff_count": 44,
+    "manager": "Marie-Claire Dubois",
+    "contact": {
+      "phone": "+1-514-555-0808",
+      "email": "yul@leafylogistics.com"
+    },
+    "created_at": { "$date": "2024-10-15T10:00:00Z" }
+  }
+]

@@ -1,0 +1,280 @@
+[
+  {
+    "shipment_id": "LL-2025-001",
+    "status": "in_transit",
+    "priority": "express",
+    "origin": {
+      "city": "Los Angeles",
+      "state": "CA",
+      "country": "US",
+      "hub_code": "LAX"
+    },
+    "destination": {
+      "city": "Monterrey",
+      "state": "Nuevo León",
+      "country": "MX",
+      "hub_code": "MTY"
+    },
+    "product": {
+      "sku": "ELEC-001",
+      "name": "Smartphone Components",
+      "category": "Electronics",
+      "weight_kg": 2.5,
+      "value_usd": 1200
+    },
+    "carrier": "Cross-Border Express",
+    "estimated_delivery": { "$date": "2025-10-29T14:00:00Z" },
+    "created_at": { "$date": "2025-10-25T09:30:00Z" }
+  },
+  {
+    "shipment_id": "LL-2025-002",
+    "status": "delayed",
+    "priority": "standard",
+    "origin": {
+      "city": "Chicago",
+      "state": "IL",
+      "country": "US",
+      "hub_code": "ORD"
+    },
+    "destination": {
+      "city": "Toronto",
+      "state": "ON",
+      "country": "CA",
+      "hub_code": "YYZ"
+    },
+    "product": {
+      "sku": "AUTO-045",
+      "name": "Automotive Parts",
+      "category": "Manufacturing",
+      "weight_kg": 15.8,
+      "value_usd": 850
+    },
+    "carrier": "TransMexico Freight",
+    "estimated_delivery": { "$date": "2025-10-28T16:00:00Z" },
+    "delay_reason": "Documentation issues at border",
+    "created_at": { "$date": "2025-10-24T11:15:00Z" }
+  },
+  {
+    "shipment_id": "LL-2025-003",
+    "status": "pending",
+    "priority": "economy",
+    "origin": {
+      "city": "CDMX",
+      "state": "Ciudad de México",
+      "country": "MX",
+      "hub_code": "MEX"
+    },
+    "destination": {
+      "city": "Detroit",
+      "state": "MI",
+      "country": "US",
+      "hub_code": "DTW"
+    },
+    "product": {
+      "sku": "TEXT-019",
+      "name": "Textile Materials",
+      "category": "Apparel",
+      "weight_kg": 8.2,
+      "value_usd": 320
+    },
+    "carrier": "NAFTA Logistics",
+    "estimated_delivery": { "$date": "2025-11-02T10:00:00Z" },
+    "created_at": { "$date": "2025-10-27T08:45:00Z" }
+  },
+  {
+    "shipment_id": "LL-2025-004",
+    "status": "in_transit",
+    "priority": "express",
+    "origin": {
+      "city": "Atlanta",
+      "state": "GA",
+      "country": "US",
+      "hub_code": "ATL"
+    },
+    "destination": {
+      "city": "Monterrey",
+      "state": "Nuevo León",
+      "country": "MX",
+      "hub_code": "MTY"
+    },
+    "product": {
+      "sku": "FOOD-007",
+      "name": "Organic Produce",
+      "category": "Food & Beverage",
+      "weight_kg": 45.0,
+      "value_usd": 680
+    },
+    "carrier": "Fresh Express",
+    "estimated_delivery": { "$date": "2025-10-28T18:00:00Z" },
+    "special_handling": ["temperature_controlled", "perishable"],
+    "created_at": { "$date": "2025-10-26T06:00:00Z" }
+  },
+  {
+    "shipment_id": "LL-2025-005",
+    "status": "delayed",
+    "priority": "standard",
+    "origin": {
+      "city": "Toronto",
+      "state": "ON",
+      "country": "CA",
+      "hub_code": "YYZ"
+    },
+    "destination": {
+      "city": "Los Angeles",
+      "state": "CA",
+      "country": "US",
+      "hub_code": "LAX"
+    },
+    "product": {
+      "sku": "PHARM-012",
+      "name": "Medical Supplies",
+      "category": "Healthcare",
+      "weight_kg": 3.7,
+      "value_usd": 2400
+    },
+    "carrier": "North Star Logistics",
+    "estimated_delivery": { "$date": "2025-10-29T12:00:00Z" },
+    "delay_reason": "Vehicle mechanical failure",
+    "special_handling": ["fragile", "regulated"],
+    "created_at": { "$date": "2025-10-25T14:20:00Z" }
+  },
+  {
+    "shipment_id": "LL-2025-006",
+    "status": "delivered",
+    "priority": "express",
+    "origin": {
+      "city": "Monterrey",
+      "state": "Nuevo León",
+      "country": "MX",
+      "hub_code": "MTY"
+    },
+    "destination": {
+      "city": "Chicago",
+      "state": "IL",
+      "country": "US",
+      "hub_code": "ORD"
+    },
+    "product": {
+      "sku": "MANU-088",
+      "name": "Industrial Equipment",
+      "category": "Manufacturing",
+      "weight_kg": 120.5,
+      "value_usd": 5600
+    },
+    "carrier": "Heavy Haul Express",
+    "estimated_delivery": { "$date": "2025-10-26T15:00:00Z" },
+    "actual_delivery": { "$date": "2025-10-26T13:45:00Z" },
+    "created_at": { "$date": "2025-10-23T10:00:00Z" }
+  },
+  {
+    "shipment_id": "LL-2025-007",
+    "status": "in_transit",
+    "priority": "standard",
+    "origin": {
+      "city": "Detroit",
+      "state": "MI",
+      "country": "US",
+      "hub_code": "DTW"
+    },
+    "destination": {
+      "city": "CDMX",
+      "state": "Ciudad de México",
+      "country": "MX",
+      "hub_code": "MEX"
+    },
+    "product": {
+      "sku": "AUTO-156",
+      "name": "Car Engine Parts",
+      "category": "Automotive",
+      "weight_kg": 87.3,
+      "value_usd": 3200
+    },
+    "carrier": "Motor City Logistics",
+    "estimated_delivery": { "$date": "2025-10-30T09:00:00Z" },
+    "created_at": { "$date": "2025-10-26T16:30:00Z" }
+  },
+  {
+    "shipment_id": "LL-2025-008",
+    "status": "delayed",
+    "priority": "express",
+    "origin": {
+      "city": "Los Angeles",
+      "state": "CA",
+      "country": "US",
+      "hub_code": "LAX"
+    },
+    "destination": {
+      "city": "Toronto",
+      "state": "ON",
+      "country": "CA",
+      "hub_code": "YYZ"
+    },
+    "product": {
+      "sku": "TECH-033",
+      "name": "Server Hardware",
+      "category": "Technology",
+      "weight_kg": 28.6,
+      "value_usd": 8900
+    },
+    "carrier": "Pacific Shipping Lines",
+    "estimated_delivery": { "$date": "2025-10-29T11:00:00Z" },
+    "delay_reason": "Port scheduling conflicts",
+    "special_handling": ["fragile", "high_value"],
+    "created_at": { "$date": "2025-10-25T12:00:00Z" }
+  },
+  {
+    "shipment_id": "LL-2025-009",
+    "status": "pending",
+    "priority": "standard",
+    "origin": {
+      "city": "Atlanta",
+      "state": "GA",
+      "country": "US",
+      "hub_code": "ATL"
+    },
+    "destination": {
+      "city": "CDMX",
+      "state": "Ciudad de México",
+      "country": "MX",
+      "hub_code": "MEX"
+    },
+    "product": {
+      "sku": "CHEM-024",
+      "name": "Industrial Chemicals",
+      "category": "Chemical",
+      "weight_kg": 156.8,
+      "value_usd": 1100
+    },
+    "carrier": "HazMat Transport",
+    "estimated_delivery": { "$date": "2025-11-01T14:00:00Z" },
+    "special_handling": ["hazardous", "regulated"],
+    "created_at": { "$date": "2025-10-27T07:15:00Z" }
+  },
+  {
+    "shipment_id": "LL-2025-010",
+    "status": "in_transit",
+    "priority": "economy",
+    "origin": {
+      "city": "Chicago",
+      "state": "IL",
+      "country": "US",
+      "hub_code": "ORD"
+    },
+    "destination": {
+      "city": "Monterrey",
+      "state": "Nuevo León",
+      "country": "MX",
+      "hub_code": "MTY"
+    },
+    "product": {
+      "sku": "FURN-041",
+      "name": "Office Furniture",
+      "category": "Furniture",
+      "weight_kg": 95.2,
+      "value_usd": 750
+    },
+    "carrier": "Bulk Freight Solutions",
+    "estimated_delivery": { "$date": "2025-11-03T16:00:00Z" },
+    "created_at": { "$date": "2025-10-26T09:45:00Z" }
+  }
+]
