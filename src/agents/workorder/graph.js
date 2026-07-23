@@ -4,7 +4,7 @@ import {
   ChatPromptTemplate,
   MessagesPlaceholder,
 } from "@langchain/core/prompts";
-import { createBedrockClient } from "../../integrations/bedrock/chat.js";
+import { createChatClient } from "../../integrations/chat_factory.js";
 import { StateAnnotation } from "./state.js";
 import { getTools } from "./tools.js";
 import { MongoDBSaver } from "@langchain/langgraph-checkpoint-mongodb";
@@ -24,7 +24,7 @@ const prompt = ChatPromptTemplate.fromMessages([
 ]);
 
 export async function callModel(state) {
-  const model = createBedrockClient();
+  const model = createChatClient();
   const bindedModel = model.bindTools(tools);
   const formattedPrompt = await prompt.formatMessages({
     messages: state.messages,

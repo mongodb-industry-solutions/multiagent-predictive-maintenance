@@ -11,7 +11,7 @@ const COMPLETION_MODEL = process.env.COMPLETION_MODEL;
  */
 let bedrockClient = null;
 
-export function createBedrockClient() {
+export function createChatClient() {
   if (!bedrockClient) {
     bedrockClient = new ChatBedrockConverse({
       model: COMPLETION_MODEL,
@@ -27,9 +27,9 @@ export function createBedrockClient() {
  * @param {Array} messages - Array of messages in LangChain format
  * @returns {Promise<Object>} - Response from the model
  */
-export async function invokeBedrock(messages) {
+export async function invokeChat(messages) {
   try {
-    const model = createBedrockClient();
+    const model = createChatClient();
     return await model.invoke(messages);
   } catch (error) {
     console.error("Error invoking Bedrock:", error);
@@ -42,9 +42,9 @@ export async function invokeBedrock(messages) {
  * @param {Array} messages - Array of messages in LangChain format
  * @returns {Promise<AsyncIterable>} - Stream of responses
  */
-export async function streamFromBedrock(messages) {
+export async function streamChat(messages) {
   try {
-    const model = createBedrockClient();
+    const model = createChatClient();
     return await model.stream(messages);
   } catch (error) {
     console.error("Error streaming from Bedrock:", error);
