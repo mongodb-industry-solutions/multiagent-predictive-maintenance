@@ -1,5 +1,5 @@
 import getMongoClientPromise from "./client.js";
-import { generateEmbedding } from "../bedrock/embeddings.js";
+import { generateEmbedding } from "../embeddings_factory.js";
 
 /**
  * Perform a vector similarity search using Bedrock embeddings and MongoDB Atlas Vector Search.

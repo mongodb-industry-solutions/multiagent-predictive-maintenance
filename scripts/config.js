@@ -1,4 +1,9 @@
 // Example configuration for embedding and vector search indexing
+
+// Number of dimensions for the embedding vectors. Read from an env var so it
+// can be changed in a single place to match the selected embedding model.
+const numDimensions = parseInt(process.env.EMBEDDING_DIMENSIONS, 10) || 1024;
+
 const config = [
   {
     collection: "interviews",
@@ -6,7 +11,7 @@ const config = [
     embeddingField: "embedding",
     indexName: "default",
     similarity: "cosine",
-    numDimensions: 1024,
+    numDimensions,
   },
   {
     collection: "manuals",
@@ -14,7 +19,7 @@ const config = [
     embeddingField: "embedding",
     indexName: "default",
     similarity: "cosine",
-    numDimensions: 1024,
+    numDimensions,
   },
   {
     collection: "workorders",
@@ -22,7 +27,7 @@ const config = [
     embeddingField: "embedding",
     indexName: "default",
     similarity: "cosine",
-    numDimensions: 1024,
+    numDimensions,
   },
 ];
 export default config;

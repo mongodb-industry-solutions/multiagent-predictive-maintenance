@@ -1,7 +1,7 @@
 import { tool } from "@langchain/core/tools";
 import { vectorSearch } from "@/integrations/mongodb/vectorSearch";
 import getMongoClientPromise from "@/integrations/mongodb/client";
-import { generateEmbedding } from "@/integrations/bedrock/embeddings";
+import { generateEmbedding } from "@/integrations/embeddings_factory";
 
 export const retrieveWorkOrders = tool(
   async ({ query, n = 3 }) => {
