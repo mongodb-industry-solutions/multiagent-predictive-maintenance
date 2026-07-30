@@ -5,7 +5,10 @@
 # Usage:
 #   AWS_REGION=us-east-1 \
 #   LAMBDA_ROLE_ARN=arn:aws:iam::<acct>:role/<lambda-exec-role> \
-#   ./aws-lambda-deploy/deploy-lambda.sh [tag]
+#   ./scripts/deploy-lambda.sh [tag]
+#
+# Build and push the Lambda-specific Dockerfile first:
+#   ./scripts/build-and-push.sh [tag]
 #
 # Secrets (MONGODB_URI, GROVE_API_KEY, VOYAGE_API_KEY) are intentionally NOT
 # passed here. Configure them via Secrets Manager / SSM or set them once in the
