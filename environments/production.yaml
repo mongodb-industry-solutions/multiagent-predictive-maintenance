@@ -1,11 +1,18 @@
 envSecrets:
   MONGODB_URI: multiagent-pred-maint
-  DATABASE_NAME: multiagent-pred-maint
-  AWS_REGION: multiagent-pred-maint
-  AWS_PROFILE: multiagent-pred-maint
-  COMPLETION_MODEL: multiagent-pred-maint
-  EMBEDDING_MODEL: multiagent-pred-maint
-  NEXT_PUBLIC_ENV: multiagent-pred-maint
+  VOYAGE_API_KEY: multiagent-pred-maint
+
+# Non-sensitive application configuration
+env:
+  DATABASE_NAME: agentic_predictive_maintenance
+  AWS_REGION: us-east-1
+  AWS_PROFILE: default
+  CHAT_PROVIDER: bedrock
+  COMPLETION_MODEL: arn:aws:bedrock:us-east-1:275662791714:application-inference-profile/vcietr88hund
+  EMBEDDING_PROVIDER: voyage
+  EMBEDDING_MODEL: voyage-4-lite
+  EMBEDDING_DIMENSIONS: "1024"
+  NEXT_PUBLIC_ENV: production
 
 serviceAccount:
   enabled: true
