@@ -1,18 +1,18 @@
 import React from "react";
 import { Body } from "@leafygreen-ui/typography";
-import Card from "@leafygreen-ui/card";
-import ExpandableCard from "@leafygreen-ui/expandable-card";
+import { Card } from "@leafygreen-ui/card";
+import { ExpandableCard } from "@leafygreen-ui/expandable-card";
 import { Avatar } from "@leafygreen-ui/avatar";
 import dynamic from "next/dynamic";
-import Code from "@leafygreen-ui/code";
+import { Code } from "@leafygreen-ui/code";
 import { useAgentLogs } from "./hooks";
 import { Option, Select } from "@leafygreen-ui/select";
-import Icon from "@leafygreen-ui/icon";
-import IconButton from "@leafygreen-ui/icon-button";
+import { Icon } from "@leafygreen-ui/icon";
+import { IconButton } from "@leafygreen-ui/icon-button";
 
 const Spinner = dynamic(
   () => import("@leafygreen-ui/loading-indicator").then((mod) => mod.Spinner),
-  { ssr: false }
+  { ssr: false },
 );
 
 export default function AgentLogs({ logs, threadId, onNewThread }) {
@@ -97,8 +97,9 @@ export default function AgentLogs({ logs, threadId, onNewThread }) {
                           {formattedToolName}
                           {log.loading && (
                             <Spinner
-                              displayOption="default-horizontal"
+                              direction="horizontal"
                               description="Running..."
+                              size="small"
                             />
                           )}
                         </span>
@@ -119,7 +120,7 @@ export default function AgentLogs({ logs, threadId, onNewThread }) {
                               doc &&
                               (typeof doc === "string"
                                 ? doc.trim() !== ""
-                                : Object.keys(doc).length > 0)
+                                : Object.keys(doc).length > 0),
                           ) && (
                             <div className="max-h-64 overflow-y-auto space-y-2">
                               <Body className="font-semibold mb-1 block">
