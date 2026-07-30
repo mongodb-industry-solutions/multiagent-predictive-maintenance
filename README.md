@@ -1,6 +1,6 @@
 # Agentic Predictive Maintenance System
 
-Manufacturers are moving beyond traditional predictive maintenance—it's not just about forecasting failures, but about acting on issues instantly and autonomously. This project demonstrates how agentic AI, orchestrated by LangGraph.js and powered by MongoDB Atlas and AWS Bedrock, enables multi-agent systems that detect problems and coordinate rapid, intelligent responses across the shop floor. 
+Manufacturers are moving beyond traditional predictive maintenance—it's not just about forecasting failures, but about acting on issues instantly and autonomously. This project demonstrates how agentic AI, orchestrated by LangGraph.js and powered by MongoDB Atlas and AWS Bedrock, enables multi-agent systems that detect problems and coordinate rapid, intelligent responses across the shop floor.
 
 This demo showcases:
 
@@ -33,12 +33,14 @@ This architecture lets manufacturers automate not just prediction, but coordinat
 
 - Node.js 18+
 - MongoDB (local or Atlas)
-- AWS Account with Bedrock access
-- AWS CLI installed locally
+- A completion provider: AWS Bedrock (AWS credentials and model access) or an Azure-based AI gateway (API key)
+- An embedding provider: Voyage AI (API Key) or AWS Bedrock (AWS credentials and model access)
+- AWS CLI (only for configuring local Bedrock profiles or AWS Lambda deployment)
+- Docker (only for Docker Compose or AWS Lambda deployment)
 
 ### Setup
 
-1. **Configure AWS credentials for Bedrock access:**
+1. **Configure AWS credentials for Bedrock access (only when using Bedrock):**
    Run one of the following commands to set up your AWS credentials locally:
 
    ```bash
@@ -64,16 +66,12 @@ This architecture lets manufacturers automate not just prediction, but coordinat
    cp .env.example .env
    ```
 
-   Then edit your `.env` file and set the following variables:
+   The example file groups the available providers:
+   - Chat completions: AWS Bedrock or an Azure-based AI gateway.
+   - Embeddings: AWS Bedrock or Voyage.
 
-   ```env
-   MONGODB_URI="<your-mongodb-uri>"
-   DATABASE_NAME="agentic_predictive_maintenance"
-   AWS_REGION="us-east-1"
-   AWS_PROFILE="default"
-   COMPLETION_MODEL="us.anthropic.claude-haiku-4-5-20251001-v1:0"
-   EMBEDDING_MODEL="cohere.embed-english-v3"
-   ```
+   Select providers and set their required credentials in `.env`. AWS credentials
+   are needed only when either selected provider uses Bedrock.
 
 4. **Seed the demo database:**
    To initialize the demo with all required collections, embeddings, and indexes, run:
@@ -91,13 +89,33 @@ This architecture lets manufacturers automate not just prediction, but coordinat
    npm run dev
    ```
 
-   Or with Docker:
+   To run it in a container instead:
 
    ```bash
    docker-compose up
    ```
 
 Open [http://localhost:8080](http://localhost:8080) in your browser to explore the demo.
+
+## Deployment
+
+### AWS Lambda
+
+The Lambda deployment uses `Dockerfile.lambda`; the standard `Dockerfile` remains
+for local Docker Compose use. After configuring AWS CLI credentials, Docker, an
+ECR-capable AWS account, and a Lambda execution role, build and deploy an image:
+
+```bash
+AWS_REGION=us-east-1 ./scripts/build-and-push.sh <tag>
+
+AWS_REGION=us-east-1 \
+LAMBDA_ROLE_ARN=arn:aws:iam::<account-id>:role/<lambda-execution-role> \
+./scripts/deploy-lambda.sh <tag>
+```
+
+The deployment script creates or updates the function and prints its Function URL.
+Set `MONGODB_URI` and any provider API keys through your secure Lambda environment
+configuration; the scripts intentionally do not pass secrets.
 
 ## Personalizing and Extending the Demo
 
@@ -137,6 +155,7 @@ This demo is designed to be flexible and extensible. Here are some ways you can 
   ];
   export default config;
   ```
+
   - `collection`: The MongoDB collection name.
   - `textFields`: Array of fields to concatenate and embed.
   - `embeddingField`: Field name to store the embedding.
