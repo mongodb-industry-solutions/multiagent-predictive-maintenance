@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Build the Next.js container image and push it to Amazon ECR.
+# Build the AWS Lambda container image and push it to Amazon ECR.
 #
 # Usage:
-#   AWS_REGION=us-east-1 ./aws-lambda-deploy/build-and-push.sh [tag]
+#   AWS_REGION=us-east-1 ./scripts/build-and-push.sh [tag]
 #
 # Prints the fully-qualified image URI on success so it can be piped into
 # deploy-lambda.sh.
@@ -16,8 +16,9 @@ ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 ECR="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 IMAGE="${ECR}/${REPO}:${TAG}"
 
-# Build from the repository root (Dockerfile lives there).
+# Build from the repository root using the Lambda-specific Dockerfile.
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DOCKERFILE="${ROOT_DIR}/Dockerfile.lambda"
 
 # Ensure the ECR repository exists.
 aws ecr describe-repositories --repository-names "$REPO" --region "$AWS_REGION" >/dev/null 2>&1 \
@@ -32,6 +33,7 @@ docker buildx build \
   --platform linux/amd64 \
   --provenance=false \
   --sbom=false \
+  --file "$DOCKERFILE" \
   -t "${REPO}:${TAG}" \
   --load \
   "$ROOT_DIR"
