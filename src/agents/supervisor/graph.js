@@ -5,7 +5,7 @@ import {
 } from "@langchain/core/prompts";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { MongoDBSaver } from "@langchain/langgraph-checkpoint-mongodb";
-import { createBedrockClient } from "../../integrations/bedrock/chat.js";
+import { createChatClient } from "../../integrations/chat_factory.js";
 import { StateAnnotation } from "./state.js";
 import { createAgentGraph as createFailureAgentGraph } from "../failure/graph.js";
 import { createAgentGraph as createWorkorderAgentGraph } from "../workorder/graph.js";
@@ -33,7 +33,7 @@ const supervisorPrompt = ChatPromptTemplate.fromMessages([
 const validAgents = ["failure", "workorder", "planning", "__end__"];
 
 export async function callModel(state) {
-  const model = createBedrockClient();
+  const model = createChatClient();
   const bindedModel = model.bindTools(tools);
   // Only exclude ToolMessage objects from the prompt history
   const filteredMessages = (state.messages || []).filter(

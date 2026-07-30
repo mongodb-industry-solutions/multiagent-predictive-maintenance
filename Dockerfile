@@ -23,18 +23,26 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# AWS Lambda Web Adapter: fronts the Next.js server and bridges the Lambda
+# runtime. Installed as a Lambda extension in /opt/extensions.
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 /lambda-adapter /opt/extensions/lambda-adapter
+
+# Stream responses through the Lambda Function URL (matches the NDJSON chat
+# routes). Point the adapter at Next.js' default port; the public interface is
+# HTTPS via the Function URL, so no application port needs to be exposed.
+ENV AWS_LWA_INVOKE_MODE=response_stream
+ENV AWS_LWA_PORT=3000
+ENV AWS_LWA_READINESS_CHECK_PORT=3000
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Standalone output ships a minimal server.js plus a trimmed node_modules.
+# Static assets and the public folder are not included, so copy them explicitly.
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
 
 USER nextjs
 
-EXPOSE 8080 
-
-ENV PORT=8080
-
-CMD ["npm", "run", "start"]
+CMD ["node", "server.js"]

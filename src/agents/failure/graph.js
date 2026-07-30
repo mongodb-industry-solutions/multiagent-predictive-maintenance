@@ -5,7 +5,7 @@ import {
   MessagesPlaceholder,
 } from "@langchain/core/prompts";
 import { MongoDBSaver } from "@langchain/langgraph-checkpoint-mongodb";
-import { createBedrockClient } from "../../integrations/bedrock/chat.js";
+import { createChatClient } from "../../integrations/chat_factory.js";
 import { StateAnnotation } from "./state.js";
 import { getTools } from "./tools.js";
 
@@ -24,7 +24,7 @@ const toolNode = new ToolNode(tools);
  * @returns {Object} Updated state with AI message
  */
 export async function callModel(state, config) {
-  const model = createBedrockClient();
+  const model = createChatClient();
   const bindedModel = model.bindTools(tools);
 
   // Create a prompt template for the conversation
