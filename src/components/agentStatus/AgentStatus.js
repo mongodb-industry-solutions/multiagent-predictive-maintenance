@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
-import Modal from "@leafygreen-ui/modal";
-import Icon from "@leafygreen-ui/icon";
+import { Modal } from "@leafygreen-ui/modal";
+import { Icon } from "@leafygreen-ui/icon";
 import dynamic from "next/dynamic";
 import { Body } from "@leafygreen-ui/typography";
 import { useAgentStatus } from "./hooks";
@@ -9,7 +9,7 @@ import AgentLogs from "@/components/agentLogs/AgentLogs";
 
 const Spinner = dynamic(
   () => import("@leafygreen-ui/loading-indicator").then((mod) => mod.Spinner),
-  { ssr: false }
+  { ssr: false },
 );
 
 export default function AgentStatus({
@@ -104,8 +104,9 @@ export default function AgentStatus({
                 >
                   {log.loading ? (
                     <Spinner
-                      displayOption="default-horizontal"
+                      direction="horizontal"
                       description=""
+                      size="small"
                     />
                   ) : (
                     <Icon

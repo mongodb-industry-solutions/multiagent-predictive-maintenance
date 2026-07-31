@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import Modal from "@leafygreen-ui/modal";
+import { Modal } from "@leafygreen-ui/modal";
 import { H3, Body } from "@leafygreen-ui/typography";
 import Icon from "@leafygreen-ui/icon";
 import PropTypes from "prop-types";
 import Image from "next/image";
-import Button from "@leafygreen-ui/button";
+import { Button } from "@leafygreen-ui/button";
 import { Tabs, Tab } from "@leafygreen-ui/tabs";
 import { useInfoWizard } from "./hooks";
 
@@ -36,8 +36,8 @@ const InfoWizard = (props) => {
         <div className="overflow-y-auto h-[500px]">
           <Tabs
             aria-label="info wizard tabs"
-            setSelected={setSelected}
-            selected={selected}
+            onValueChange={setSelected}
+            value={selected}
           >
             {sections.map((tab, tabIndex) => (
               <Tab key={tabIndex} name={tab.heading}>
@@ -67,7 +67,7 @@ const InfoWizard = (props) => {
                               <li key={idx}>
                                 <Body>{item}</Body>
                               </li>
-                            )
+                            ),
                           )}
                         </ul>
                       ) : (
@@ -116,9 +116,9 @@ InfoWizard.propTypes = {
             alt: PropTypes.string.isRequired,
             width: PropTypes.number,
           }),
-        })
+        }),
       ).isRequired,
-    })
+    }),
   ),
 };
 

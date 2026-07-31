@@ -4,7 +4,7 @@ import config from "./config.js";
 import getMongoClientPromise, {
   closeMongoClient,
 } from "../src/integrations/mongodb/client.js";
-import { generateEmbedding } from "../src/integrations/bedrock/embeddings.js";
+import { generateEmbedding } from "../src/integrations/embeddings_factory.js";
 import { createVectorSearchIndex } from "../src/integrations/mongodb/vectorSearch.js";
 
 async function embedCollection({
