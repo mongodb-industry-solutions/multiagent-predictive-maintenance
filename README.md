@@ -12,18 +12,24 @@ This demo showcases:
 
 ![High Level Architecture](public/img/high-level-architecture.svg)
 
-**How it works:**
+### How it works
 
 1. **Detection:** Agents monitor machine telemetry and logs, triggering alerts on anomalies.
 2. **Diagnosis:** The Failure Agent uses MongoDB’s flexible data model and vector search to rapidly analyze root causes.
 3. **Action:** The Work Order Agent drafts and routes maintenance tasks, leveraging historical data and inventory.
 4. **Optimization:** The Planning Agent schedules work to minimize disruption, using real-time production and staff data.
 
-**Why MongoDB?**
+### Why MongoDB?
 
 - **Unified data layer:** Handles structured, unstructured, and time series data for all agents and workflows.
 - **Real-time search & retrieval:** Atlas Search and vector search enable fast, context-rich decision-making.
 - **Scalable, adaptable foundation:** Easily extend to new agents, data sources, and operational needs.
+
+### Why Voyage AI?
+
+- **One search index across three kinds of writing.** Root-cause analysis pulls from equipment manuals (formal spec language), past work orders (terse shorthand like *"bearing misalignment, realigned shaft"*), and technician interviews (how people actually talk). One alert has to find all three, so the model must recognize that *"E12 high temp"*, *"coolant tubing kinks under load"*, and a manual's thermal-tolerance section are about the same problem — even though they barely share a word.
+- **Keeps technical details distinct.** Maintenance text is full of part numbers, error codes, and measurements (`P-001`, `E13`, `1.9 mm/s`). General-purpose models tend to treat these as interchangeable noise; Voyage's search-tuned models tell them apart — the difference between the failure agent citing the right manual section and citing a wrong one that sounds right.
+- **Embeddings and search in one place.** Voyage is served through MongoDB, so one API key covers both creating the embeddings and searching them — no second vendor to set up, and nothing to keep in sync between the model and the index. At 1024 dimensions the indexes stay small, so re-processing everything is fast and cheap when you swap in your own data.
 
 This architecture lets manufacturers automate not just prediction, but coordinated action—unlocking the next level of operational excellence.
 
