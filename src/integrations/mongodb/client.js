@@ -9,7 +9,7 @@ function createMongoClient() {
   }
   const uri = process.env.MONGODB_URI;
   const options = {
-    appName: "genai-inventory-optimization",
+    appName: "devrel-github-javascript-predictive-maintenance-langgraph",
     serverApi: {
       version: ServerApiVersion.v1,
       strict: false,
