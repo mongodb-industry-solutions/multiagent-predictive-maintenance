@@ -1,0 +1,136 @@
+"use client";
+
+import React from "react";
+import CardList from "@/components/cardList/CardList";
+import AgentStatus from "@/components/agentStatus/AgentStatus";
+import dynamic from "next/dynamic";
+import Button from "@leafygreen-ui/button";
+import FullCalendar from "@fullcalendar/react";
+import "@/app/globals.css";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import { useWorkorderSchedulerPage } from "./hooks";
+
+const Code = dynamic(
+  () => import("@leafygreen-ui/code").then((mod) => mod.Code),
+  { ssr: false }
+);
+
+function renderEventContent(eventInfo) {
+  // Only show MAINT-XXX and priority for maintenance tasks
+  const { event } = eventInfo;
+  if (event.extendedProps && event.extendedProps.task_type === "maintenance") {
+    return (
+      <>
+        {event.extendedProps.task_id}
+        {event.extendedProps.priority && (
+          <span className="ml-2">({event.extendedProps.priority})</span>
+        )}
+      </>
+    );
+  }
+  // Default: show time and title (for production, etc)
+  return (
+    <>
+      <b>{eventInfo.timeText}</b> <i>{event.title}</i>
+    </>
+  );
+}
+
+export default function WorkorderSchedulerPage() {
+  const {
+    workorders,
+    selectedWorkorderId,
+    setSelectedWorkorderId,
+    workordersLoading,
+    workordersError,
+    productionCalendarSample,
+    calendarEvents,
+    calendarLoading,
+    calendarError,
+    agentStatus,
+    showModal,
+    setShowModal,
+    modalContent,
+    canContinue,
+    handleContinueWorkflow,
+    handleResetCalendar,
+    agentLogs,
+  } = useWorkorderSchedulerPage();
+
+  return (
+    <main className="flex flex-col w-full h-full">
+        <div className="flex flex-1 min-h-0 w-full gap-6 px-2 pb-4">
+          {/* Left Section */}
+          <section className="mx-2 mb-2 mt-0 flex min-h-[320px] min-w-[320px] w-1/2 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-4">
+            {/* Continue Workflow Button centered */}
+            <div className="flex justify-start mb-4">
+              <Button
+                className="self-start w-auto min-w-0"
+                disabled={!canContinue}
+                variant="primary"
+                onClick={handleContinueWorkflow}
+              >
+                Continue Workflow
+              </Button>
+            </div>
+            <div className="flex flex-1 gap-4 min-h-0 overflow-hidden">
+              {/* Workorders CardList fills available space */}
+              <div className="w-full flex flex-col min-w-[180px]">
+                <CardList
+                  items={workorders}
+                  idField="_id"
+                  cardType="workorders"
+                  selectable
+                  selectedId={selectedWorkorderId}
+                  onSelect={setSelectedWorkorderId}
+                  maxHeight="max-h-full"
+                  emptyText="No workorders found."
+                  listTitle="Work Orders"
+                  listDescription="Select a workorder to find the optimal maintenance window."
+                  isItemDisabled={(item) => item.status !== "new"}
+                />
+              </div>
+            </div>
+          </section>
+          {/* Right Section */}
+          <section className="mx-2 mb-2 mt-0 flex min-h-[320px] min-w-[320px] w-1/2 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-4">
+            {/* AgentStatus centered */}
+            <div className="flex justify-center mb-4">
+              <AgentStatus
+                isActive={agentStatus === "active"}
+                showModal={showModal}
+                setShowModal={setShowModal}
+                modalContent={modalContent}
+                logs={agentLogs || []}
+              />
+            </div>
+            {/* Calendar directly under AgentStatus with margin */}
+            <div className="w-full flex-1 flex flex-col">
+              {calendarLoading && <div>Loading calendar...</div>}
+              {calendarError && (
+                <div className="text-red-500">
+                  Error: {calendarError.message}
+                </div>
+              )}
+              <div className="flex-1">
+                <FullCalendar
+                  plugins={[dayGridPlugin]}
+                  initialView="dayGridMonth"
+                  weekends={true}
+                  events={calendarEvents}
+                  eventContent={renderEventContent}
+                  height="100%"
+                />
+              </div>
+            </div>
+            {/* Reset Button below calendar, right aligned */}
+            <div className="flex justify-end mt-2">
+              <Button variant="default" onClick={handleResetCalendar}>
+                Reset Calendar
+              </Button>
+            </div>
+          </section>
+        </div>
+    </main>
+  );
+}

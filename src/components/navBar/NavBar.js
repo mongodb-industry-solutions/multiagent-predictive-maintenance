@@ -1,88 +1,96 @@
 "use client";
-import React, { useState } from "react";
+
+import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import Icon from "@leafygreen-ui/icon";
 import { Body } from "@leafygreen-ui/typography";
-import InfoWizard from "../infoWizard/InfoWizard";
-import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
-import { TALK_TRACK } from "../../lib/const/talkTrack";
+import { STORY_STAGES, getStageForPath } from "../../lib/const/navigation";
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [infoOpen, setInfoOpen] = useState(false);
-  const navLinks = [
-    { href: "/", label: "Demo Overview" },
-    { href: "/failure-prediction", label: "Failure Prediction" },
-    { href: "/workorder-generation", label: "Work Order Generation" },
-    { href: "/workorder-scheduler", label: "Work Order Scheduler" },
-    { href: "/agent-sandbox", label: "Agent Sandbox" },
-  ];
+  const activeStage = getStageForPath(pathname);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   return (
-    <LeafyGreenProvider baseFontSize={16}>
-      <nav className="w-full bg-white shadow-md fixed top-0 left-0">
-        {/* Logo absolutely positioned in the top-left corner */}
-        <div className="absolute left-0 top-0 pl-5 pt-2">
+    <nav className="fixed left-0 top-0 z-50 h-16 w-full border-b border-[#D8E3DF] bg-white shadow-sm">
+        <div className="relative mx-auto flex h-16 w-full max-w-[1600px] items-center justify-between px-3 sm:px-5">
           <Link
             href="/"
-            className="flex items-center"
-            style={{ width: 175, height: 40, position: "relative" }}
+            aria-label="Leafy Factory home"
+            className="relative block h-10 w-[135px] shrink-0 sm:w-[165px]"
           >
             <Image
               src="/img/logo.png"
-              alt="Logo"
+              alt="MongoDB"
               fill
-              style={{ objectFit: "contain" }}
-              sizes="500px"
+              className="object-contain object-left"
+              sizes="165px"
               priority
             />
           </Link>
-        </div>
-        {/* Main navbar content centered horizontally */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 relative">
-          <div className="w-full flex justify-center">
-            <div className="flex space-x-6">
-              {navLinks.map(({ href, label }) => {
-                const selected =
-                  href === "/" ? pathname === "/" : pathname.startsWith(href);
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={`transition-colors px-2 py-1 rounded-md ${
-                      selected
-                        ? "bg-[#E3FCF7]"
-                        : "text-gray-700 hover:text-blue-600"
-                    }`}
+
+          <div className="absolute left-1/2 hidden h-full -translate-x-1/2 items-center gap-6 lg:flex xl:gap-10">
+            {STORY_STAGES.map((stage) => {
+              const isActive = activeStage?.id === stage.id;
+
+              return (
+                <Link
+                  key={stage.id}
+                  href={stage.href}
+                  className={`rounded-lg px-3 py-2 transition-colors ${
+                    isActive
+                      ? "bg-[#E3FCF7] text-[#00684A]"
+                      : "text-[#3D4F58] hover:bg-[#F1F5F3]"
+                  }`}
+                >
+                  <Body
+                    as="span"
+                    weight={isActive ? "medium" : "regular"}
                   >
-                    <Body
-                      className="m-0 p-0"
-                      as="span"
-                      baseFontSize={16}
-                      weight={selected ? "medium" : "regular"}
-                      style={selected ? { color: "#00684A" } : {}}
-                    >
-                      {label}
-                    </Body>
-                  </Link>
-                );
-              })}
-            </div>
+                    {stage.label}
+                  </Body>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              aria-label="Toggle navigation"
+              aria-expanded={mobileOpen}
+              onClick={() => setMobileOpen((value) => !value)}
+              className="flex h-10 items-center gap-1 rounded-lg border border-[#C1C7C6] px-2 text-[#112733] lg:hidden"
+            >
+              <Icon glyph={mobileOpen ? "X" : "Menu"} size={18} />
+              <span className="hidden text-sm sm:inline">Menu</span>
+            </button>
           </div>
         </div>
 
-        {/* InfoWizard absolutely positioned in the top-right corner to mirror the logo on the left */}
-        <div className="absolute right-0 top-0 pr-5 pt-2">
-          <div className="flex items-center">
-            <InfoWizard
-              open={infoOpen}
-              setOpen={setInfoOpen}
-              sections={TALK_TRACK}
-            />
+        {mobileOpen && (
+          <div className="grid max-h-[calc(100vh-4rem)] gap-2 overflow-y-auto border-t border-[#D8E3DF] bg-white p-3 shadow-xl lg:hidden">
+            {STORY_STAGES.map((stage) => (
+              <Link
+                key={stage.id}
+                href={stage.href}
+                className={`block rounded-lg px-3 py-2 ${
+                  activeStage?.id === stage.id
+                    ? "bg-[#E3FCF7] text-[#00684A]"
+                    : "hover:bg-[#F1F5F3]"
+                }`}
+              >
+                <Body weight="medium">{stage.label}</Body>
+              </Link>
+            ))}
           </div>
-        </div>
-      </nav>
-    </LeafyGreenProvider>
+        )}
+    </nav>
   );
 }

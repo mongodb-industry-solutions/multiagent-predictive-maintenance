@@ -39,6 +39,8 @@
     "@leafygreen-ui/modal": "^22.0.1",
     "@leafygreen-ui/segmented-control": "^11.1.0",
     "@leafygreen-ui/select": "^17.1.0",
+    "@leafygreen-ui/side-nav": "^17.0.12",
+    "@leafygreen-ui/stepper": "^6.1.5",
     "@leafygreen-ui/tabs": "^17.0.11",
     "@leafygreen-ui/text-area": "^12.1.5",
     "@leafygreen-ui/text-input": "^16.2.3",

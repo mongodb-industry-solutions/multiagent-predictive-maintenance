@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+:root {
+  --leafy-ink: #112733;
+  --leafy-muted: #3d4f58;
+  --leafy-green: #00684a;
+  --leafy-green-bright: #00a35c;
+  --leafy-mint: #e3fcf7;
+  --leafy-canvas: #f8faf9;
+  --leafy-border: #d8e3df;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--leafy-canvas);
+}
+
 @keyframes agent-glow-fade {
   0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
   100% { box-shadow: 0 0 16px 8px rgba(34,197,94,0.25); }
@@ -8,8 +26,50 @@
   animation: agent-glow-fade 1s infinite alternate;
 }
 
+/* ---------- Landing page (dark) motion primitives ---------- */
+
+@keyframes leafy-rise {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.leafy-rise {
+  animation: leafy-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes leafy-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.leafy-fade-in {
+  animation: leafy-fade-in 1.2s ease-out both;
+}
+
+@keyframes leafy-ring-pulse {
+  0% { opacity: 0.45; transform: scale(0.82); }
+  70% { opacity: 0; transform: scale(1.35); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+.leafy-ring-pulse {
+  animation: leafy-ring-pulse 3.2s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leafy-rise,
+  .leafy-fade-in,
+  .leafy-ring-pulse {
+    animation: none;
+  }
+}
+
 body {
-  @apply bg-white;
+  background: var(--leafy-canvas);
+  color: var(--leafy-ink);
+  text-rendering: optimizeLegibility;
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Custom scrollbar for CardList */
