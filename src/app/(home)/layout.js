@@ -6,7 +6,6 @@ import Navbar from "@/components/navBar/NavBar";
 export default function HomeLayout({ children }) {
   const pathname = usePathname();
   const isUnifiedNamespaceDemo =
-    pathname === "/unified-namespace/factory-explorer" ||
     pathname === "/unified-namespace/uns-in-action";
 
   return (

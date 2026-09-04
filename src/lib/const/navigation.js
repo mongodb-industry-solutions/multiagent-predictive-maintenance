@@ -13,11 +13,6 @@ export const STORY_STAGES = [
         description: "Why a unified namespace needs memory.",
       },
       {
-        label: "Explore Leafy Factory",
-        href: "/unified-namespace/factory-explorer",
-        description: "Walk the EV module line station by station.",
-      },
-      {
         label: "UNS in Action",
         href: "/unified-namespace/uns-in-action",
         description: "Run orders and inspect live operational data.",
@@ -36,16 +31,6 @@ export const STORY_STAGES = [
         label: "Stage Overview",
         href: "/ai-workflows",
         description: "From retrieval to guided decisions.",
-      },
-      {
-        label: "Factory Chat",
-        href: "/ai-workflows/factory-chat",
-        description: "Talk to your unified factory context.",
-      },
-      {
-        label: "Criticality Analysis",
-        href: "/ai-workflows/criticality-analysis",
-        description: "Turn evidence into a governed assessment.",
       },
     ],
   },

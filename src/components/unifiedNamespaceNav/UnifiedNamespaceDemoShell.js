@@ -5,9 +5,7 @@ import UnifiedNamespaceNav from "./UnifiedNamespaceNav";
 
 export default function UnifiedNamespaceDemoShell({ children }) {
   const pathname = usePathname();
-  const isDemoRoute =
-    pathname === "/unified-namespace/factory-explorer" ||
-    pathname === "/unified-namespace/uns-in-action";
+  const isDemoRoute = pathname === "/unified-namespace/uns-in-action";
 
   if (!isDemoRoute) return children;
 

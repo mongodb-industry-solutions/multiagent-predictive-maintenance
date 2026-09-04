@@ -13,6 +13,65 @@ import {
   AGENTIC_TALK_TRACK,
 } from "@/lib/const/talkTrack";
 
+function ComingSoonBadge() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FFDD49]/70 bg-[#FEF7DB] px-2.5 py-1 text-xs font-medium text-[#944F01]">
+      <Icon glyph="Clock" size={12} />
+      Coming soon
+    </span>
+  );
+}
+
+function UseCaseCard({ item }) {
+  const isComingSoon = Boolean(item.comingSoon);
+
+  const content = (
+    <>
+      <div className="mb-5 flex items-center justify-between">
+        <span
+          className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+            isComingSoon
+              ? "bg-[#F1F5F3] text-[#5C6C75]"
+              : "bg-[#E3FCF7] text-[#00684A]"
+          }`}
+        >
+          <Icon glyph={item.glyph} size={22} />
+        </span>
+        {isComingSoon && <ComingSoonBadge />}
+      </div>
+      <H3 className="text-[#112733]">{item.title}</H3>
+      <Description className="mt-2 flex-1 leading-6">
+        {item.description}
+      </Description>
+    </>
+  );
+
+  if (isComingSoon) {
+    return (
+      <div className="flex min-h-[210px] flex-col rounded-2xl border border-dashed border-[#C1C7C6] bg-[#F8FAF9] p-5">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={item.href}
+      className="group flex min-h-[210px] flex-col rounded-2xl border border-[#D8E3DF] bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-[#00A35C] hover:shadow-md"
+    >
+      {content}
+      <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#00684A]">
+        Open use case
+        <Icon
+          glyph="ArrowRight"
+          size={15}
+          className="transition-transform group-hover:translate-x-1"
+        />
+      </span>
+    </Link>
+  );
+}
+
 function UseCaseCatalog({ items }) {
   return (
     <section>
@@ -24,31 +83,9 @@ function UseCaseCatalog({ items }) {
           Use cases
         </Body>
       </div>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
         {items.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="group flex min-h-[210px] flex-col rounded-2xl border border-[#D8E3DF] bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-[#00A35C] hover:shadow-md"
-          >
-            <div className="mb-5 flex items-center justify-between">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E3FCF7] text-[#00684A]">
-                <Icon glyph={item.glyph} size={22} />
-              </span>
-            </div>
-            <H3 className="text-[#112733]">{item.title}</H3>
-            <Description className="mt-2 flex-1 leading-6">
-              {item.description}
-            </Description>
-            <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#00684A]">
-              Open use case
-              <Icon
-                glyph="ArrowRight"
-                size={15}
-                className="transition-transform group-hover:translate-x-1"
-              />
-            </span>
-          </Link>
+          <UseCaseCard key={item.href || item.title} item={item} />
         ))}
       </div>
     </section>
@@ -142,15 +179,17 @@ export default function SectionHome({
               {subtitle}
             </p>
             <div className="mt-7 flex items-center gap-2">
-              <Button
-                href={startHref}
-                onClick={onStart}
-                variant="primary"
-                darkMode={false}
-                rightGlyph={<Icon glyph="ArrowRight" />}
-              >
-                Start demo
-              </Button>
+              {startHref && (
+                <Button
+                  href={startHref}
+                  onClick={onStart}
+                  variant="primary"
+                  darkMode={false}
+                  rightGlyph={<Icon glyph="ArrowRight" />}
+                >
+                  Start demo
+                </Button>
+              )}
               <InfoWizard
                 open={infoOpen}
                 setOpen={setInfoOpen}

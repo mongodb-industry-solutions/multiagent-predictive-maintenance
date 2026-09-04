@@ -12,7 +12,6 @@ export default function UnifiedNamespaceNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [collapsed, setCollapsed] = useState(true);
-  const isExplorer = pathname === "/unified-namespace/factory-explorer";
   const isUnsAction = pathname === "/unified-namespace/uns-in-action";
   const requestedView = searchParams.get("view");
   const activeView = UNS_VIEWS.has(requestedView)
@@ -28,15 +27,6 @@ export default function UnifiedNamespaceNav() {
       setCollapsed={setCollapsed}
       className="sticky top-0 z-[70] h-[calc(100vh-4rem)] shrink-0"
     >
-      <SideNavItem
-        as={Link}
-        href="/unified-namespace/factory-explorer"
-        active={isExplorer}
-        glyph={<Icon glyph="Diagram" size={20} />}
-      >
-        Explore Leafy Factory
-      </SideNavItem>
-
       <SideNavGroup
         header="UNS in action"
         glyph={<Icon glyph="Database" size={20} />}

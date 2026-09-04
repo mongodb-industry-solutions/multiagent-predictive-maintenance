@@ -7,15 +7,22 @@ const useCases = [
     title: "Factory Chat",
     description:
       "Ask natural-language questions across live and historical factory context with visible supporting evidence.",
-    href: "/ai-workflows/factory-chat",
     glyph: "Wizard",
+    comingSoon: true,
   },
   {
     title: "Criticality Analysis",
     description:
       "Retrieve evidence, score asset impact, explain the result, and route it through human review.",
-    href: "/ai-workflows/criticality-analysis",
     glyph: "Diagram",
+    comingSoon: true,
+  },
+  {
+    title: "Repair Plan Generation",
+    description:
+      "Assemble a step-by-step repair plan from manuals, maintenance history, and spare-part availability.",
+    glyph: "Wrench",
+    comingSoon: true,
   },
 ];
 
@@ -54,7 +61,6 @@ export default function AiWorkflowsPage() {
         subtitle="Ground natural-language experiences and governed AI workflows in the same trusted operational context created by the unified namespace."
         image="/img/ai-workloads-overview.png"
         imageAlt="AI workflows and agentic workloads overview"
-        startHref="/ai-workflows/factory-chat"
         useCases={useCases}
         resources={resources}
     />

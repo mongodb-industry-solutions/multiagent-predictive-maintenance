@@ -48,28 +48,23 @@ export default function Page() {
         </p>
       </header>
 
-      {/* Main animation */}
-      <div className="relative z-10 min-h-0 flex-1 px-2 sm:px-6">
-        <FactoryConstellation />
-      </div>
-
       {/* Stage entry points */}
-      <footer className="relative z-10 shrink-0 px-4 pb-[clamp(1.5rem,5vh,3rem)] sm:px-6">
+      <nav
+        aria-label="Story stages"
+        className="relative z-10 shrink-0 px-4 pt-[clamp(0.75rem,2.2vh,1.25rem)] sm:px-6"
+      >
         <div className="mx-auto grid max-w-5xl grid-cols-3 gap-2 sm:gap-2.5">
           {STORY_STAGES.map((stage, index) => (
             <Link
               key={stage.id}
               href={stage.href}
               className="leafy-rise group relative flex flex-col items-start gap-1.5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-[#00ED64]/40 hover:bg-white/[0.07] hover:shadow-[0_18px_40px_-24px_rgba(0,237,100,0.65)] sm:flex-row sm:items-center sm:gap-3 sm:px-4 sm:py-3"
-              style={{ animationDelay: `${0.55 + index * 0.1}s` }}
+              style={{ animationDelay: `${0.3 + index * 0.1}s` }}
             >
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-[#00ED64]/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
               />
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-[#00ED64]/10 text-[10px] font-semibold text-[#8FE9BA] transition-colors duration-300 group-hover:border-[#00ED64]/40 group-hover:text-[#00ED64] sm:h-8 sm:w-8 sm:text-[11px]">
-                {stage.number}
-              </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[11px] font-semibold leading-tight text-white sm:truncate sm:text-sm">
                   {stage.label}
@@ -93,7 +88,12 @@ export default function Page() {
             </Link>
           ))}
         </div>
-      </footer>
+      </nav>
+
+      {/* Main animation */}
+      <div className="relative z-10 min-h-0 flex-1 px-2 py-[clamp(0.75rem,2.5vh,1.75rem)] sm:px-6">
+        <FactoryConstellation />
+      </div>
     </main>
   );
 }

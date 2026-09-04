@@ -5,32 +5,25 @@ import { resetAgenticProgress } from "@/lib/agenticProgress";
 
 const useCases = [
   {
-    title: "Failure prediction & root cause",
+    title: "Predictive Maintenance",
     description:
-      "Stream machine telemetry, detect an anomaly, and retrieve evidence for an automated root-cause report.",
+      "Specialist agents detect failures, diagnose root cause, generate work orders, and schedule maintenance end to end.",
     href: "/agentic-ai/failure-prediction",
     glyph: "Warning",
   },
   {
-    title: "Work order generation",
+    title: "Contestable AI",
     description:
-      "Turn an incident report into an actionable maintenance plan with parts, skills, and duration estimates.",
-    href: "/agentic-ai/workorder-generation",
-    glyph: "Wrench",
+      "Agent outputs become proposals: engineers can accept, reject, or modify each argument before a recommendation is finalised.",
+    glyph: "Person",
+    comingSoon: true,
   },
   {
-    title: "Maintenance scheduling",
+    title: "Change Documentation Agent",
     description:
-      "Balance production, inventory, and technician constraints to select the best maintenance window.",
-    href: "/agentic-ai/workorder-scheduler",
-    glyph: "Clock",
-  },
-  {
-    title: "Agent Sandbox",
-    description:
-      "Chat with each specialist agent directly and inspect its tools, retrieved context, and responses.",
-    href: "/agentic-ai/agent-sandbox",
-    glyph: "Wrench",
+      "Capture shop-floor changes and keep procedures, asset records, and work instructions up to date automatically.",
+    glyph: "File",
+    comingSoon: true,
   },
 ];
 

@@ -119,14 +119,14 @@ function SpreadsheetIcon() {
 
 // `x` / `y` are the scattered ("before") positions in 0..1 stage units.
 const NODES = [
-  { id: "scada", label: "SCADA", Icon: ScadaIcon, x: 0.11, y: 0.17 },
+  { id: "scada", label: "SCADA", Icon: ScadaIcon, x: 0.11, y: 0.13 },
   { id: "plc", label: "PLCs", Icon: PlcIcon, x: 0.08, y: 0.55 },
   { id: "sensors", label: "Sensors", Icon: SensorIcon, x: 0.17, y: 0.86 },
   { id: "historian", label: "Historians", Icon: HistorianIcon, x: 0.41, y: 0.9 },
   { id: "erp", label: "ERP", Icon: ErpIcon, x: 0.33, y: 0.35 },
   // Kept clear of the stage centre, which the invitation and then the hub occupy.
   { id: "mes", label: "MES", Icon: MesIcon, x: 0.57, y: 0.69 },
-  { id: "robots", label: "Robots", Icon: RobotIcon, x: 0.63, y: 0.15 },
+  { id: "robots", label: "Robots", Icon: RobotIcon, x: 0.63, y: 0.11 },
   { id: "cmms", label: "CMMS", Icon: CmmsIcon, x: 0.87, y: 0.29 },
   { id: "vision", label: "Vision", Icon: VisionIcon, x: 0.92, y: 0.65 },
   { id: "excel", label: "Excel", Icon: SpreadsheetIcon, x: 0.71, y: 0.88 },
@@ -187,7 +187,9 @@ const RING_ANGLES = (() => {
 })();
 
 const MORPH_MS = 1250;
-const BOTTOM_INSET = 12;
+// The stage is padded by its parent, so the layout uses the full height and
+// stays vertically centred in the space it is given.
+const BOTTOM_INSET = 0;
 
 // The pointer gently pushes nearby systems away from it and they drift back once
 // it moves on. Their connections are drawn from the same points, so the whole
