@@ -120,25 +120,6 @@ export default function FactorySourceBar({ compact = false }) {
                 </select>
               </label>
             )}
-
-            <div className="mt-3 grid gap-2 border-t border-[#D8E3DF] px-2 pt-3">
-              {[
-                ["Current order", selectedOrderId || "None selected"],
-                ["Live events", snapshot.events.length],
-                ["Production units", snapshot.productionUnits.length],
-                ["Active orders", snapshot.activeOrders.length],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="flex items-center justify-between gap-4 text-sm"
-                >
-                  <span className="text-[#5C6C75]">{label}</span>
-                  <span className="max-w-[180px] truncate font-medium text-[#112733]">
-                    {value}
-                  </span>
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </div>
