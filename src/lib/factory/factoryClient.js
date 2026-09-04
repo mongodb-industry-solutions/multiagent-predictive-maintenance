@@ -1,4 +1,7 @@
 const PROXY_ROOT = "/api/factory-simulator";
+// The simulator rejects limit > 100 with a 422, and it does not filter by
+// order_id server-side, so units are filtered client-side after the fetch.
+const MAX_PRODUCTION_UNITS_LIMIT = 100;
 
 export class FactoryApiError extends Error {
   constructor(message, status = 500) {
@@ -121,7 +124,9 @@ export async function fetchMachineEvents({
 
 export async function fetchProductionUnits({ orderId, limit = 30 } = {}) {
   const data = await factoryFetch(
-    `api/production-units${queryString({ limit })}`
+    `api/production-units${queryString({
+      limit: Math.min(limit, MAX_PRODUCTION_UNITS_LIMIT),
+    })}`
   );
   return (Array.isArray(data.production_units)
     ? data.production_units
@@ -186,31 +191,80 @@ export async function fetchThresholds(orderId) {
   }
 }
 
-export async function fetchRemoteSnapshot(orderId) {
+/**
+ * Fetches factory status, the live order list, and — only when an order is
+ * selected — that order's events, units, alerts, analytics, SCADA state, and
+ * thresholds. Which orders are shown is decided by the caller (session list).
+ */
+export async function fetchRemoteSnapshot(orderId, onPartial) {
+  if (!orderId) {
+    const [status, activeOrders, analytics] = await Promise.all([
+      fetchFactoryStatus(),
+      fetchActiveOrders(),
+      fetchFactoryAnalytics({}),
+    ]);
+    return {
+      status,
+      activeOrders,
+      scadaState: null,
+      events: [],
+      productionUnits: [],
+      alerts: [],
+      analytics,
+      thresholds: null,
+    };
+  }
+
+  // The list/status request is independent of the selected order's detail
+  // requests. Start all of them together so an order switch waits only for
+  // the slowest endpoint, rather than for two consecutive request groups.
+  const detailPromises = [
+    fetchMachineEvents({ orderId }).then((value) => {
+      onPartial?.({ events: value });
+      return value;
+    }),
+    fetchProductionUnits({ orderId, limit: MAX_PRODUCTION_UNITS_LIMIT }).then(
+      (value) => {
+        onPartial?.({ productionUnits: value });
+        return value;
+      }
+    ),
+    fetchFactoryAlerts({ orderId }).then((value) => {
+      onPartial?.({ alerts: value });
+      return value;
+    }),
+    fetchFactoryAnalytics({ orderId }).then((value) => {
+      onPartial?.({ analytics: value });
+      return value;
+    }),
+    // Remains available after the run stops (404 → null otherwise).
+    fetchScadaState(orderId).then((value) => {
+      onPartial?.({ scadaState: value });
+      return value;
+    }),
+    fetchThresholds(orderId).then((value) => {
+      onPartial?.({ thresholds: value });
+      return value;
+    }),
+  ];
   const [status, activeOrders] = await Promise.all([
     fetchFactoryStatus(),
     fetchActiveOrders(),
   ]);
-  const effectiveOrderId =
-    orderId && activeOrders.some((order) => order.order_id === orderId)
-      ? orderId
-      : activeOrders[0]?.order_id || null;
+  onPartial?.({ status, activeOrders });
 
-  const [events, productionUnits, alerts, analytics, scadaState, thresholds] =
-    await Promise.all([
-      fetchMachineEvents({ orderId: effectiveOrderId }),
-      fetchProductionUnits({ orderId: effectiveOrderId }),
-      fetchFactoryAlerts({ orderId: effectiveOrderId }),
-      fetchFactoryAnalytics({ orderId: effectiveOrderId }),
-      fetchScadaState(effectiveOrderId),
-      fetchThresholds(effectiveOrderId),
-    ]);
+  const [
+    events,
+    productionUnits,
+    alerts,
+    analytics,
+    scadaState,
+    thresholds,
+  ] = await Promise.all(detailPromises);
 
   return {
     status,
     activeOrders,
-    selectedOrder:
-      activeOrders.find((order) => order.order_id === effectiveOrderId) || null,
     scadaState,
     events,
     productionUnits,

@@ -1,56 +1,240 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Icon from "@leafygreen-ui/icon";
 import { H2, H3, Body, Description } from "@leafygreen-ui/typography";
 import { useFactoryData } from "@/components/factoryDataProvider/FactoryDataProvider";
+import { isRunningOrder } from "@/lib/factory/sessionOrders";
 
 function severityClass(severity) {
   if (severity === "critical") return "bg-[#FDEDEB] text-[#B1371F]";
   return "bg-[#FFF1E5] text-[#944F01]";
 }
 
+const COLORS = {
+  normal: "#00A35C",
+  warning: "#DB6C00",
+  critical: "#DB3030",
+};
+
+function severityFor(value, threshold) {
+  const ratio = value / Math.max(1, threshold);
+  if (ratio >= 1.5) return "critical";
+  if (ratio > 1) return "warning";
+  return "normal";
+}
+
+/**
+ * Range-input state that only commits when the interaction ends: on pointer
+ * release after a drag, on a plain click (press + release on a new value), or
+ * on key release. The returned `draft` follows the thumb live.
+ */
+function useCommitOnRelease(value, onCommit) {
+  const [draft, setDraft] = useState(value);
+  const dragging = useRef(false);
+  const draftRef = useRef(value);
+  const lastCommitted = useRef(value);
+
+  useEffect(() => {
+    if (!dragging.current) {
+      setDraft(value);
+      draftRef.current = value;
+      lastCommitted.current = value;
+    }
+  }, [value]);
+
+  const commit = (next) => {
+    const numeric = Number(next);
+    if (numeric === lastCommitted.current) return;
+    lastCommitted.current = numeric;
+    onCommit(numeric);
+  };
+
+  // Fallback for a pointer released outside the slider while dragging.
+  useEffect(() => {
+    const release = () => {
+      if (!dragging.current) return;
+      dragging.current = false;
+      commit(draftRef.current);
+    };
+    window.addEventListener("pointerup", release);
+    window.addEventListener("pointercancel", release);
+    return () => {
+      window.removeEventListener("pointerup", release);
+      window.removeEventListener("pointercancel", release);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onCommit]);
+
+  const handlers = {
+    onPointerDown: () => {
+      dragging.current = true;
+    },
+    onPointerUp: (event) => {
+      dragging.current = false;
+      commit(event.currentTarget.value);
+    },
+    onKeyUp: (event) => commit(event.currentTarget.value),
+    onChange: (event) => {
+      const next = Number(event.target.value);
+      draftRef.current = next;
+      setDraft(next);
+    },
+  };
+
+  return [draft, handlers];
+}
+
+/**
+ * One track, two handles: a round thumb for the injected reading and an
+ * orange flag for the alert threshold. The track is tinted green below the
+ * threshold and red above it, and the filled reading bar takes the current
+ * severity colour, so the relationship between the two is visible at a glance.
+ */
+function SensorSlider({
+  label,
+  unit,
+  min,
+  max,
+  value,
+  threshold,
+  onCommitValue,
+  onCommitThreshold,
+  disabled = false,
+}) {
+  const [draftValue, valueHandlers] = useCommitOnRelease(value, onCommitValue);
+  const [draftThreshold, thresholdHandlers] = useCommitOnRelease(
+    threshold,
+    onCommitThreshold
+  );
+  const percent = (number) =>
+    Math.min(100, Math.max(0, ((number - min) / (max - min)) * 100));
+  const valuePct = percent(draftValue);
+  const thresholdPct = percent(draftThreshold);
+  const severity = severityFor(draftValue, draftThreshold);
+  const color = COLORS[severity];
+
+  return (
+    <div className={`grid gap-1 ${disabled ? "opacity-50" : ""}`}>
+      <div className="flex items-baseline justify-between gap-2">
+        <Body weight="medium" className="text-sm text-[#3D4F58]">
+          {label}
+        </Body>
+        <span className="flex items-baseline gap-3 font-mono text-xs">
+          <span className="text-[#944F01]" title="Alert threshold">
+            ▮ {draftThreshold} {unit}
+          </span>
+          <span
+            className="text-sm font-semibold"
+            style={{ color: severity === "normal" ? "#112733" : color }}
+            title="Current reading"
+          >
+            ● {draftValue} {unit}
+          </span>
+        </span>
+      </div>
+
+      <div
+        className={`relative h-8 ${disabled ? "cursor-not-allowed" : ""}`}
+        style={{ "--sensor-value-color": color }}
+        title={
+          disabled
+            ? "Readings and thresholds can only be changed while the selected order is running."
+            : undefined
+        }
+      >
+        {/* Track: safe zone up to the threshold, alert zone beyond it. */}
+        <div
+          aria-hidden="true"
+          className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full"
+          style={{
+            background: `linear-gradient(to right, #C0E9DA ${thresholdPct}%, #F6D3CD ${thresholdPct}%)`,
+          }}
+        >
+          <div
+            className="h-full rounded-full transition-[width] duration-100"
+            style={{ width: `${valuePct}%`, backgroundColor: color }}
+          />
+        </div>
+        <input
+          type="range"
+          aria-label={`${label} alert threshold`}
+          min={min}
+          max={max}
+          value={draftThreshold}
+          disabled={disabled}
+          className="sensor-range sensor-range--threshold"
+          {...thresholdHandlers}
+        />
+        <input
+          type="range"
+          aria-label={`${label} reading`}
+          min={min}
+          max={max}
+          value={draftValue}
+          disabled={disabled}
+          className="sensor-range sensor-range--value"
+          {...valueHandlers}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function ConditionWorkspace() {
   const {
     snapshot,
     selectedOrderId,
-    selectOrder,
+    selectedOrder,
+    isOrderLoading,
+    orderDataLoading,
     saveThresholds,
     sendMetrics,
     busyAction,
   } = useFactoryData();
-  const [thresholds, setThresholds] = useState({
-    temperature_threshold: 80,
-    vibration_threshold: 50,
-  });
-  const [readings, setReadings] = useState({
-    temperature: 68,
-    vibration: 24,
-  });
+  // Readings and thresholds can only be pushed to a running factory runtime.
+  const canControl = !isOrderLoading && isRunningOrder(selectedOrder);
   const [alertFilter, setAlertFilter] = useState("all");
   const [message, setMessage] = useState("");
 
+  // Thresholds are a slider setting, not a per-order reading: keep whatever
+  // the user last set (or the first value loaded) and never reset it when a
+  // different order is selected. Switching orders only enables/disables the
+  // sliders via `canControl`; it does not move the threshold handle.
+  const [thresholds, setThresholds] = useState(() => ({
+    temperature_threshold: Number(
+      snapshot.thresholds?.temperature_threshold ?? 80
+    ),
+    vibration_threshold: Number(
+      snapshot.thresholds?.vibration_threshold ?? 50
+    ),
+  }));
+  const thresholdsInitialized = useRef(
+    snapshot.thresholds?.temperature_threshold != null ||
+      snapshot.thresholds?.vibration_threshold != null
+  );
   useEffect(() => {
-    if (snapshot.thresholds) {
-      setThresholds({
-        temperature_threshold: Number(
-          snapshot.thresholds.temperature_threshold ?? 80
-        ),
-        vibration_threshold: Number(
-          snapshot.thresholds.vibration_threshold ?? 50
-        ),
-      });
-    }
+    // Pick up the first real thresholds fetched from the backend (they load
+    // asynchronously after mount), but only once — later order switches or
+    // refreshes must not override the user's current slider positions.
+    if (thresholdsInitialized.current || !snapshot.thresholds) return;
+    thresholdsInitialized.current = true;
+    setThresholds({
+      temperature_threshold: Number(
+        snapshot.thresholds.temperature_threshold ?? 80
+      ),
+      vibration_threshold: Number(
+        snapshot.thresholds.vibration_threshold ?? 50
+      ),
+    });
   }, [snapshot.thresholds]);
-
-  useEffect(() => {
-    if (snapshot.sensor) {
-      setReadings({
-        temperature: Number(snapshot.sensor.temperature ?? 68),
-        vibration: Number(snapshot.sensor.vibration ?? 24),
-      });
-    }
-  }, [snapshot.sensor]);
+  const readings = useMemo(
+    () => ({
+      temperature: Number(snapshot.sensor?.temperature ?? 68),
+      vibration: Number(snapshot.sensor?.vibration ?? 24),
+    }),
+    [snapshot.sensor]
+  );
 
   const visibleAlerts = useMemo(
     () =>
@@ -60,299 +244,158 @@ export default function ConditionWorkspace() {
     [alertFilter, snapshot.alerts]
   );
 
-  const tempRatio =
-    readings.temperature / Math.max(1, thresholds.temperature_threshold);
-  const vibrationRatio =
-    readings.vibration / Math.max(1, thresholds.vibration_threshold);
-
-  const applyThresholds = async () => {
+  const commitReading = async (key, value) => {
     setMessage("");
     try {
-      await saveThresholds(thresholds);
-      setMessage("Thresholds saved for the selected order.");
-    } catch {
-      // Provider displays the detailed error.
-    }
-  };
-
-  const applyReadings = async () => {
-    setMessage("");
-    try {
-      const result = await sendMetrics(readings);
+      const result = await sendMetrics({ ...readings, [key]: value });
       setMessage(
         result.alerts_generated?.length
           ? `Generated ${result.alerts_generated.join(" and ")} alert.`
-          : "Readings applied. No new threshold crossing."
+          : "Reading applied. No threshold crossing."
       );
     } catch {
       // Provider displays the detailed error.
     }
   };
 
-  if (!selectedOrderId) {
-    return (
-      <section className="rounded-2xl border border-dashed border-[#00A35C] bg-white p-10 text-center shadow-sm">
-        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#E3FCF7] text-[#00684A]">
-          <Icon glyph="Warning" size={24} />
-        </span>
-        <H2 className="mt-4 !text-xl !leading-7 text-[#112733]">
-          Select or start an active order
-        </H2>
-        <Description className="mx-auto mt-2 max-w-lg leading-6">
-          Thresholds and injected sensor readings are scoped to a production
-          order, matching the Leafy Factory API contract.
-        </Description>
-      </section>
-    );
-  }
+  const commitThreshold = async (key, value) => {
+    setMessage("");
+    const next = { ...thresholds, [key]: value };
+    // Reflect the change immediately and keep it regardless of order
+    // switches; only a further user edit or the very first load moves it.
+    setThresholds(next);
+    try {
+      await saveThresholds(next);
+      setMessage("Threshold saved.");
+    } catch {
+      // Provider displays the detailed error.
+    }
+  };
+
+  const busy = busyAction === "metrics" || busyAction === "thresholds";
 
   return (
-    <div className="grid gap-5">
-      <section className="flex flex-wrap items-end justify-between gap-4 rounded-xl border border-[#D8E3DF] bg-white p-4 shadow-sm">
-        <div>
-          <Body weight="medium" className="text-[#00684A]">
-            Condition-monitoring scope
-          </Body>
-          <Description className="mt-1">
-            Thresholds and alerts are isolated by production order.
-          </Description>
-        </div>
-        <label className="grid min-w-[260px] gap-1 text-sm font-medium text-[#3D4F58]">
-          Active order
-          <select
-            value={selectedOrderId}
-            onChange={(event) => selectOrder(event.target.value)}
-            className="h-10 rounded-lg border border-[#C1C7C6] bg-white px-3 text-[#112733]"
-          >
-            {snapshot.activeOrders.map((order) => (
-              <option key={order.order_id} value={order.order_id}>
-                {order.order_id} · {order.customer || "Factory order"}
-              </option>
-            ))}
-          </select>
-        </label>
-      </section>
+    <section className="grid gap-5 lg:grid-cols-[7fr_13fr]">
+      {/* Sensor controls — 35% */}
+      <div className="flex min-w-0 flex-col rounded-2xl border border-[#D8E3DF] bg-white p-5 shadow-sm">
+        <H2 className="!text-xl !leading-7 text-[#112733]">Sensors</H2>
 
-      <section className="grid gap-5 lg:grid-cols-2">
-        <div className="rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm">
-          <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E3FCF7] text-[#00684A]">
-              <Icon glyph="Wrench" size={20} />
-            </span>
-            <div>
-              <H2 className="!text-xl !leading-7 text-[#112733]">
-                Alert thresholds
-              </H2>
-              <Description className="mt-1">
-                Laser Tab Welding · {selectedOrderId}
-              </Description>
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-5">
-            <label className="grid gap-2">
-              <span className="flex items-center justify-between gap-3">
-                <Body weight="medium" className="text-sm text-[#3D4F58]">
-                  Temperature threshold
-                </Body>
-                <span className="font-mono text-sm font-semibold text-[#112733]">
-                  {thresholds.temperature_threshold} °C
-                </span>
-              </span>
-              <input
-                type="range"
-                min="40"
-                max="160"
-                value={thresholds.temperature_threshold}
-                onChange={(event) =>
-                  setThresholds((current) => ({
-                    ...current,
-                    temperature_threshold: Number(event.target.value),
-                  }))
-                }
-                className="accent-[#00A35C]"
-              />
-            </label>
-            <label className="grid gap-2">
-              <span className="flex items-center justify-between gap-3">
-                <Body weight="medium" className="text-sm text-[#3D4F58]">
-                  Vibration threshold
-                </Body>
-                <span className="font-mono text-sm font-semibold text-[#112733]">
-                  {thresholds.vibration_threshold} mm/s
-                </span>
-              </span>
-              <input
-                type="range"
-                min="10"
-                max="100"
-                value={thresholds.vibration_threshold}
-                onChange={(event) =>
-                  setThresholds((current) => ({
-                    ...current,
-                    vibration_threshold: Number(event.target.value),
-                  }))
-                }
-                className="accent-[#00A35C]"
-              />
-            </label>
-          </div>
-
-          <button
-            type="button"
-            onClick={applyThresholds}
-            disabled={busyAction === "thresholds"}
-            className="mt-6 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#00684A] font-medium text-[#00684A] hover:bg-[#E3FCF7] disabled:opacity-50"
-          >
-            {busyAction === "thresholds" && (
-              <Icon glyph="Refresh" size={16} className="animate-spin" />
-            )}
-            Save thresholds
-          </button>
+        <div className="mt-4 grid gap-3">
+          <SensorSlider
+            label="Temperature"
+            unit="°C"
+            min={20}
+            max={200}
+            value={readings.temperature}
+            threshold={thresholds.temperature_threshold}
+            disabled={!canControl}
+            onCommitValue={(value) => commitReading("temperature", value)}
+            onCommitThreshold={(value) =>
+              commitThreshold("temperature_threshold", value)
+            }
+          />
+          <SensorSlider
+            label="Vibration"
+            unit="mm/s"
+            min={0}
+            max={120}
+            value={readings.vibration}
+            threshold={thresholds.vibration_threshold}
+            disabled={!canControl}
+            onCommitValue={(value) => commitReading("vibration", value)}
+            onCommitThreshold={(value) =>
+              commitThreshold("vibration_threshold", value)
+            }
+          />
         </div>
 
-        <div className="rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm">
-          <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E3FCF7] text-[#00684A]">
-              <Icon glyph="Warning" size={20} />
+        <div className="mt-auto flex min-h-[20px] items-center justify-between gap-2 pt-3 text-xs">
+          <span className="flex items-center gap-3 text-[#5C6C75]">
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-3 w-3 rounded-full border-2 border-[#00A35C] bg-white" />
+              Reading
             </span>
-            <div>
-              <H2 className="!text-xl !leading-7 text-[#112733]">
-                Sensor test bench
-              </H2>
-              <Description className="mt-1">
-                Move values across a threshold to generate an alert.
-              </Description>
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-5">
-            {[
-              {
-                key: "temperature",
-                label: "Temperature",
-                unit: "°C",
-                min: 20,
-                max: 200,
-                ratio: tempRatio,
-              },
-              {
-                key: "vibration",
-                label: "Vibration",
-                unit: "mm/s",
-                min: 0,
-                max: 120,
-                ratio: vibrationRatio,
-              },
-            ].map((sensor) => {
-              const severity =
-                sensor.ratio >= 1.5
-                  ? "critical"
-                  : sensor.ratio > 1
-                    ? "warning"
-                    : "normal";
-              return (
-                <label key={sensor.key} className="grid gap-2">
-                  <span className="flex items-center justify-between gap-3">
-                    <Body weight="medium" className="text-sm text-[#3D4F58]">
-                      {sensor.label}
-                    </Body>
-                    <span className="flex items-center gap-2">
-                      <span
-                        className={`h-2.5 w-2.5 rounded-full ${
-                          severity === "critical"
-                            ? "bg-[#DB3030]"
-                            : severity === "warning"
-                              ? "bg-[#DB6C00]"
-                              : "bg-[#00A35C]"
-                        }`}
-                      />
-                      <span className="font-mono text-sm font-semibold text-[#112733]">
-                        {readings[sensor.key]} {sensor.unit}
-                      </span>
-                    </span>
-                  </span>
-                  <input
-                    type="range"
-                    min={sensor.min}
-                    max={sensor.max}
-                    value={readings[sensor.key]}
-                    onChange={(event) =>
-                      setReadings((current) => ({
-                        ...current,
-                        [sensor.key]: Number(event.target.value),
-                      }))
-                    }
-                    className="accent-[#00A35C]"
-                  />
-                </label>
-              );
-            })}
-          </div>
-
-          <button
-            type="button"
-            onClick={applyReadings}
-            disabled={busyAction === "metrics"}
-            className="mt-6 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#00684A] font-medium text-white hover:bg-[#00543D] disabled:opacity-50"
-          >
-            {busyAction === "metrics" ? (
-              <Icon glyph="Refresh" size={16} className="animate-spin" />
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-3.5 w-1 rounded-sm bg-[#DB6C00]" />
+              Threshold
+            </span>
+          </span>
+          <span className="flex min-w-0 items-center gap-1.5 truncate text-right">
+            {busy ? (
+              <>
+                <Icon
+                  glyph="Refresh"
+                  size={14}
+                  className="animate-spin text-[#00684A]"
+                />
+                <span className="text-[#5C6C75]">Applying…</span>
+              </>
             ) : (
-              <Icon glyph="Play" size={16} />
+              canControl &&
+              message && (
+                <span className="truncate font-medium text-[#00684A]">
+                  {message}
+                </span>
+              )
             )}
-            Apply sensor readings
-          </button>
+          </span>
         </div>
-      </section>
+      </div>
 
-      {message && (
-        <div className="rounded-lg border border-[#B8E4D8] bg-[#E3FCF7] px-4 py-3 text-sm font-medium text-[#00684A]">
-          {message}
-        </div>
-      )}
-
-      <section className="rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm">
+      {/* Alerts — 65% */}
+      <div className="min-w-0 rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <H2 className="!text-xl !leading-7 text-[#112733]">Alerts</H2>
-            <Description className="mt-1">
-              Threshold crossings recorded for the selected order.
-            </Description>
-          </div>
-          <div
-            className="inline-flex rounded-lg bg-[#E8EDEB] p-1"
-            role="group"
-            aria-label="Alert severity filter"
-          >
-            {["all", "warning", "critical"].map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                onClick={() => setAlertFilter(filter)}
-                aria-pressed={alertFilter === filter}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium capitalize ${
-                  alertFilter === filter
-                    ? "bg-white text-[#00684A] shadow-sm"
-                    : "text-[#5C6C75]"
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
+          <H2 className="!text-xl !leading-7 text-[#112733]">Alerts</H2>
+          {orderDataLoading.alerts ? (
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#5C6C75]">
+              <Icon glyph="Refresh" size={14} className="animate-spin" />
+              Loading alerts…
+            </span>
+          ) : (
+            <div
+              className="inline-flex rounded-lg bg-[#E8EDEB] p-1"
+              role="group"
+              aria-label="Alert severity filter"
+            >
+              {["all", "warning", "critical"].map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setAlertFilter(filter)}
+                  aria-pressed={alertFilter === filter}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium capitalize ${
+                    alertFilter === filter
+                      ? "bg-white text-[#00684A] shadow-sm"
+                      : "text-[#5C6C75]"
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="cardlist-scrollbar mt-5 grid max-h-[420px] gap-3 overflow-y-auto pr-1 md:grid-cols-2 xl:grid-cols-3">
           {visibleAlerts.length === 0 ? (
             <div className="rounded-xl border border-dashed border-[#C1C7C6] bg-[#F8FAF9] p-8 text-center md:col-span-2 xl:col-span-3">
               <Icon
-                glyph="CheckmarkWithCircle"
+                glyph={
+                  orderDataLoading.alerts ? "Refresh" : "CheckmarkWithCircle"
+                }
                 size={24}
-                className="mx-auto text-[#00A35C]"
+                className={`mx-auto text-[#00A35C] ${
+                  orderDataLoading.alerts ? "animate-spin" : ""
+                }`}
               />
               <Body className="mt-2 text-[#5C6C75]">
-                No alerts match this view.
+                {orderDataLoading.alerts
+                  ? "Loading alerts for this order…"
+                  : !selectedOrderId
+                  ? "Select an order to see its alerts."
+                  : canControl
+                    ? "No alerts match this view. Move a sensor above its threshold to generate one."
+                    : "No alerts were recorded for this order."}
               </Body>
             </div>
           ) : (
@@ -369,9 +412,16 @@ export default function ConditionWorkspace() {
                   >
                     {alert.severity}
                   </span>
-                  <Description className="text-[11px]">
+                  <Description
+                    className="shrink-0 whitespace-nowrap text-[11px] tabular-nums"
+                    title={
+                      alert.timestamp
+                        ? new Date(alert.timestamp).toLocaleString()
+                        : undefined
+                    }
+                  >
                     {alert.timestamp
-                      ? new Date(alert.timestamp).toLocaleString()
+                      ? new Date(alert.timestamp).toLocaleTimeString()
                       : "Now"}
                   </Description>
                 </div>
@@ -381,19 +431,11 @@ export default function ConditionWorkspace() {
                 <Description className="mt-1">
                   {alert.machine || "Laser Tab Welding"}
                 </Description>
-                <div className="mt-4 flex items-end justify-between gap-3">
-                  <p className="text-2xl font-semibold text-[#112733]">
-                    {alert.value}
-                  </p>
-                  <Body className="text-xs text-[#5C6C75]">
-                    Threshold {alert.threshold}
-                  </Body>
-                </div>
               </article>
             ))
           )}
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
   );
 }

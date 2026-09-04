@@ -15,9 +15,6 @@ export default function FactorySourceBar({ compact = false }) {
     isRefreshing,
     lastUpdated,
     refresh,
-    selectedOrderId,
-    selectOrder,
-    snapshot,
   } = useFactoryData();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -103,23 +100,6 @@ export default function FactorySourceBar({ compact = false }) {
                 </button>
               ))}
             </div>
-
-            {snapshot.activeOrders.length > 0 && (
-              <label className="mt-3 grid gap-1.5 border-t border-[#D8E3DF] px-2 pt-3 text-xs font-medium uppercase tracking-[0.1em] text-[#5C6C75]">
-                Active order
-                <select
-                  value={selectedOrderId || ""}
-                  onChange={(event) => selectOrder(event.target.value)}
-                  className="h-10 w-full min-w-0 rounded-lg border border-[#C1C7C6] bg-white px-3 text-sm normal-case tracking-normal text-[#112733]"
-                >
-                  {snapshot.activeOrders.map((order) => (
-                    <option key={order.order_id} value={order.order_id}>
-                      {order.order_id} · {order.customer || "Factory order"}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
           </div>
         )}
       </div>

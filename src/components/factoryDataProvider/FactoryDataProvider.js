@@ -33,13 +33,55 @@ import {
   FACTORY_STATIONS,
   PRODUCTS,
 } from "@/lib/factory/constants";
+import {
+  isRunningOrder,
+  markSessionOrderStopped,
+  reconcileSessionOrders,
+  toSessionOrder,
+} from "@/lib/factory/sessionOrders";
+import {
+  buildUnitsFromEvents,
+  mergeEvents,
+  mergeUnits,
+  scadaCompletedBatches,
+  scadaEvents,
+} from "@/lib/factory/sessionLedger";
 
 const LOCAL_STATE_STORAGE_KEY = "leafy-local-factory-state";
+const SESSION_ORDERS_STORAGE_KEY = "leafy-session-orders";
+const SESSION_LEDGER_STORAGE_KEY = "leafy-session-ledger";
+const SCADA_POLL_GAP_MS = 250;
+
+function readSessionJson(key, fallback) {
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeSessionJson(key, value) {
+  try {
+    window.sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Ignore disabled or full browser storage.
+  }
+}
 const HEARTBEAT_FAILURES_BEFORE_FALLBACK = 2;
+const EMPTY_ORDER_DATA_LOADING = {
+  events: false,
+  productionUnits: false,
+  alerts: false,
+  analytics: false,
+  scadaState: false,
+  thresholds: false,
+};
 
 const EMPTY_SNAPSHOT = {
   status: null,
   activeOrders: [],
+  orders: [],
   selectedOrder: null,
   scadaState: null,
   liveProductionUnit: null,
@@ -133,6 +175,11 @@ export default function FactoryDataProvider({ children }) {
   const localStateRef = useRef(null);
   const [remoteSnapshot, setRemoteSnapshot] = useState(null);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const selectedOrderIdRef = useRef(null);
+  const [isOrderLoading, setIsOrderLoading] = useState(false);
+  const [orderDataLoading, setOrderDataLoading] = useState(
+    EMPTY_ORDER_DATA_LOADING
+  );
   const [isReady, setIsReady] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [busyAction, setBusyAction] = useState(null);
@@ -142,12 +189,82 @@ export default function FactoryDataProvider({ children }) {
     temperature: 68,
     vibration: 24,
   });
+  // Orders this user started against Leafy Factory in this browser session,
+  // plus every machine event observed for them (keyed by order_id). The
+  // reconciled list is exposed through `snapshot.orders`.
+  const sessionOrdersRef = useRef([]);
+  const ledgerRef = useRef({});
   const refreshingRef = useRef(false);
   const heartbeatFailuresRef = useRef(0);
 
   const commitLocalState = useCallback((nextState) => {
     localStateRef.current = nextState;
     setLocalState(nextState);
+  }, []);
+
+  const commitSessionOrders = useCallback((next) => {
+    sessionOrdersRef.current = next;
+    writeSessionJson(SESSION_ORDERS_STORAGE_KEY, next);
+    // Drop ledger entries for orders no longer in the session.
+    const keep = new Set(next.map((order) => order.order_id));
+    const pruned = Object.fromEntries(
+      Object.entries(ledgerRef.current).filter(([orderId]) => keep.has(orderId))
+    );
+    if (Object.keys(pruned).length !== Object.keys(ledgerRef.current).length) {
+      ledgerRef.current = pruned;
+      writeSessionJson(SESSION_LEDGER_STORAGE_KEY, pruned);
+    }
+  }, []);
+
+  /**
+   * Record a SCADA frame for `orderId`: the events it exposes go to the
+   * ledger and its batch counter advances the session order's progress.
+   */
+  const recordScada = useCallback(
+    (orderId, scadaState) => {
+      if (!orderId || !scadaState) return;
+      const incoming = scadaEvents(scadaState);
+      if (incoming.length > 0) {
+        const current = ledgerRef.current[orderId] || [];
+        const merged = mergeEvents(current, incoming);
+        if (merged.length !== current.length) {
+          ledgerRef.current = { ...ledgerRef.current, [orderId]: merged };
+          writeSessionJson(SESSION_LEDGER_STORAGE_KEY, ledgerRef.current);
+        }
+      }
+      const orders = sessionOrdersRef.current;
+      const order = orders.find((entry) => entry.order_id === orderId);
+      if (!order) return;
+      const completed = scadaCompletedBatches(scadaState, order.quantity);
+      if (completed > (order.completed_units || 0)) {
+        commitSessionOrders(
+          orders.map((entry) =>
+            entry.order_id === orderId
+              ? { ...entry, completed_units: completed }
+              : entry
+          )
+        );
+      }
+    },
+    [commitSessionOrders]
+  );
+
+  /** Merge the ledger into a fetched snapshot and derive live/completed units. */
+  const composeRemote = useCallback((base, orders, selectedOrder, sensor) => {
+    let events = base.events || [];
+    let productionUnits = base.productionUnits || [];
+    if (selectedOrder?.order_id) {
+      const recorded = ledgerRef.current[selectedOrder.order_id] || [];
+      events = mergeEvents(events, recorded);
+      productionUnits = mergeUnits(
+        productionUnits,
+        buildUnitsFromEvents(selectedOrder, recorded)
+      );
+    }
+    return enrichRemoteSnapshot(
+      { ...base, orders, selectedOrder, events, productionUnits },
+      sensor
+    );
   }, []);
 
   useEffect(() => {
@@ -159,6 +276,10 @@ export default function FactoryDataProvider({ children }) {
       // Storage is an enhancement; the in-memory simulation still works.
     }
     commitLocalState(restored);
+    const orders = readSessionJson(SESSION_ORDERS_STORAGE_KEY, []);
+    if (Array.isArray(orders)) sessionOrdersRef.current = orders;
+    const ledger = readSessionJson(SESSION_LEDGER_STORAGE_KEY, {});
+    if (ledger && typeof ledger === "object") ledgerRef.current = ledger;
     setIsReady(true);
   }, [commitLocalState]);
 
@@ -186,6 +307,62 @@ export default function FactoryDataProvider({ children }) {
     return () => window.clearInterval(interval);
   }, [commitLocalState, isReady, localState, source]);
 
+  /**
+   * Fetch the remote snapshot scoped to `orderId`, reconcile the session
+   * order list against the live orders, and store the composed snapshot.
+   */
+  const loadRemote = useCallback(
+    async (orderId, sensor = remoteSensor) => {
+      const current = sessionOrdersRef.current;
+      const known = current.some((order) => order.order_id === orderId);
+      const remoteOrderId = known ? orderId : null;
+      const applyPartial = (partial) => {
+        if (orderId !== selectedOrderIdRef.current) return;
+        const loadedFields = Object.keys(EMPTY_ORDER_DATA_LOADING).filter(
+          (field) => Object.hasOwn(partial, field)
+        );
+        if (loadedFields.length) {
+          setOrderDataLoading((loading) => ({
+            ...loading,
+            ...Object.fromEntries(loadedFields.map((field) => [field, false])),
+          }));
+        }
+        if (partial.activeOrders) {
+          commitSessionOrders(
+            reconcileSessionOrders(sessionOrdersRef.current, partial.activeOrders)
+          );
+        }
+        const orders = sessionOrdersRef.current;
+        const selectedOrder =
+          orders.find((order) => order.order_id === orderId) || null;
+        setRemoteSnapshot((previous) =>
+          previous
+            ? composeRemote(
+                { ...previous, ...partial },
+                orders,
+                selectedOrder,
+                sensor
+              )
+            : previous
+        );
+      };
+      const snapshot = await fetchRemoteSnapshot(remoteOrderId, applyPartial);
+      commitSessionOrders(
+        reconcileSessionOrders(sessionOrdersRef.current, snapshot.activeOrders)
+      );
+      // May advance the selected order's progress, so read the list after it.
+      recordScada(known ? orderId : null, snapshot.scadaState);
+      const orders = sessionOrdersRef.current;
+      const selectedOrder =
+        orders.find((order) => order.order_id === orderId) || null;
+      // A slower request for a previously selected order must not replace the
+      // currently selected order's view.
+      if (orderId !== selectedOrderIdRef.current) return;
+      setRemoteSnapshot(composeRemote(snapshot, orders, selectedOrder, sensor));
+    },
+    [commitSessionOrders, composeRemote, recordScada, remoteSensor]
+  );
+
   const refresh = useCallback(
     async (orderId = selectedOrderId) => {
       if (source === FACTORY_SOURCES.LOCAL) {
@@ -196,14 +373,7 @@ export default function FactoryDataProvider({ children }) {
       refreshingRef.current = true;
       setIsRefreshing(true);
       try {
-        const snapshot = await fetchRemoteSnapshot(orderId);
-        setRemoteSnapshot(enrichRemoteSnapshot(snapshot, remoteSensor));
-        if (
-          snapshot.selectedOrder?.order_id &&
-          snapshot.selectedOrder.order_id !== orderId
-        ) {
-          setSelectedOrderId(snapshot.selectedOrder.order_id);
-        }
+        await loadRemote(orderId);
         heartbeatFailuresRef.current = 0;
         setError(null);
         setLastUpdated(new Date());
@@ -214,6 +384,7 @@ export default function FactoryDataProvider({ children }) {
           heartbeatFailuresRef.current >=
           HEARTBEAT_FAILURES_BEFORE_FALLBACK
         ) {
+          selectedOrderIdRef.current = null;
           setSelectedOrderId(null);
           setSourceState(FACTORY_SOURCES.LOCAL);
           setError(null);
@@ -223,7 +394,7 @@ export default function FactoryDataProvider({ children }) {
         setIsRefreshing(false);
       }
     },
-    [remoteSensor, selectedOrderId, source]
+    [loadRemote, selectedOrderId, source]
   );
 
   useEffect(() => {
@@ -235,38 +406,63 @@ export default function FactoryDataProvider({ children }) {
     return () => window.clearInterval(interval);
   }, [isReady, refresh, source]);
 
+  const selectedOrderRunning = isRunningOrder(remoteSnapshot?.selectedOrder);
+
   useEffect(() => {
     if (
       source !== FACTORY_SOURCES.LEAFY ||
-      !selectedOrderId
+      !selectedOrderId ||
+      !selectedOrderRunning
     ) {
       return;
     }
+    // Stations cycle every ~200 ms and each frame only holds the latest event
+    // per station, so sample as fast as the round trip allows: one request
+    // in flight at a time, with a short pause between frames.
     let cancelled = false;
+    let timer = null;
     const updateScada = async () => {
-      if (document.hidden) return;
-      try {
-        const scadaState = await fetchScadaState(selectedOrderId);
-        if (!cancelled) {
-          setRemoteSnapshot((current) =>
-            current
-              ? enrichRemoteSnapshot(
-                  { ...current, scadaState },
-                  current.sensor || remoteSensor
-                )
-              : current
-          );
+      if (cancelled) return;
+      if (!document.hidden) {
+        try {
+          const scadaState = await fetchScadaState(selectedOrderId);
+          if (cancelled) return;
+          if (scadaState) {
+            recordScada(selectedOrderId, scadaState);
+            const orders = sessionOrdersRef.current;
+            const selectedOrder =
+              orders.find((order) => order.order_id === selectedOrderId) ||
+              null;
+            setRemoteSnapshot((current) =>
+              current
+                ? composeRemote(
+                    { ...current, scadaState },
+                    orders,
+                    selectedOrder || current.selectedOrder,
+                    current.sensor || remoteSensor
+                  )
+                : current
+            );
+          }
+        } catch {
+          // Main refresh exposes connection errors; keep the last SCADA frame.
         }
-      } catch {
-        // Main refresh exposes connection errors; keep the last SCADA frame.
       }
+      timer = window.setTimeout(updateScada, SCADA_POLL_GAP_MS);
     };
-    const interval = window.setInterval(updateScada, 1000);
+    updateScada();
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
+      window.clearTimeout(timer);
     };
-  }, [remoteSensor, selectedOrderId, source]);
+  }, [
+    composeRemote,
+    recordScada,
+    remoteSensor,
+    selectedOrderId,
+    selectedOrderRunning,
+    source,
+  ]);
 
   const setSource = useCallback((nextSource) => {
     if (
@@ -276,17 +472,68 @@ export default function FactoryDataProvider({ children }) {
       return;
     }
     setError(null);
+    selectedOrderIdRef.current = null;
     setSelectedOrderId(null);
+    setIsOrderLoading(false);
+    setOrderDataLoading(EMPTY_ORDER_DATA_LOADING);
     heartbeatFailuresRef.current = 0;
     setSourceState(nextSource);
   }, []);
 
   const selectOrder = useCallback(
-    (orderId) => {
-      setSelectedOrderId(orderId || null);
-      if (source === FACTORY_SOURCES.LEAFY) refresh(orderId || null);
+    async (orderId) => {
+      const nextOrderId = orderId || null;
+      selectedOrderIdRef.current = nextOrderId;
+      setSelectedOrderId(nextOrderId);
+      if (source !== FACTORY_SOURCES.LEAFY) return;
+
+      // Commit selection before fetching so the chosen card responds at once.
+      // Clear order-scoped data rather than momentarily showing the prior
+      // order's events, units, and alerts under the new selection.
+      const selectedOrder =
+        sessionOrdersRef.current.find(
+          (order) => order.order_id === nextOrderId
+        ) || null;
+      setRemoteSnapshot((current) =>
+        current
+          ? composeRemote(
+              {
+                ...current,
+                scadaState: null,
+                events: [],
+                productionUnits: [],
+                alerts: [],
+                analytics: EMPTY_SNAPSHOT.analytics,
+              },
+              sessionOrdersRef.current,
+              selectedOrder,
+              current.sensor || remoteSensor
+            )
+          : current
+      );
+      setIsOrderLoading(true);
+      setOrderDataLoading({
+        events: true,
+        productionUnits: true,
+        alerts: true,
+        analytics: true,
+        scadaState: true,
+        thresholds: true,
+      });
+      try {
+        await loadRemote(nextOrderId);
+        setError(null);
+        setLastUpdated(new Date());
+      } catch (selectionError) {
+        setError(selectionError.message || "Leafy Factory is unavailable");
+      } finally {
+        if (selectedOrderIdRef.current === nextOrderId) {
+          setIsOrderLoading(false);
+          setOrderDataLoading(EMPTY_ORDER_DATA_LOADING);
+        }
+      }
     },
-    [refresh, source]
+    [composeRemote, loadRemote, remoteSensor, source]
   );
 
   const runAction = useCallback(async (name, action) => {
@@ -311,18 +558,25 @@ export default function FactoryDataProvider({ children }) {
             input
           );
           commitLocalState(result.state);
+          selectedOrderIdRef.current = result.order.order_id;
           setSelectedOrderId(result.order.order_id);
           setLastUpdated(new Date());
           return result.order;
         }
         const order = await createRemoteOrder(input);
+        commitSessionOrders([
+          toSessionOrder({ ...input, ...order }),
+          ...sessionOrdersRef.current.filter(
+            (existing) => existing.order_id !== order.order_id
+          ),
+        ]);
+        selectedOrderIdRef.current = order.order_id;
         setSelectedOrderId(order.order_id);
-        const snapshot = await fetchRemoteSnapshot(order.order_id);
-        setRemoteSnapshot(enrichRemoteSnapshot(snapshot, remoteSensor));
+        await loadRemote(order.order_id);
         setLastUpdated(new Date());
         return order;
       }),
-    [commitLocalState, remoteSensor, runAction, source]
+    [commitLocalState, commitSessionOrders, loadRemote, runAction, source]
   );
 
   const stopOrder = useCallback(
@@ -334,22 +588,17 @@ export default function FactoryDataProvider({ children }) {
             orderId
           );
           commitLocalState(next);
-          if (selectedOrderId === orderId) setSelectedOrderId(null);
           return { order_id: orderId, status: "stopped" };
         }
+        // The stopped order stays in the session list and stays selected.
         const result = await stopRemoteOrder(orderId);
-        if (selectedOrderId === orderId) setSelectedOrderId(null);
-        const snapshot = await fetchRemoteSnapshot(null);
-        setRemoteSnapshot(enrichRemoteSnapshot(snapshot, remoteSensor));
+        commitSessionOrders(
+          markSessionOrderStopped(sessionOrdersRef.current, orderId)
+        );
+        await loadRemote(selectedOrderId);
         return result;
       }),
-    [
-      commitLocalState,
-      remoteSensor,
-      runAction,
-      selectedOrderId,
-      source,
-    ]
+    [commitLocalState, commitSessionOrders, loadRemote, runAction, selectedOrderId, source]
   );
 
   const saveThresholds = useCallback(
@@ -392,16 +641,13 @@ export default function FactoryDataProvider({ children }) {
           return result.result;
         }
         const result = await sendRemoteMetrics(selectedOrderId, values);
-        const snapshot = await fetchRemoteSnapshot(selectedOrderId);
-        setRemoteSnapshot(
-          enrichRemoteSnapshot(snapshot, {
-            temperature: Number(values.temperature),
-            vibration: Number(values.vibration),
-          })
-        );
+        await loadRemote(selectedOrderId, {
+          temperature: Number(values.temperature),
+          vibration: Number(values.vibration),
+        });
         return result;
       }),
-    [commitLocalState, runAction, selectedOrderId, source]
+    [commitLocalState, loadRemote, runAction, selectedOrderId, source]
   );
 
   const snapshot = useMemo(() => {
@@ -420,6 +666,8 @@ export default function FactoryDataProvider({ children }) {
       setSource,
       isReady,
       isRefreshing,
+      isOrderLoading,
+      orderDataLoading,
       busyAction,
       error,
       lastUpdated,
@@ -427,7 +675,13 @@ export default function FactoryDataProvider({ children }) {
         source === FACTORY_SOURCES.LOCAL
           ? true
           : Boolean(remoteSnapshot?.status) && !error,
-      selectedOrderId: snapshot.selectedOrder?.order_id || null,
+      selectedOrderId,
+      selectedOrder:
+        snapshot.selectedOrder ||
+        sessionOrdersRef.current.find(
+          (order) => order.order_id === selectedOrderId
+        ) ||
+        null,
       selectOrder,
       snapshot,
       refresh,
@@ -443,14 +697,17 @@ export default function FactoryDataProvider({ children }) {
       busyAction,
       error,
       isReady,
+      isOrderLoading,
       isRefreshing,
       lastUpdated,
       refresh,
       remoteSnapshot,
+      orderDataLoading,
       saveThresholds,
       selectOrder,
       sendMetrics,
       setSource,
+      selectedOrderId,
       snapshot,
       source,
       startOrder,

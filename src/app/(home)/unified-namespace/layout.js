@@ -1,10 +1,7 @@
 import { Suspense } from "react";
-import UnifiedNamespaceDemoShell from "@/components/unifiedNamespaceNav/UnifiedNamespaceDemoShell";
 
+// Suspense boundary so pages under /unified-namespace can read search params
+// (e.g. `?view=analytics`) without blocking static rendering.
 export default function UnifiedNamespaceLayout({ children }) {
-  return (
-    <Suspense fallback={children}>
-      <UnifiedNamespaceDemoShell>{children}</UnifiedNamespaceDemoShell>
-    </Suspense>
-  );
+  return <Suspense fallback={null}>{children}</Suspense>;
 }

@@ -185,7 +185,11 @@ function DonutChart({ entries, colors }) {
   );
 }
 
-export default function AnalyticsDashboard({ analytics, onOpenPipeline }) {
+export default function AnalyticsDashboard({
+  analytics,
+  isLoading = false,
+  onOpenPipeline,
+}) {
   const kpis = analytics?.kpis || {};
   const pipelines = analytics?.pipelines || {};
   const throughput = (analytics?.throughput || []).slice(-10).map((point) => ({
@@ -216,7 +220,15 @@ export default function AnalyticsDashboard({ analytics, onOpenPipeline }) {
   ).map(([label, value]) => ({ label, value }));
 
   return (
-    <div className="grid gap-5">
+    <div className="relative grid gap-5" aria-busy={isLoading}>
+      {isLoading && (
+        <div className="absolute inset-0 z-10 flex min-h-72 items-center justify-center rounded-2xl bg-white/85 backdrop-blur-[1px]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#D8E3DF] bg-white px-4 py-2 text-sm font-medium text-[#3D4F58] shadow-sm">
+            <Icon glyph="Refresh" size={16} className="animate-spin text-[#00684A]" />
+            Loading analytics for the selected order…
+          </span>
+        </div>
+      )}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {[
           ["Units produced", kpis.total_units ?? 0, "today"],

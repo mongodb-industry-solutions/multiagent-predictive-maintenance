@@ -3,6 +3,7 @@ import {
   FACTORY_STATIONS,
   PRODUCTS,
 } from "./constants.js";
+import { isRunningOrder } from "./sessionOrders.js";
 
 const LOCAL_STORAGE_VERSION = 1;
 
@@ -595,19 +596,17 @@ export function buildLocalAnalytics(state, orderId) {
 }
 
 export function buildLocalSnapshot(state, selectedOrderId) {
-  const activeOrders = state.orders.filter(
-    (order) => order.status === "running" || order.status === "paused"
-  );
-  const orderId =
-    selectedOrderId &&
-    activeOrders.some((order) => order.order_id === selectedOrderId)
-      ? selectedOrderId
-      : activeOrders[0]?.order_id || null;
-  const selectedOrder = state.orders.find(
-    (order) => order.order_id === orderId
-  );
+  // Orders started in this browser, newest first; completed ones stay listed.
+  const orders = state.orders.map((order) => ({
+    ...order,
+    completed_units: Math.max(0, Number(order.runtime?.batchId || 1) - 1),
+  }));
+  const activeOrders = orders.filter(isRunningOrder);
+  const selectedOrder =
+    orders.find((order) => order.order_id === selectedOrderId) || null;
+  const orderId = selectedOrder?.order_id || null;
   const liveEvents = selectedOrder?.runtime?.batchEvents || [];
-  const liveProductionUnit = selectedOrder
+  const liveProductionUnit = isRunningOrder(selectedOrder)
     ? {
         order_id: selectedOrder.order_id,
         batch_id: selectedOrder.runtime?.batchId || 1,
@@ -633,18 +632,19 @@ export function buildLocalSnapshot(state, selectedOrderId) {
       active_containers: activeOrders.length,
     },
     activeOrders,
+    orders,
     selectedOrder,
     scadaState: selectedOrder?.runtime || null,
     liveProductionUnit,
-    events: state.events.filter(
-      (event) => !orderId || event.order_id === orderId
-    ),
-    productionUnits: state.productionUnits.filter(
-      (unit) => !orderId || unit.order_id === orderId
-    ),
-    alerts: state.alerts.filter(
-      (alert) => !orderId || alert.order_id === orderId
-    ),
+    events: orderId
+      ? state.events.filter((event) => event.order_id === orderId)
+      : [],
+    productionUnits: orderId
+      ? state.productionUnits.filter((unit) => unit.order_id === orderId)
+      : [],
+    alerts: orderId
+      ? state.alerts.filter((alert) => alert.order_id === orderId)
+      : [],
     analytics: buildLocalAnalytics(state, orderId),
     thresholds:
       (orderId && state.thresholds[orderId]) || DEFAULT_THRESHOLDS,

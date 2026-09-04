@@ -85,6 +85,86 @@ button {
   scrollbar-color: #cbd5e1 #f8fafc; /* thumb and track */
 }
 
+/* Dual-handle sensor slider: two native range inputs stacked over one track.
+   Only the thumbs receive pointer events so both handles stay grabbable. */
+.sensor-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: none;
+  outline: none;
+}
+.sensor-range::-webkit-slider-runnable-track {
+  background: transparent;
+}
+.sensor-range::-moz-range-track {
+  background: transparent;
+}
+.sensor-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: auto;
+  cursor: grab;
+}
+.sensor-range::-moz-range-thumb {
+  pointer-events: auto;
+  cursor: grab;
+  border: none;
+}
+/* Disabled handles pass hover through so the wrapper's tooltip shows. */
+.sensor-range:disabled::-webkit-slider-thumb,
+.sensor-range:disabled::-moz-range-thumb {
+  pointer-events: none;
+}
+/* Reading: round thumb on the track. */
+.sensor-range--value::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 3px solid var(--sensor-value-color, #00a35c);
+  box-shadow: 0 1px 3px rgba(17, 39, 51, 0.25);
+}
+.sensor-range--value::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 3px solid var(--sensor-value-color, #00a35c);
+  box-shadow: 0 1px 3px rgba(17, 39, 51, 0.25);
+}
+/* Threshold: tall thin flag, taller than the reading thumb so its tips stay
+   reachable when both handles overlap. */
+.sensor-range--threshold::-webkit-slider-thumb {
+  width: 6px;
+  height: 30px;
+  border-radius: 3px;
+  background: #db6c00;
+  border: 1px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(17, 39, 51, 0.3);
+}
+.sensor-range--threshold::-moz-range-thumb {
+  width: 6px;
+  height: 30px;
+  border-radius: 3px;
+  background: #db6c00;
+  border: 1px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(17, 39, 51, 0.3);
+}
+.sensor-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #016bf8;
+  outline-offset: 2px;
+}
+.sensor-range:focus-visible::-moz-range-thumb {
+  outline: 2px solid #016bf8;
+  outline-offset: 2px;
+}
+
 .agent-logs-scrollbar::-webkit-scrollbar {
   width: 6px;
 }

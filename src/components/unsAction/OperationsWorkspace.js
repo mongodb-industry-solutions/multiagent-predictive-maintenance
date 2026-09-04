@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Icon from "@leafygreen-ui/icon";
 import { H2, H3, Body, Description } from "@leafygreen-ui/typography";
 import { useFactoryData } from "@/components/factoryDataProvider/FactoryDataProvider";
+import { isRunningOrder } from "@/lib/factory/sessionOrders";
 
 function defaultDeliveryDate() {
   const date = new Date(Date.now() + 7 * 86400000);
@@ -18,12 +19,18 @@ function eventSummary(metrics = {}) {
     .join(" · ");
 }
 
-export default function OperationsWorkspace({ onOpenDocument }) {
+/**
+ * `children` is rendered as a row between "Start production / Orders" and
+ * "Machine events / Recent production units" (used for condition monitoring).
+ */
+export default function OperationsWorkspace({ onOpenDocument, children }) {
   const {
     products,
     stations,
     snapshot,
     selectedOrderId,
+    isOrderLoading,
+    orderDataLoading,
     selectOrder,
     startOrder,
     stopOrder,
@@ -45,7 +52,7 @@ export default function OperationsWorkspace({ onOpenDocument }) {
       snapshot.events
         .filter((event) => !stationFilter || event.station === stationFilter)
         .slice(0, 24),
-    [snapshot.events, stationFilter]
+    [snapshot.events, stationFilter],
   );
 
   const submitOrder = async (event) => {
@@ -83,7 +90,7 @@ export default function OperationsWorkspace({ onOpenDocument }) {
       <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
         <form
           onSubmit={submitOrder}
-          className="min-w-0 rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm"
+          className="flex min-w-0 flex-col rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm"
         >
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E3FCF7] text-[#00684A]">
@@ -93,14 +100,11 @@ export default function OperationsWorkspace({ onOpenDocument }) {
               <H2 className="!text-xl !leading-7 text-[#112733]">
                 Start production
               </H2>
-              <Description className="mt-1">
-                Create an order and start its factory runtime.
-              </Description>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <label className="grid min-w-0 gap-1.5 text-sm font-medium text-[#3D4F58]">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="grid min-w-0 gap-1 text-sm font-medium text-[#3D4F58]">
               Product
               <select
                 value={form.product_id}
@@ -110,7 +114,7 @@ export default function OperationsWorkspace({ onOpenDocument }) {
                     product_id: event.target.value,
                   }))
                 }
-                className="h-11 w-full min-w-0 rounded-lg border border-[#C1C7C6] bg-white px-3 text-[#112733] outline-none focus:border-[#00A35C]"
+                className="h-10 w-full min-w-0 rounded-lg border border-[#C1C7C6] bg-white px-3 text-sm text-[#112733] outline-none focus:border-[#00A35C]"
               >
                 {products.map((product) => (
                   <option key={product.id} value={product.id}>
@@ -119,7 +123,7 @@ export default function OperationsWorkspace({ onOpenDocument }) {
                 ))}
               </select>
             </label>
-            <label className="grid min-w-0 gap-1.5 text-sm font-medium text-[#3D4F58]">
+            <label className="grid min-w-0 gap-1 text-sm font-medium text-[#3D4F58]">
               Quantity
               <input
                 type="number"
@@ -132,10 +136,10 @@ export default function OperationsWorkspace({ onOpenDocument }) {
                     quantity: event.target.value,
                   }))
                 }
-                className="h-11 w-full min-w-0 rounded-lg border border-[#C1C7C6] px-3 text-[#112733] outline-none focus:border-[#00A35C]"
+                className="h-10 w-full min-w-0 rounded-lg border border-[#C1C7C6] px-3 text-sm text-[#112733] outline-none focus:border-[#00A35C]"
               />
             </label>
-            <label className="grid min-w-0 gap-1.5 text-sm font-medium text-[#3D4F58]">
+            <label className="grid min-w-0 gap-1 text-sm font-medium text-[#3D4F58]">
               Customer
               <input
                 type="text"
@@ -146,10 +150,10 @@ export default function OperationsWorkspace({ onOpenDocument }) {
                     customer: event.target.value,
                   }))
                 }
-                className="h-11 w-full min-w-0 rounded-lg border border-[#C1C7C6] px-3 text-[#112733] outline-none focus:border-[#00A35C]"
+                className="h-10 w-full min-w-0 rounded-lg border border-[#C1C7C6] px-3 text-sm text-[#112733] outline-none focus:border-[#00A35C]"
               />
             </label>
-            <label className="grid min-w-0 gap-1.5 text-sm font-medium text-[#3D4F58]">
+            <label className="grid min-w-0 gap-1 text-sm font-medium text-[#3D4F58]">
               Customer PO
               <input
                 type="text"
@@ -161,10 +165,10 @@ export default function OperationsWorkspace({ onOpenDocument }) {
                     customer_po: event.target.value,
                   }))
                 }
-                className="h-11 w-full min-w-0 rounded-lg border border-[#C1C7C6] px-3 text-[#112733] outline-none focus:border-[#00A35C]"
+                className="h-10 w-full min-w-0 rounded-lg border border-[#C1C7C6] px-3 text-sm text-[#112733] outline-none focus:border-[#00A35C]"
               />
             </label>
-            <label className="grid min-w-0 gap-1.5 text-sm font-medium text-[#3D4F58] sm:col-span-2">
+            <label className="grid min-w-0 gap-1 text-sm font-medium text-[#3D4F58] sm:col-span-2">
               Delivery date
               <input
                 type="date"
@@ -175,25 +179,25 @@ export default function OperationsWorkspace({ onOpenDocument }) {
                     delivery_date: event.target.value,
                   }))
                 }
-                className="h-11 w-full min-w-0 rounded-lg border border-[#C1C7C6] px-3 text-[#112733] outline-none focus:border-[#00A35C]"
+                className="h-10 w-full min-w-0 rounded-lg border border-[#C1C7C6] px-3 text-sm text-[#112733] outline-none focus:border-[#00A35C]"
               />
             </label>
           </div>
 
           {formError && (
-            <p className="mt-4 text-sm font-medium text-[#B1371F]">
+            <p className="mt-3 text-sm font-medium text-[#B1371F]">
               {formError}
             </p>
           )}
           {successMessage && (
-            <p className="mt-4 text-sm font-medium text-[#00684A]">
+            <p className="mt-3 text-sm font-medium text-[#00684A]">
               {successMessage}
             </p>
           )}
           <button
             type="submit"
             disabled={busyAction === "start-order"}
-            className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#00684A] px-5 font-medium text-white hover:bg-[#00543D] disabled:cursor-wait disabled:opacity-60"
+            className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#00684A] px-4 font-medium text-white hover:bg-[#00543D] disabled:cursor-wait disabled:opacity-60"
           >
             {busyAction === "start-order" ? (
               <>
@@ -209,23 +213,18 @@ export default function OperationsWorkspace({ onOpenDocument }) {
           </button>
         </form>
 
-        <div className="min-w-0 rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm">
+        <div className="flex min-w-0 flex-col rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm max-xl:max-h-[420px] xl:h-0 xl:min-h-full">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <H2 className="!text-xl !leading-7 text-[#112733]">
-                Active orders
-              </H2>
-              <Description className="mt-1">
-                Select an order to scope events, alerts, and analytics.
-              </Description>
+              <H2 className="!text-xl !leading-7 text-[#112733]">Orders</H2>
             </div>
             <span className="rounded-full bg-[#E3FCF7] px-3 py-1 text-sm font-semibold text-[#00684A]">
               {snapshot.activeOrders.length} running
             </span>
           </div>
 
-          <div className="cardlist-scrollbar mt-5 grid max-h-[420px] gap-3 overflow-y-auto pr-1">
-            {snapshot.activeOrders.length === 0 ? (
+          <div className="cardlist-scrollbar mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+            {snapshot.orders.length === 0 ? (
               <div className="rounded-xl border border-dashed border-[#C1C7C6] bg-[#F8FAF9] p-8 text-center">
                 <Icon
                   glyph="Clock"
@@ -233,23 +232,24 @@ export default function OperationsWorkspace({ onOpenDocument }) {
                   className="mx-auto text-[#889397]"
                 />
                 <Body className="mt-2 text-[#5C6C75]">
-                  No active orders. Start one to see the line come alive.
+                  No orders yet. Start one to see the line come alive.
                 </Body>
               </div>
             ) : (
-              snapshot.activeOrders.map((order) => {
+              snapshot.orders.map((order) => {
                 const selected = selectedOrderId === order.order_id;
-                const currentBatch = Number(
-                  order.runtime?.batch_id ?? order.runtime?.batchId ?? 1
-                );
-                const completedBatches = Math.max(
-                  0,
-                  currentBatch - 1
-                );
+                const running = isRunningOrder(order);
+                const completedBatches = Number(order.completed_units || 0);
                 const progress = Math.min(
                   100,
-                  (completedBatches / Math.max(1, order.quantity || 1)) * 100
+                  (completedBatches / Math.max(1, order.quantity || 1)) * 100,
                 );
+                const statusLabel =
+                  order.status === "complete"
+                    ? "Complete"
+                    : running
+                      ? "Running"
+                      : "Stopped";
                 return (
                   <div
                     key={order.order_id}
@@ -270,7 +270,10 @@ export default function OperationsWorkspace({ onOpenDocument }) {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <Body weight="medium" className="truncate text-[#112733]">
+                        <Body
+                          weight="medium"
+                          className="truncate text-[#112733]"
+                        >
                           {order.order_id}
                         </Body>
                         <Description className="mt-1 truncate">
@@ -278,37 +281,67 @@ export default function OperationsWorkspace({ onOpenDocument }) {
                           {order.sales_order || order.product_id}
                         </Description>
                       </div>
-                      <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-[#00684A]">
-                        <span className="h-2 w-2 animate-pulse rounded-full bg-[#00A35C]" />
-                        Running
+                      <span
+                        className={`inline-flex shrink-0 items-center gap-1.5 text-xs font-medium ${
+                          running
+                            ? "text-[#00684A]"
+                            : order.status === "complete"
+                              ? "text-[#3D4F58]"
+                              : "text-[#5C6C75]"
+                        }`}
+                      >
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            running
+                              ? "animate-pulse bg-[#00A35C]"
+                              : order.status === "complete"
+                                ? "bg-[#3D4F58]"
+                                : "bg-[#889397]"
+                          }`}
+                        />
+                        {statusLabel}
                       </span>
                     </div>
                     <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white">
                       <div
-                        className="h-full rounded-full bg-[#00A35C] transition-all"
+                        className={`h-full rounded-full transition-all ${
+                          running ? "bg-[#00A35C]" : "bg-[#889397]"
+                        }`}
                         style={{ width: `${progress}%` }}
                       />
                     </div>
-                    <div className="mt-3 flex items-center justify-between">
+                    <div className="mt-3 flex h-6 items-center justify-between">
                       <Description className="text-xs">
                         {completedBatches} / {order.quantity || "?"} units
                       </Description>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          if (
-                            window.confirm(
-                              `Stop simulation for ${order.order_id}?`
-                            )
-                          ) {
-                            stopOrder(order.order_id);
-                          }
-                        }}
-                        className="rounded-md px-2 py-1 text-xs font-medium text-[#B1371F] hover:bg-[#FDEDEB]"
-                      >
-                        Stop
-                      </button>
+                      {selected && isOrderLoading && (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#00684A]">
+                          <Icon
+                            glyph="Refresh"
+                            size={13}
+                            className="animate-spin"
+                          />
+                          Loading data…
+                        </span>
+                      )}
+                      {running && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (
+                              window.confirm(
+                                `Stop simulation for ${order.order_id}?`,
+                              )
+                            ) {
+                              stopOrder(order.order_id);
+                            }
+                          }}
+                          className="rounded-md px-2 py-1 text-xs font-medium text-[#B1371F] hover:bg-[#FDEDEB]"
+                        >
+                          Stop
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -318,6 +351,8 @@ export default function OperationsWorkspace({ onOpenDocument }) {
         </div>
       </section>
 
+      {children}
+
       <section className="grid gap-5 xl:grid-cols-2">
         <div className="rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm">
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -325,10 +360,13 @@ export default function OperationsWorkspace({ onOpenDocument }) {
               <H2 className="!text-xl !leading-7 text-[#112733]">
                 Machine events
               </H2>
-              <Description className="mt-1">
-                Raw station signals entering the unified namespace.
-              </Description>
             </div>
+            {orderDataLoading.events && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#5C6C75]">
+                <Icon glyph="Refresh" size={14} className="animate-spin" />
+                Loading…
+              </span>
+            )}
             <select
               value={stationFilter}
               onChange={(event) => setStationFilter(event.target.value)}
@@ -346,7 +384,11 @@ export default function OperationsWorkspace({ onOpenDocument }) {
           <div className="cardlist-scrollbar mt-5 max-h-[500px] overflow-y-auto px-2">
             {visibleEvents.length === 0 ? (
               <div className="rounded-xl bg-[#F8FAF9] p-8 text-center text-[#5C6C75]">
-                No events match this filter.
+                {orderDataLoading.events
+                  ? "Loading machine events…"
+                  : selectedOrderId
+                    ? "No events match this filter."
+                    : "Select an order to see its machine events."}
               </div>
             ) : (
               <ol className="relative ml-1 border-l border-[#D8E3DF] pl-6">
@@ -378,13 +420,16 @@ export default function OperationsWorkspace({ onOpenDocument }) {
         </div>
 
         <div className="rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm">
-          <div>
+          <div className="flex items-center justify-between gap-3">
             <H2 className="!text-xl !leading-7 text-[#112733]">
               Recent production units
             </H2>
-            <Description className="mt-1">
-              Live work in progress and completed genealogy documents.
-            </Description>
+            {orderDataLoading.productionUnits && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#5C6C75]">
+                <Icon glyph="Refresh" size={14} className="animate-spin" />
+                Loading…
+              </span>
+            )}
           </div>
 
           <div className="cardlist-scrollbar mt-5 grid max-h-[500px] gap-3 overflow-y-auto pr-1">
@@ -412,7 +457,7 @@ export default function OperationsWorkspace({ onOpenDocument }) {
                         onOpenDocument(
                           `Production unit · Batch ${snapshot.liveProductionUnit.batch_id}`,
                           `${snapshot.liveProductionUnit.order_id} · live document`,
-                          snapshot.liveProductionUnit
+                          snapshot.liveProductionUnit,
                         )
                       }
                       aria-label="View live production unit document"
@@ -425,9 +470,8 @@ export default function OperationsWorkspace({ onOpenDocument }) {
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#3D4F58]">
                   <span>
                     {
-                      Object.keys(
-                        snapshot.liveProductionUnit.process || {}
-                      ).length
+                      Object.keys(snapshot.liveProductionUnit.process || {})
+                        .length
                     }{" "}
                     stations completed
                   </span>
@@ -438,65 +482,85 @@ export default function OperationsWorkspace({ onOpenDocument }) {
 
             {!snapshot.liveProductionUnit &&
               snapshot.productionUnits.length === 0 && (
-              <div className="rounded-xl border border-dashed border-[#C1C7C6] bg-[#F8FAF9] p-8 text-center">
-                <Body className="text-[#5C6C75]">
-                  Production units will appear here.
-                </Body>
-              </div>
+                <div className="rounded-xl border border-dashed border-[#C1C7C6] bg-[#F8FAF9] p-8 text-center">
+                  <Body className="text-[#5C6C75]">
+                    {orderDataLoading.productionUnits
+                      ? "Loading production units…"
+                      : selectedOrderId
+                        ? "Production units will appear here as batches complete."
+                        : "Select an order to see its production units."}
+                  </Body>
+                </div>
               )}
 
             {snapshot.productionUnits.slice(0, 24).map((unit) => (
-                <article
-                  key={`${unit.order_id}-${unit.batch_id}`}
-                  className="rounded-xl border border-[#D8E3DF] bg-[#F8FAF9] p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <Body weight="medium" className="truncate text-[#112733]">
-                        Batch {unit.batch_id} · {unit.order_id}
-                      </Body>
-                      <Description className="mt-1 truncate text-xs">
-                        {unit.order?.customer || "Factory customer"} ·{" "}
-                        {Number(unit.cycle_time_sec || 0).toFixed(2)}s cycle
-                      </Description>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          unit.final_status === "pass"
-                            ? "bg-[#E3FCF7] text-[#00684A]"
-                            : "bg-[#FDEDEB] text-[#B1371F]"
-                        }`}
-                      >
-                        {unit.final_status === "pass" ? "Pass" : "Fail"}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onOpenDocument(
-                            `Production unit · Batch ${unit.batch_id}`,
-                            `${unit.order_id} · MongoDB document`,
-                            unit
-                          )
-                        }
-                        aria-label={`View batch ${unit.batch_id} document`}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#C1C7C6] font-mono text-sm font-semibold text-[#00684A] hover:bg-[#E3FCF7]"
-                      >
-                        {"{}"}
-                      </button>
-                    </div>
+              <article
+                key={`${unit.order_id}-${unit.batch_id}`}
+                className="rounded-xl border border-[#D8E3DF] bg-[#F8FAF9] p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Body weight="medium" className="truncate text-[#112733]">
+                      Batch {unit.batch_id} · {unit.order_id}
+                    </Body>
+                    <Description className="mt-1 truncate text-xs">
+                      {unit.order?.customer || "Factory customer"}
+                      {Number.isFinite(unit.cycle_time_sec)
+                        ? ` · ${Number(unit.cycle_time_sec).toFixed(2)}s cycle`
+                        : ""}
+                    </Description>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5C6C75]">
-                    <span>{unit.cells?.length || 0} cells</span>
-                    <span>{Object.keys(unit.process || {}).length} processes</span>
-                    <span>
-                      {unit.completed_at
-                        ? new Date(unit.completed_at).toLocaleString()
-                        : "Completed"}
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        unit.final_status === "pass"
+                          ? "bg-[#E3FCF7] text-[#00684A]"
+                          : unit.final_status === "fail"
+                            ? "bg-[#FDEDEB] text-[#B1371F]"
+                            : "bg-[#E8EDEB] text-[#3D4F58]"
+                      }`}
+                    >
+                      {unit.final_status === "pass"
+                        ? "Pass"
+                        : unit.final_status === "fail"
+                          ? "Fail"
+                          : "Complete"}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onOpenDocument(
+                          `Production unit · Batch ${unit.batch_id}`,
+                          `${unit.order_id} · MongoDB document`,
+                          unit,
+                        )
+                      }
+                      aria-label={`View batch ${unit.batch_id} document`}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#C1C7C6] font-mono text-sm font-semibold text-[#00684A] hover:bg-[#E3FCF7]"
+                    >
+                      {"{}"}
+                    </button>
                   </div>
-                </article>
-              ))}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5C6C75]">
+                  <span>{unit.cells?.length || 0} cells</span>
+                  <span>
+                    {Object.keys(unit.process || {}).length} processes
+                  </span>
+                  {unit.completed_at && (
+                    <span>{new Date(unit.completed_at).toLocaleString()}</span>
+                  )}
+                  {unit.telemetry === "partial" && (
+                    <span
+                      className="text-[#944F01]"
+                      title="Only the station events sampled from the SCADA state while this batch ran are available."
+                    >
+                      Partial telemetry
+                    </span>
+                  )}
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       </section>
