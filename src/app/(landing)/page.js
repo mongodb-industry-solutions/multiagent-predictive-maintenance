@@ -43,7 +43,8 @@ export default function Page() {
           className="leafy-rise mx-auto mt-[clamp(0.4rem,1.2vh,0.9rem)] max-w-2xl text-[clamp(0.85rem,1.9vh,1.15rem)] leading-snug text-white/55"
           style={{ animationDelay: "0.2s" }}
         >
-          A unified context layer to unlock AI in the factory shop floor
+          A unified context layer to unlock AI enabled Digital Twins in the
+          factory shop floor
         </p>
       </header>
 
