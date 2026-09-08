@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+:root {
+  --leafy-ink: #112733;
+  --leafy-muted: #3d4f58;
+  --leafy-green: #00684a;
+  --leafy-green-bright: #00a35c;
+  --leafy-mint: #e3fcf7;
+  --leafy-canvas: #f8faf9;
+  --leafy-border: #d8e3df;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--leafy-canvas);
+}
+
 @keyframes agent-glow-fade {
   0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
   100% { box-shadow: 0 0 16px 8px rgba(34,197,94,0.25); }
@@ -8,8 +26,50 @@
   animation: agent-glow-fade 1s infinite alternate;
 }
 
+/* ---------- Landing page (dark) motion primitives ---------- */
+
+@keyframes leafy-rise {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.leafy-rise {
+  animation: leafy-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes leafy-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.leafy-fade-in {
+  animation: leafy-fade-in 1.2s ease-out both;
+}
+
+@keyframes leafy-ring-pulse {
+  0% { opacity: 0.45; transform: scale(0.82); }
+  70% { opacity: 0; transform: scale(1.35); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+.leafy-ring-pulse {
+  animation: leafy-ring-pulse 3.2s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leafy-rise,
+  .leafy-fade-in,
+  .leafy-ring-pulse {
+    animation: none;
+  }
+}
+
 body {
-  @apply bg-white;
+  background: var(--leafy-canvas);
+  color: var(--leafy-ink);
+  text-rendering: optimizeLegibility;
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Custom scrollbar for CardList */
@@ -23,6 +83,86 @@ body {
 .cardlist-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f8fafc; /* thumb and track */
+}
+
+/* Dual-handle sensor slider: two native range inputs stacked over one track.
+   Only the thumbs receive pointer events so both handles stay grabbable. */
+.sensor-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: none;
+  outline: none;
+}
+.sensor-range::-webkit-slider-runnable-track {
+  background: transparent;
+}
+.sensor-range::-moz-range-track {
+  background: transparent;
+}
+.sensor-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: auto;
+  cursor: grab;
+}
+.sensor-range::-moz-range-thumb {
+  pointer-events: auto;
+  cursor: grab;
+  border: none;
+}
+/* Disabled handles pass hover through so the wrapper's tooltip shows. */
+.sensor-range:disabled::-webkit-slider-thumb,
+.sensor-range:disabled::-moz-range-thumb {
+  pointer-events: none;
+}
+/* Reading: round thumb on the track. */
+.sensor-range--value::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 3px solid var(--sensor-value-color, #00a35c);
+  box-shadow: 0 1px 3px rgba(17, 39, 51, 0.25);
+}
+.sensor-range--value::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 3px solid var(--sensor-value-color, #00a35c);
+  box-shadow: 0 1px 3px rgba(17, 39, 51, 0.25);
+}
+/* Threshold: tall thin flag, taller than the reading thumb so its tips stay
+   reachable when both handles overlap. */
+.sensor-range--threshold::-webkit-slider-thumb {
+  width: 6px;
+  height: 30px;
+  border-radius: 3px;
+  background: #db6c00;
+  border: 1px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(17, 39, 51, 0.3);
+}
+.sensor-range--threshold::-moz-range-thumb {
+  width: 6px;
+  height: 30px;
+  border-radius: 3px;
+  background: #db6c00;
+  border: 1px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(17, 39, 51, 0.3);
+}
+.sensor-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #016bf8;
+  outline-offset: 2px;
+}
+.sensor-range:focus-visible::-moz-range-thumb {
+  outline: 2px solid #016bf8;
+  outline-offset: 2px;
 }
 
 .agent-logs-scrollbar::-webkit-scrollbar {

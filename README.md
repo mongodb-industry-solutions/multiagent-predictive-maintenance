@@ -27,7 +27,7 @@ This demo showcases:
 
 ### Why Voyage AI?
 
-- **One search index across three kinds of writing.** Root-cause analysis pulls from equipment manuals (formal spec language), past work orders (terse shorthand like *"bearing misalignment, realigned shaft"*), and technician interviews (how people actually talk). One alert has to find all three, so the model must recognize that *"E12 high temp"*, *"coolant tubing kinks under load"*, and a manual's thermal-tolerance section are about the same problem — even though they barely share a word.
+- **One search index across three kinds of writing.** Root-cause analysis pulls from equipment manuals (formal spec language), past work orders (terse shorthand like _"bearing misalignment, realigned shaft"_), and technician interviews (how people actually talk). One alert has to find all three, so the model must recognize that _"E12 high temp"_, _"coolant tubing kinks under load"_, and a manual's thermal-tolerance section are about the same problem — even though they barely share a word.
 - **Keeps technical details distinct.** Maintenance text is full of part numbers, error codes, and measurements (`P-001`, `E13`, `1.9 mm/s`). General-purpose models tend to treat these as interchangeable noise; Voyage's search-tuned models tell them apart — the difference between the failure agent citing the right manual section and citing a wrong one that sounds right.
 - **Embeddings and search in one place.** Voyage is served through MongoDB, so one API key covers both creating the embeddings and searching them — no second vendor to set up, and nothing to keep in sync between the model and the index. At 1024 dimensions the indexes stay small, so re-processing everything is fast and cheap when you swap in your own data.
 
@@ -146,6 +146,7 @@ This demo is designed to be flexible and extensible. Here are some ways you can 
   ```
   This will embed the new content and update the vector indexes for search and retrieval.
 - To customize which fields are embedded or change the embedding field name, edit the configuration in [`scripts/config.js`](scripts/config.js):
+
   ```javascript
   // Example config.js entry
   const config = [

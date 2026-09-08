@@ -1,0 +1,582 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Icon from "@leafygreen-ui/icon";
+import { H2, H3, Body, Description } from "@leafygreen-ui/typography";
+import { useFactoryData } from "@/components/factoryDataProvider/FactoryDataProvider";
+import { isRunningOrder } from "@/lib/factory/sessionOrders";
+
+function defaultDeliveryDate() {
+  const date = new Date(Date.now() + 7 * 86400000);
+  return date.toISOString().slice(0, 10);
+}
+
+function eventSummary(metrics = {}) {
+  return Object.entries(metrics)
+    .filter(([, value]) => !Array.isArray(value))
+    .slice(0, 3)
+    .map(([key, value]) => `${key.replaceAll("_", " ")}: ${String(value)}`)
+    .join(" · ");
+}
+
+/**
+ * `children` is rendered as a row between "Start production / Orders" and
+ * "Machine events / Recent production units" (used for condition monitoring).
+ */
+export default function OperationsWorkspace({
+  onOpenDocument,
+  onOpenAnalytics,
+  children,
+}) {
+  const {
+    products,
+    stations,
+    snapshot,
+    selectedOrderId,
+    isOrderLoading,
+    orderDataLoading,
+    selectOrder,
+    startOrder,
+    stopOrder,
+    busyAction,
+  } = useFactoryData();
+  const [stationFilter, setStationFilter] = useState("");
+  const [form, setForm] = useState({
+    product_id: "1",
+    quantity: 8,
+    customer: "H Motors",
+    customer_po: "",
+    delivery_date: defaultDeliveryDate(),
+  });
+  const [formError, setFormError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const visibleEvents = useMemo(
+    () =>
+      snapshot.events
+        .filter((event) => !stationFilter || event.station === stationFilter)
+        .slice(0, 24),
+    [snapshot.events, stationFilter],
+  );
+
+  const submitOrder = async (event) => {
+    event.preventDefault();
+    setFormError("");
+    setSuccessMessage("");
+    if (!form.customer.trim()) {
+      setFormError("Customer is required.");
+      return;
+    }
+    if (Number(form.quantity) < 1 || Number(form.quantity) > 100) {
+      setFormError("Quantity must be between 1 and 100.");
+      return;
+    }
+    if (!form.delivery_date) {
+      setFormError("Delivery date is required.");
+      return;
+    }
+
+    try {
+      const order = await startOrder({
+        ...form,
+        customer: form.customer.trim(),
+        customer_po: form.customer_po.trim(),
+        quantity: Number(form.quantity),
+      });
+      setSuccessMessage(`Order ${order.order_id} is now running.`);
+    } catch {
+      // The provider exposes the API error in the source bar.
+    }
+  };
+
+  return (
+    <div className="grid gap-5">
+      <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+        <form
+          onSubmit={submitOrder}
+          className="flex min-w-0 flex-col rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm"
+        >
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E3FCF7] text-[#00684A]">
+              <Icon glyph="Plus" size={20} />
+            </span>
+            <div className="min-w-0">
+              <H2 className="!text-xl !leading-7 text-[#112733]">
+                Start production
+              </H2>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="grid min-w-0 gap-1 text-sm font-medium text-[#3D4F58]">
+              Product
+              <select
+                value={form.product_id}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    product_id: event.target.value,
+                  }))
+                }
+                className="h-10 w-full min-w-0 rounded-lg border border-[#C1C7C6] bg-white px-3 text-sm text-[#112733] outline-none focus:border-[#00A35C]"
+              >
+                {products.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.code} · {product.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid min-w-0 gap-1 text-sm font-medium text-[#3D4F58]">
+              Quantity
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={form.quantity}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    quantity: event.target.value,
+                  }))
+                }
+                className="h-10 w-full min-w-0 rounded-lg border border-[#C1C7C6] px-3 text-sm text-[#112733] outline-none focus:border-[#00A35C]"
+              />
+            </label>
+            <label className="grid min-w-0 gap-1 text-sm font-medium text-[#3D4F58]">
+              Customer
+              <input
+                type="text"
+                value={form.customer}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    customer: event.target.value,
+                  }))
+                }
+                className="h-10 w-full min-w-0 rounded-lg border border-[#C1C7C6] px-3 text-sm text-[#112733] outline-none focus:border-[#00A35C]"
+              />
+            </label>
+            <label className="grid min-w-0 gap-1 text-sm font-medium text-[#3D4F58]">
+              Customer PO
+              <input
+                type="text"
+                placeholder="Optional"
+                value={form.customer_po}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    customer_po: event.target.value,
+                  }))
+                }
+                className="h-10 w-full min-w-0 rounded-lg border border-[#C1C7C6] px-3 text-sm text-[#112733] outline-none focus:border-[#00A35C]"
+              />
+            </label>
+            <label className="grid min-w-0 gap-1 text-sm font-medium text-[#3D4F58] sm:col-span-2">
+              Delivery date
+              <input
+                type="date"
+                value={form.delivery_date}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    delivery_date: event.target.value,
+                  }))
+                }
+                className="h-10 w-full min-w-0 rounded-lg border border-[#C1C7C6] px-3 text-sm text-[#112733] outline-none focus:border-[#00A35C]"
+              />
+            </label>
+          </div>
+
+          {formError && (
+            <p className="mt-3 text-sm font-medium text-[#B1371F]">
+              {formError}
+            </p>
+          )}
+          {successMessage && (
+            <p className="mt-3 text-sm font-medium text-[#00684A]">
+              {successMessage}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={busyAction === "start-order"}
+            className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#00684A] px-4 font-medium text-white hover:bg-[#00543D] disabled:cursor-wait disabled:opacity-60"
+          >
+            {busyAction === "start-order" ? (
+              <>
+                <Icon glyph="Refresh" size={17} className="animate-spin" />
+                Starting factory…
+              </>
+            ) : (
+              <>
+                <Icon glyph="Play" size={17} />
+                Start simulation
+              </>
+            )}
+          </button>
+        </form>
+
+        <div className="flex min-w-0 flex-col rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm max-xl:max-h-[420px] xl:h-0 xl:min-h-full">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <H2 className="!text-xl !leading-7 text-[#112733]">Orders</H2>
+            </div>
+            <span className="rounded-full bg-[#E3FCF7] px-3 py-1 text-sm font-semibold text-[#00684A]">
+              {snapshot.activeOrders.length} running
+            </span>
+          </div>
+
+          <div className="cardlist-scrollbar mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+            {snapshot.orders.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-[#C1C7C6] bg-[#F8FAF9] p-8 text-center">
+                <Icon
+                  glyph="Clock"
+                  size={24}
+                  className="mx-auto text-[#889397]"
+                />
+                <Body className="mt-2 text-[#5C6C75]">
+                  No orders yet. Start one to see the line come alive.
+                </Body>
+              </div>
+            ) : (
+              snapshot.orders.map((order) => {
+                const selected = selectedOrderId === order.order_id;
+                const running = isRunningOrder(order);
+                const completedBatches = Number(order.completed_units || 0);
+                const progress = Math.min(
+                  100,
+                  (completedBatches / Math.max(1, order.quantity || 1)) * 100,
+                );
+                const statusLabel =
+                  order.status === "complete"
+                    ? "Complete"
+                    : running
+                      ? "Running"
+                      : "Stopped";
+                return (
+                  <article
+                    key={order.order_id}
+                    className={`rounded-xl border p-4 transition ${
+                      selected
+                        ? "border-[#00A35C] bg-[#E3FCF7]"
+                        : "border-[#D8E3DF] bg-[#F8FAF9]"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => selectOrder(order.order_id)}
+                      aria-pressed={selected}
+                      className="block w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-[#00A35C] focus-visible:ring-offset-2"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <Body
+                            weight="medium"
+                            className="truncate text-[#112733]"
+                          >
+                            {order.order_id}
+                          </Body>
+                          <Description className="mt-1 truncate">
+                            {order.customer || "Factory customer"} ·{" "}
+                            {order.sales_order || order.product_id}
+                          </Description>
+                        </div>
+                        <span
+                          className={`inline-flex shrink-0 items-center gap-1.5 text-xs font-medium ${
+                            running
+                              ? "text-[#00684A]"
+                              : order.status === "complete"
+                                ? "text-[#3D4F58]"
+                                : "text-[#5C6C75]"
+                          }`}
+                        >
+                          <span
+                            className={`h-2 w-2 rounded-full ${
+                              running
+                                ? "animate-pulse bg-[#00A35C]"
+                                : order.status === "complete"
+                                  ? "bg-[#3D4F58]"
+                                  : "bg-[#889397]"
+                            }`}
+                          />
+                          {statusLabel}
+                        </span>
+                      </div>
+                      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            running ? "bg-[#00A35C]" : "bg-[#889397]"
+                          }`}
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </button>
+                    <div className="mt-3 flex min-h-8 items-center justify-between gap-3">
+                      <Description className="text-xs">
+                        {completedBatches} / {order.quantity || "?"} units
+                      </Description>
+                      <div className="flex items-center gap-1">
+                        {selected && isOrderLoading && (
+                          <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-medium text-[#00684A]">
+                            <Icon
+                              glyph="Refresh"
+                              size={13}
+                              className="animate-spin"
+                            />
+                            Loading…
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => onOpenAnalytics(order.order_id)}
+                          aria-label={`View analytics for ${order.order_id}`}
+                          title="View order analytics"
+                          className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-[#00684A] hover:bg-white"
+                        >
+                          <Icon glyph="Charts" size={14} />
+                          Analytics
+                        </button>
+                        {running && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Stop simulation for ${order.order_id}?`,
+                                )
+                              ) {
+                                stopOrder(order.order_id);
+                              }
+                            }}
+                            className="rounded-md px-2 py-1 text-xs font-medium text-[#B1371F] hover:bg-[#FDEDEB]"
+                          >
+                            Stop
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </section>
+
+      {children}
+
+      <section className="grid gap-5 xl:grid-cols-2">
+        <div className="rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <H2 className="!text-xl !leading-7 text-[#112733]">
+                Machine events
+              </H2>
+            </div>
+            {orderDataLoading.events && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#5C6C75]">
+                <Icon glyph="Refresh" size={14} className="animate-spin" />
+                Loading…
+              </span>
+            )}
+            <select
+              value={stationFilter}
+              onChange={(event) => setStationFilter(event.target.value)}
+              className="h-9 rounded-lg border border-[#C1C7C6] bg-white px-3 text-sm text-[#112733]"
+            >
+              <option value="">All stations</option>
+              {stations.map((station) => (
+                <option key={station.name} value={station.name}>
+                  {station.shortName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="cardlist-scrollbar mt-5 max-h-[500px] overflow-y-auto px-2">
+            {visibleEvents.length === 0 ? (
+              <div className="rounded-xl bg-[#F8FAF9] p-8 text-center text-[#5C6C75]">
+                {orderDataLoading.events
+                  ? "Loading machine events…"
+                  : selectedOrderId
+                    ? "No events match this filter."
+                    : "Select an order to see its machine events."}
+              </div>
+            ) : (
+              <ol className="relative ml-1 border-l border-[#D8E3DF] pl-6">
+                {visibleEvents.map((event) => (
+                  <li key={event.event_id} className="relative pb-5">
+                    <span
+                      className={`absolute -left-[29px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white ${
+                        event.ok === false ? "bg-[#DB3030]" : "bg-[#00A35C]"
+                      }`}
+                    />
+                    <div className="flex items-start justify-between gap-3">
+                      <Body weight="medium" className="text-sm text-[#112733]">
+                        {event.station}
+                      </Body>
+                      <Description className="shrink-0 text-[11px]">
+                        {event.ts
+                          ? new Date(event.ts).toLocaleTimeString()
+                          : "Now"}
+                      </Description>
+                    </div>
+                    <Description className="mt-1 break-words text-xs leading-5">
+                      Batch {event.batch_id} · {eventSummary(event.metrics)}
+                    </Description>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-[#D8E3DF] bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <H2 className="!text-xl !leading-7 text-[#112733]">
+              Recent production units
+            </H2>
+            {orderDataLoading.productionUnits && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#5C6C75]">
+                <Icon glyph="Refresh" size={14} className="animate-spin" />
+                Loading…
+              </span>
+            )}
+          </div>
+
+          <div className="cardlist-scrollbar mt-5 grid max-h-[500px] gap-3 overflow-y-auto pr-1">
+            {snapshot.liveProductionUnit && (
+              <article className="rounded-xl border border-[#00A35C] bg-[#E3FCF7] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Body weight="medium" className="truncate text-[#112733]">
+                      Batch {snapshot.liveProductionUnit.batch_id} ·{" "}
+                      {snapshot.liveProductionUnit.order_id}
+                    </Body>
+                    <Description className="mt-1 truncate text-xs">
+                      {snapshot.liveProductionUnit.current_stage_label ||
+                        "Starting production"}
+                    </Description>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#00684A]">
+                      <span className="h-2 w-2 animate-pulse rounded-full bg-[#00A35C]" />
+                      In progress
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onOpenDocument(
+                          `Production unit · Batch ${snapshot.liveProductionUnit.batch_id}`,
+                          `${snapshot.liveProductionUnit.order_id} · live document`,
+                          snapshot.liveProductionUnit,
+                        )
+                      }
+                      aria-label="View live production unit document"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#00A35C] bg-white font-mono text-sm font-semibold text-[#00684A]"
+                    >
+                      {"{}"}
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#3D4F58]">
+                  <span>
+                    {
+                      Object.keys(snapshot.liveProductionUnit.process || {})
+                        .length
+                    }{" "}
+                    stations completed
+                  </span>
+                  <span>Streaming from SCADA state</span>
+                </div>
+              </article>
+            )}
+
+            {!snapshot.liveProductionUnit &&
+              snapshot.productionUnits.length === 0 && (
+                <div className="rounded-xl border border-dashed border-[#C1C7C6] bg-[#F8FAF9] p-8 text-center">
+                  <Body className="text-[#5C6C75]">
+                    {orderDataLoading.productionUnits
+                      ? "Loading production units…"
+                      : selectedOrderId
+                        ? "Production units will appear here as batches complete."
+                        : "Select an order to see its production units."}
+                  </Body>
+                </div>
+              )}
+
+            {snapshot.productionUnits.slice(0, 24).map((unit) => (
+              <article
+                key={`${unit.order_id}-${unit.batch_id}`}
+                className="rounded-xl border border-[#D8E3DF] bg-[#F8FAF9] p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Body weight="medium" className="truncate text-[#112733]">
+                      Batch {unit.batch_id} · {unit.order_id}
+                    </Body>
+                    <Description className="mt-1 truncate text-xs">
+                      {unit.order?.customer || "Factory customer"}
+                      {Number.isFinite(unit.cycle_time_sec)
+                        ? ` · ${Number(unit.cycle_time_sec).toFixed(2)}s cycle`
+                        : ""}
+                    </Description>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        unit.final_status === "pass"
+                          ? "bg-[#E3FCF7] text-[#00684A]"
+                          : unit.final_status === "fail"
+                            ? "bg-[#FDEDEB] text-[#B1371F]"
+                            : "bg-[#E8EDEB] text-[#3D4F58]"
+                      }`}
+                    >
+                      {unit.final_status === "pass"
+                        ? "Pass"
+                        : unit.final_status === "fail"
+                          ? "Fail"
+                          : "Complete"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onOpenDocument(
+                          `Production unit · Batch ${unit.batch_id}`,
+                          `${unit.order_id} · MongoDB document`,
+                          unit,
+                        )
+                      }
+                      aria-label={`View batch ${unit.batch_id} document`}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#C1C7C6] font-mono text-sm font-semibold text-[#00684A] hover:bg-[#E3FCF7]"
+                    >
+                      {"{}"}
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5C6C75]">
+                  <span>{unit.cells?.length || 0} cells</span>
+                  <span>
+                    {Object.keys(unit.process || {}).length} processes
+                  </span>
+                  {unit.completed_at && (
+                    <span>{new Date(unit.completed_at).toLocaleString()}</span>
+                  )}
+                  {unit.telemetry === "partial" && (
+                    <span
+                      className="text-[#944F01]"
+                      title="Only the station events sampled from the SCADA state while this batch ran are available."
+                    >
+                      Partial telemetry
+                    </span>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

@@ -3,10 +3,11 @@
 import React from "react";
 import { Modal } from "@leafygreen-ui/modal";
 import { H3, Body } from "@leafygreen-ui/typography";
-import Icon from "@leafygreen-ui/icon";
+import { Icon } from "@leafygreen-ui/icon";
 import PropTypes from "prop-types";
 import Image from "next/image";
 import { Button } from "@leafygreen-ui/button";
+import { IconButton } from "@leafygreen-ui/icon-button";
 import { Tabs, Tab } from "@leafygreen-ui/tabs";
 import { useInfoWizard } from "./hooks";
 
@@ -16,6 +17,9 @@ const InfoWizard = (props) => {
     setOpen,
     tooltipText,
     iconGlyph,
+    triggerText,
+    iconOnly,
+    darkMode,
     sections,
     selected,
     setSelected,
@@ -23,17 +27,32 @@ const InfoWizard = (props) => {
 
   return (
     <>
-      {/* Bigger button for navbars */}
-      <Button
-        style={{ margin: "5px" }}
-        onClick={() => setOpen((prev) => !prev)}
-        leftGlyph={<Icon glyph={iconGlyph} />}
-      >
-        Tell me more!
-      </Button>
+      {iconOnly ? (
+        <IconButton
+          darkMode={darkMode}
+          aria-label={tooltipText}
+          title={tooltipText}
+          onClick={() => setOpen((prev) => !prev)}
+        >
+          <Icon glyph={iconGlyph} />
+        </IconButton>
+      ) : (
+        <Button
+          style={{ margin: "5px" }}
+          onClick={() => setOpen((prev) => !prev)}
+          leftGlyph={<Icon glyph={iconGlyph} />}
+        >
+          {triggerText}
+        </Button>
+      )}
 
-      <Modal open={open} setOpen={setOpen} size={"large"} className="z-2">
-        <div className="overflow-y-auto h-[500px]">
+      <Modal
+        open={open}
+        setOpen={setOpen}
+        size="large"
+        style={{ width: "min(92vw, 1100px)", maxWidth: "1100px" }}
+      >
+        <div className="h-[72vh] min-h-[420px] max-h-[780px] overflow-y-auto pr-2">
           <Tabs
             aria-label="info wizard tabs"
             onValueChange={setSelected}
@@ -75,12 +94,13 @@ const InfoWizard = (props) => {
                       ))}
 
                     {section.image && (
-                      <div className="relative w-full h-[400px] flex justify-center items-center">
+                      <div className="relative flex h-[55vh] min-h-[440px] max-h-[620px] w-full items-center justify-center">
                         <Image
                           src={section.image.src}
                           alt={section.image.alt}
                           fill
-                          sizes="(max-width: 768px) 90vw, 700px"
+                          quality={100}
+                          sizes="(max-width: 768px) 90vw, 1000px"
                           style={{
                             objectFit: "contain",
                             objectPosition: "center",
@@ -104,13 +124,16 @@ InfoWizard.propTypes = {
   setOpen: PropTypes.func.isRequired,
   tooltipText: PropTypes.string,
   iconGlyph: PropTypes.string,
+  triggerText: PropTypes.string,
+  iconOnly: PropTypes.bool,
+  darkMode: PropTypes.bool,
   sections: PropTypes.arrayOf(
     PropTypes.shape({
       heading: PropTypes.string.isRequired, // Tab title
       content: PropTypes.arrayOf(
         PropTypes.shape({
           heading: PropTypes.string,
-          body: PropTypes.string,
+          body: PropTypes.oneOfType([PropTypes.string, PropTypes.array]),
           image: PropTypes.shape({
             src: PropTypes.string.isRequired,
             alt: PropTypes.string.isRequired,
