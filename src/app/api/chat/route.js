@@ -1,10 +1,12 @@
-import { NextResponse } from "next/server";
 import { handleChatRequestStream } from "@/agents/callAgent.js";
 
 export async function POST(request) {
   // Streaming response using ReadableStream
-  const { message, agentId } = await request.json();
-  const threadId = Date.now().toString();
+  const { message, agentId, context } = await request.json();
+  const threadId =
+    agentId === "uns-chat"
+      ? `uns-chat:${Date.now()}`
+      : Date.now().toString();
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -18,7 +20,7 @@ export async function POST(request) {
         close: () => controller.close(),
       };
       await handleChatRequestStream(
-        { message, threadId, agentId },
+        { message, threadId, agentId, context },
         streamWriter
       );
     },

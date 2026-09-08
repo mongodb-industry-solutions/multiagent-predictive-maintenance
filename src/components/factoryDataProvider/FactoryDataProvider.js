@@ -11,6 +11,7 @@ import {
 } from "react";
 import {
   createRemoteOrder,
+  ensureRemoteOrder,
   fetchRemoteSnapshot,
   fetchScadaState,
   sendRemoteMetrics,
@@ -567,6 +568,136 @@ export default function FactoryDataProvider({ children }) {
     }
   }, []);
 
+  /**
+   * Start an order for a background experience without selecting it or
+   * enabling the high-frequency SCADA poll. Local mode selects the order so
+   * its in-browser data can be supplied to experiences that need it.
+   */
+  const startBackgroundOrder = useCallback(
+    async (input) => {
+      if (source === FACTORY_SOURCES.LOCAL) {
+        const result = createLocalOrder(
+          localStateRef.current || createInitialLocalFactoryState(),
+          { ...input, prefill_count: 8 }
+        );
+        commitLocalState(result.state);
+        selectedOrderIdRef.current = result.order.order_id;
+        setSelectedOrderId(result.order.order_id);
+        setLastUpdated(new Date());
+        return result.order;
+      }
+
+      const marker = String(input.customer_po || "DEMO").replace(
+        /^UNS-CHAT-/,
+        ""
+      );
+      const order = await ensureRemoteOrder(marker);
+      if (order.guardian_created === false) {
+        setRemoteSnapshot((current) => {
+          if (
+            !current ||
+            current.activeOrders?.some(
+              (activeOrder) => activeOrder.order_id === order.order_id
+            )
+          ) {
+            return current;
+          }
+          return {
+            ...current,
+            activeOrders: [order, ...(current.activeOrders || [])],
+          };
+        });
+        return order;
+      }
+      const sessionOrder = toSessionOrder({ ...input, ...order });
+      const orders = [
+        sessionOrder,
+        ...sessionOrdersRef.current.filter(
+          (existing) => existing.order_id !== order.order_id
+        ),
+      ];
+      commitSessionOrders(orders);
+      setRemoteSnapshot((current) =>
+        current
+          ? composeRemote(
+              {
+                ...current,
+                activeOrders: [
+                  sessionOrder,
+                  ...(current.activeOrders || []).filter(
+                    (existing) => existing.order_id !== order.order_id
+                  ),
+                ],
+              },
+              orders,
+              current.selectedOrder,
+              current.sensor || remoteSensor
+            )
+          : current
+      );
+      setLastUpdated(new Date());
+      return order;
+    },
+    [
+      commitLocalState,
+      commitSessionOrders,
+      composeRemote,
+      remoteSensor,
+      source,
+    ]
+  );
+
+  /**
+   * Stop an order created by a page-scoped background experience. The source
+   * is explicit so cleanup still targets the right runtime after a source
+   * switch. `keepalive` improves best-effort cleanup during full-page exits.
+   */
+  const stopBackgroundOrder = useCallback(
+    async (orderId, { orderSource = source, keepalive = false } = {}) => {
+      if (!orderId) return null;
+      if (orderSource === FACTORY_SOURCES.LOCAL) {
+        const next = stopLocalOrder(
+          localStateRef.current || createInitialLocalFactoryState(),
+          orderId
+        );
+        commitLocalState(next);
+        return { order_id: orderId, status: "stopped" };
+      }
+
+      const result = await stopRemoteOrder(orderId, { keepalive });
+      commitSessionOrders(
+        markSessionOrderStopped(sessionOrdersRef.current, orderId)
+      );
+      setRemoteSnapshot((current) => {
+        if (!current) return current;
+        const orders = sessionOrdersRef.current;
+        const selectedOrder =
+          orders.find(
+            (order) => order.order_id === selectedOrderIdRef.current
+          ) || null;
+        return composeRemote(
+          {
+            ...current,
+            activeOrders: (current.activeOrders || []).filter(
+              (order) => order.order_id !== orderId
+            ),
+          },
+          orders,
+          selectedOrder,
+          current.sensor || remoteSensor
+        );
+      });
+      return result;
+    },
+    [
+      commitLocalState,
+      commitSessionOrders,
+      composeRemote,
+      remoteSensor,
+      source,
+    ]
+  );
+
   const startOrder = useCallback(
     (input) =>
       runAction("start-order", async () => {
@@ -704,7 +835,9 @@ export default function FactoryDataProvider({ children }) {
       snapshot,
       refresh,
       startOrder,
+      startBackgroundOrder,
       stopOrder,
+      stopBackgroundOrder,
       saveThresholds,
       sendMetrics,
       products: PRODUCTS,
@@ -728,7 +861,9 @@ export default function FactoryDataProvider({ children }) {
       selectedOrderId,
       snapshot,
       source,
+      startBackgroundOrder,
       startOrder,
+      stopBackgroundOrder,
       stopOrder,
     ]
   );

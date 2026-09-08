@@ -289,10 +289,19 @@ export function createRemoteOrder(input, { signal } = {}) {
   });
 }
 
-export function stopRemoteOrder(orderId) {
+export function ensureRemoteOrder(marker, { signal } = {}) {
+  return factoryFetch("ensure-order", {
+    method: "POST",
+    body: JSON.stringify({ marker }),
+    signal,
+  });
+}
+
+export function stopRemoteOrder(orderId, { keepalive = false } = {}) {
   return factoryFetch("api/orders/stop", {
     method: "POST",
     body: JSON.stringify({ order_id: orderId }),
+    keepalive,
   });
 }
 

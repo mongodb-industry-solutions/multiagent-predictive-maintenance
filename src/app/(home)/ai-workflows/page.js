@@ -4,11 +4,11 @@ import SectionHome from "@/components/sectionHome/SectionHome";
 
 const useCases = [
   {
-    title: "Factory Chat",
+    title: "UNS Chat",
     description:
       "Ask natural-language questions across live and historical factory context with visible supporting evidence.",
     glyph: "Wizard",
-    comingSoon: true,
+    href: "/ai-workflows/factory-chat",
   },
   {
     title: "Criticality Analysis",
