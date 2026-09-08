@@ -6,6 +6,7 @@ import { useFailureDetectionPage } from "./hooks";
 import MachineController from "@/components/machineController/MachineController";
 import CardList from "@/components/cardList/CardList";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
+import FactorySourceSelector from "@/components/factorySourceSelector/FactorySourceSelector";
 
 const Code = dynamic(
   () => import("@leafygreen-ui/code").then((mod) => mod.Code),
@@ -24,6 +25,7 @@ export default function Page() {
     modalContent,
     handleStart,
     handleStop,
+    handleSourceChange,
     agentLogs,
     showTelemetry,
     setShowTelemetry,
@@ -37,37 +39,69 @@ export default function Page() {
             id="detection"
             className="mx-2 mb-2 mt-0 flex min-h-[320px] min-w-[320px] w-1/2 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-4"
           >
-            {/* Top part: Buttons (30%) and MachineController (70%) */}
-            <div className="flex flex-row w-full gap-4 mb-4 min-h-[100px] max-h-[120px]">
-              {/* Left: Buttons */}
+            {/* Top: data source and actions on the left, machine controls on the right */}
+            <div className="mb-4 flex min-h-[164px] w-full flex-row gap-6">
               <div
-                className="flex flex-col gap-2 items-center justify-center h-full"
-                style={{ flexBasis: "30%", minWidth: 120 }}
+                className="flex h-full flex-col justify-center gap-3"
+                style={{ flexBasis: "34%", minWidth: 190 }}
               >
+                <FactorySourceSelector
+                  source={sim.dataSource}
+                  onChange={handleSourceChange}
+                  connected={
+                    sim.dataSource === "local" || sim.leafyAvailable === true
+                  }
+                  isChecking={sim.isSourceChecking}
+                  disabled={sim.isStarting || sim.isSourceChecking}
+                  className="w-full"
+                  buttonClassName="w-full justify-between"
+                  menuAlign="left"
+                />
+                {sim.sourceError && (
+                  <p className="text-xs font-medium text-[#B1371F]">
+                    {sim.sourceError}
+                  </p>
+                )}
                 <Button
                   variant={sim.isRunning ? "danger" : "primary"}
                   onClick={sim.isRunning ? handleStop : handleStart}
-                  className="mb-2 w-full"
-                >
-                  {sim.isRunning ? "Stop Simulator" : "Start Simulator"}
-                </Button>
-                <Button
-                  variant="default"
-                  onClick={() => setShowTelemetry((v) => !v)}
+                  disabled={sim.isStarting}
                   className="w-full"
                 >
-                  {showTelemetry ? "Hide Telemetry" : "Show Telemetry"}
+                  {sim.isStarting
+                    ? "Opening order..."
+                    : sim.isRunning
+                      ? "Stop Simulator"
+                      : "Start Simulator"}
                 </Button>
               </div>
-              {/* Right: MachineController */}
-              <div className="flex-1 flex items-center min-w-0">
-                <MachineController
-                  status={sim.status}
-                  temperature={sim.temperature}
-                  vibration={sim.vibration}
-                  onTemperatureChange={sim.onTemperatureChange}
-                  onVibrationChange={sim.onVibrationChange}
-                />
+              {/* Right: machine and sensor controls */}
+              <div className="flex min-w-0 flex-1 flex-col justify-center">
+                <div className="flex items-center">
+                  <MachineController
+                    status={sim.status}
+                    temperature={sim.temperature}
+                    vibration={sim.vibration}
+                    onTemperatureChange={sim.onTemperatureChange}
+                    onVibrationChange={sim.onVibrationChange}
+                  />
+                </div>
+                <div className="mt-1 grid grid-cols-[3fr_2fr]">
+                  <button
+                    type="button"
+                    onClick={() => setShowTelemetry((visible) => !visible)}
+                    aria-pressed={showTelemetry}
+                    className="inline-flex h-8 items-center justify-self-center gap-2 rounded-lg px-3 text-sm font-medium text-[#00684A] hover:bg-[#E3FCF7]"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="font-mono text-xs font-semibold"
+                    >
+                      {"{}"}
+                    </span>
+                    {showTelemetry ? "Hide telemetry" : "View telemetry"}
+                  </button>
+                </div>
               </div>
             </div>
             {/* Bottom part: Alerts and (optionally) Telemetry */}
@@ -75,7 +109,11 @@ export default function Page() {
               <div className="flex flex-1 gap-4 min-h-0 overflow-hidden">
                 {/* Left: Machine Telemetry */}
                 <div className="w-1/2 flex flex-col min-w-[180px] h-full">
-                  <div className="font-semibold mb-2">Machine Telemetry</div>
+                  <div className="font-semibold mb-2">
+                    {sim.dataSource === "leafy"
+                      ? "Leafy Factory Telemetry"
+                      : "Machine Telemetry"}
+                  </div>
                   <div className="flex-1 min-h-0 max-h-full overflow-y-auto">
                     <Code
                       language="json"

@@ -79,8 +79,8 @@ async function factoryFetch(path, options = {}) {
   return payload && typeof payload === "object" ? payload : {};
 }
 
-export async function fetchFactoryStatus() {
-  return factoryFetch("api/status");
+export async function fetchFactoryStatus({ signal } = {}) {
+  return factoryFetch("api/status", { signal });
 }
 
 export async function fetchActiveOrders() {
@@ -111,13 +111,15 @@ export async function fetchMachineEvents({
   orderId,
   station,
   limit = 80,
+  signal,
 } = {}) {
   const data = await factoryFetch(
     `api/machines/events${queryString({
       order_id: orderId,
       station,
       limit,
-    })}`
+    })}`,
+    { signal }
   );
   return (Array.isArray(data.events) ? data.events : []).map(normalizeEvent);
 }
@@ -136,9 +138,14 @@ export async function fetchProductionUnits({ orderId, limit = 30 } = {}) {
     .filter((unit) => !orderId || unit.order_id === orderId);
 }
 
-export async function fetchFactoryAlerts({ orderId, limit = 80 } = {}) {
+export async function fetchFactoryAlerts({
+  orderId,
+  limit = 80,
+  signal,
+} = {}) {
   const data = await factoryFetch(
-    `api/alerts${queryString({ order_id: orderId, limit })}`
+    `api/alerts${queryString({ order_id: orderId, limit })}`,
+    { signal }
   );
   return (Array.isArray(data.alerts) ? data.alerts : []).map((alert) => ({
     ...alert,
@@ -274,10 +281,11 @@ export async function fetchRemoteSnapshot(orderId, onPartial) {
   };
 }
 
-export function createRemoteOrder(input) {
+export function createRemoteOrder(input, { signal } = {}) {
   return factoryFetch("api/orders/create", {
     method: "POST",
     body: JSON.stringify(input),
+    signal,
   });
 }
 
@@ -288,7 +296,7 @@ export function stopRemoteOrder(orderId) {
   });
 }
 
-export function setRemoteThresholds(orderId, values) {
+export function setRemoteThresholds(orderId, values, { signal } = {}) {
   return factoryFetch("api/machines/laser-welding/thresholds", {
     method: "POST",
     body: JSON.stringify({
@@ -296,10 +304,11 @@ export function setRemoteThresholds(orderId, values) {
       temperature_threshold: Number(values.temperature_threshold),
       vibration_threshold: Number(values.vibration_threshold),
     }),
+    signal,
   });
 }
 
-export function sendRemoteMetrics(orderId, values) {
+export function sendRemoteMetrics(orderId, values, { signal } = {}) {
   return factoryFetch("api/machines/laser-welding/metrics", {
     method: "POST",
     body: JSON.stringify({
@@ -307,5 +316,6 @@ export function sendRemoteMetrics(orderId, values) {
       temperature: Number(values.temperature),
       vibration: Number(values.vibration),
     }),
+    signal,
   });
 }
