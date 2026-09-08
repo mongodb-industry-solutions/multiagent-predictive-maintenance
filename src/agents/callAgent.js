@@ -1,5 +1,6 @@
 import { HumanMessage } from "@langchain/core/messages";
 import getMongoClientPromise from "@/integrations/mongodb/client.js";
+import { normalizeFactoryChatContext } from "@/lib/factory/chatContext.js";
 import { getAgentById } from "./config.js";
 
 /**
@@ -12,18 +13,26 @@ const agentGraphCache = {};
  * Create agent callbacks that write logs to a stream
  * @param {WritableStreamDefaultWriter} writer
  */
-function createAgentCallbacks(writer) {
+function createAgentCallbacks(writer, threadId) {
   const writeLog = async (obj) => {
     await writer.ready;
-    writer.write(JSON.stringify(obj) + "\n");
+    await writer.write(JSON.stringify({ ...obj, threadId }) + "\n");
   };
   return {
     handleToolStart(tool, input, runId) {
-      console.log("[Tool Start]", JSON.parse(input).name);
+      let values = {};
+      try {
+        values = JSON.parse(input);
+      } catch {
+        values = { input };
+      }
+      values.name = values.name || tool?.name || "tool";
+      console.log("[Tool Start]", values.name);
       writeLog({
         type: "update",
         name: "tool_start",
-        values: JSON.parse(input),
+        runId,
+        values,
       });
     },
     handleToolEnd(output, runId) {
@@ -31,6 +40,7 @@ function createAgentCallbacks(writer) {
       writeLog({
         type: "update",
         name: "tool_end",
+        runId,
         values: output,
       });
     },
@@ -38,7 +48,9 @@ function createAgentCallbacks(writer) {
       writeLog({
         type: "error",
         name: "tool_error",
-        values: { name: err?.name || "unknown" },
+        values: {
+          name: err?.message || err?.name || "Tool request failed",
+        },
       });
     },
     handleLLMError(err, runId) {
@@ -85,7 +97,13 @@ export const agentCallbacks = {
  * @param {WritableStreamDefaultWriter} [writer] - Optional stream writer for logs
  * @returns {Promise<string>} Agent's response
  */
-export async function callAgent(message, threadId, agentId = "test", writer) {
+export async function callAgent(
+  message,
+  threadId,
+  agentId = "test",
+  writer,
+  context
+) {
   try {
     // Initialize MongoDB client
     const dbName = process.env.DATABASE_NAME;
@@ -108,8 +126,10 @@ export async function callAgent(message, threadId, agentId = "test", writer) {
 
     // Use streaming callbacks if writer is provided
     const callbacks = writer
-      ? [createAgentCallbacks(writer)]
+      ? [createAgentCallbacks(writer, threadId)]
       : [agentCallbacks];
+    const factoryContext =
+      agentId === "uns-chat" ? normalizeFactoryChatContext(context) : null;
 
     // Invoke the agent with the user's message
     const finalState = await agentGraph.invoke(
@@ -118,7 +138,12 @@ export async function callAgent(message, threadId, agentId = "test", writer) {
       },
       {
         recursionLimit: 25,
-        configurable: { thread_id: threadId },
+        metadata: { agentId },
+        configurable: {
+          thread_id: threadId,
+          factorySource: factoryContext?.source || "leafy",
+          factoryContext,
+        },
         callbacks,
       }
     );
@@ -135,6 +160,7 @@ export async function callAgent(message, threadId, agentId = "test", writer) {
           type: "final",
           name: "agent_response",
           values: { name: "response", content: lastMessage.content },
+          threadId,
         }) + "\n"
       );
       await writer.close();
@@ -164,13 +190,24 @@ export async function callAgent(message, threadId, agentId = "test", writer) {
  * @returns {Promise<Object>} Response object
  */
 export async function handleChatRequest(req) {
-  const { message, threadId = Date.now().toString(), agentId = "test" } = req;
+  const {
+    message,
+    threadId = Date.now().toString(),
+    agentId = "test",
+    context,
+  } = req;
 
   if (!message) {
     throw new Error('Missing required field: "message"');
   }
 
-  const response = await callAgent(message, threadId, agentId);
+  const response = await callAgent(
+    message,
+    threadId,
+    agentId,
+    undefined,
+    context
+  );
 
   return {
     threadId,
@@ -185,7 +222,12 @@ export async function handleChatRequest(req) {
  * @returns {Promise<void>}
  */
 export async function handleChatRequestStream(req, writer) {
-  const { message, threadId = Date.now().toString(), agentId = "test" } = req;
+  const {
+    message,
+    threadId = Date.now().toString(),
+    agentId = "test",
+    context,
+  } = req;
   if (!message) {
     await writer.ready;
     await writer.write(
@@ -197,5 +239,5 @@ export async function handleChatRequestStream(req, writer) {
     await writer.close();
     return;
   }
-  await callAgent(message, threadId, agentId, writer);
+  await callAgent(message, threadId, agentId, writer, context);
 }

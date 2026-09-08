@@ -8,6 +8,25 @@ export async function fetchAgentOptions() {
   return await res.json();
 }
 
+export async function fetchRecentChatThreads(agentId = "uns-chat") {
+  const res = await fetch(
+    `/api/chat/threads?agentId=${encodeURIComponent(agentId)}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) throw new Error("Failed to load recent conversations");
+  const data = await res.json();
+  return Array.isArray(data.threads) ? data.threads : [];
+}
+
+export async function fetchChatThread(threadId, agentId = "uns-chat") {
+  const res = await fetch(
+    `/api/chat/${encodeURIComponent(threadId)}?agentId=${encodeURIComponent(agentId)}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) throw new Error("Failed to load conversation");
+  return res.json();
+}
+
 export async function sendChatMessage({
   message,
   agentId,
@@ -15,13 +34,17 @@ export async function sendChatMessage({
   setLogs,
   setThreadId,
   setError,
+  context,
 }) {
   const url = threadId ? `/api/chat/${threadId}` : "/api/chat";
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, agentId }),
+    body: JSON.stringify({ message, agentId, context }),
   });
+  if (!res.ok) {
+    throw new Error(`Agent request failed (${res.status})`);
+  }
   if (!res.body) throw new Error("No response body");
   let newThreadId = threadId;
   for await (const evt of streamAgentEvents(res.body)) {

@@ -43,7 +43,7 @@ function metricsFor(station, batchId) {
       return {
         layer_count: 4,
         stack_height_mm: round(9.3 + variance, 3),
-        alignment_ok: batchId % 11 !== 0,
+        alignment_ok: batchId % 7 !== 0,
         cell_ids: cellIds,
       };
     case "Module Pre-Assembly":
@@ -56,13 +56,13 @@ function metricsFor(station, batchId) {
       return {
         laser_power_w: 510 + (batchId % 7) * 18,
         weld_points: 6,
-        weld_ok: batchId % 13 !== 0,
+        weld_ok: batchId % 5 !== 0,
       };
     case "Ultrasonic Busbar Welding":
       return {
         weld_energy_j: round(255 + variance * 20, 2),
         weld_time_ms: 106 + (batchId % 8) * 4,
-        weld_ok: batchId % 17 !== 0,
+        weld_ok: batchId % 9 !== 0,
       };
     case "TIM Dispensing & Cooling Plate Assembly":
       return {
@@ -74,13 +74,13 @@ function metricsFor(station, batchId) {
       return {
         seal_temp_c: 146 + (batchId % 6),
         seal_pressure_kpa: round(310 + variance * 35, 1),
-        seal_ok: batchId % 19 !== 0,
+        seal_ok: batchId % 8 !== 0,
       };
     case "Helium Leak Test":
       return {
         leak_rate_pa_l_s: round(0.00064 + variance / 10000, 7),
         test_pressure_kpa: 120 + (batchId % 5) * 7,
-        pass: batchId % 19 !== 0,
+        pass: batchId % 10 !== 0,
       };
     default:
       return {
@@ -284,33 +284,98 @@ export function createLocalOrder(state, input) {
   const suffix = `${now.getHours()}${now.getMinutes()}${now.getSeconds()}${now.getMilliseconds()}`;
   const orderId = `LOCAL-${now.toISOString().slice(0, 10).replaceAll("-", "")}-${suffix}`;
   const product = productFor(input.product_id);
+  const quantity = Number(input.quantity);
+  const prefillCount = Math.min(
+    Math.max(Number(input.prefill_count) || 0, 0),
+    Math.max(quantity - 1, 0)
+  );
   const order = {
     order_id: orderId,
     mes_order_id: `MES-${suffix}`,
     runtime_id: `runtime-${orderId}`,
     product_id: product.id,
-    quantity: Number(input.quantity),
+    quantity,
     customer: input.customer,
     customer_po: input.customer_po,
     delivery_date: input.delivery_date,
     sales_order: `SO-${suffix}`,
-    created_at: now.toISOString(),
+    created_at: new Date(
+      now.getTime() - prefillCount * 15000
+    ).toISOString(),
     status: "running",
     scada_path: `/scada/${orderId}`,
     runtime: {
       status: "running",
       stationIndex: 0,
-      batchId: 1,
+      batchId: prefillCount + 1,
       batchEvents: [],
       current_stage_label: FACTORY_STATIONS[0].output,
       last_results: {},
     },
   };
 
+  const seededUnits = [];
+  const seededEvents = [];
+  for (let batchId = 1; batchId <= prefillCount; batchId += 1) {
+    const completedAt = new Date(
+      now.getTime() - (prefillCount - batchId + 1) * 15000
+    ).toISOString();
+    const events = FACTORY_STATIONS.map((_, stationIndex) =>
+      makeEvent(
+        orderId,
+        batchId,
+        stationIndex,
+        new Date(
+          new Date(completedAt).getTime() -
+            (FACTORY_STATIONS.length - stationIndex) * 700
+        ).toISOString()
+      )
+    );
+    seededEvents.push(...events);
+    seededUnits.push(makeProductionUnit(order, events, completedAt));
+  }
+  if (seededEvents.length > 0) {
+    const latestBatchEvents = seededEvents.filter(
+      (event) => event.batch_id === prefillCount
+    );
+    order.runtime.last_results = Object.fromEntries(
+      latestBatchEvents.map((event) => [event.station, event])
+    );
+  }
+
+  const seededAlert =
+    prefillCount > 0
+      ? {
+          order_id: orderId,
+          machine: "Laser Tab Welding",
+          metric: "vibration",
+          value: 54.2,
+          threshold: DEFAULT_THRESHOLDS.vibration_threshold,
+          status: "anomaly",
+          severity: "warning",
+          timestamp: new Date(now.getTime() - 45000).toISOString(),
+        }
+      : null;
+
   return {
     state: {
       ...state,
       orders: [order, ...state.orders],
+      events: [
+        ...seededEvents.sort((a, b) => new Date(b.ts) - new Date(a.ts)),
+        ...state.events,
+      ].slice(0, 500),
+      productionUnits: [
+        ...seededUnits.reverse(),
+        ...state.productionUnits,
+      ].slice(0, 200),
+      alerts: seededAlert
+        ? [seededAlert, ...state.alerts].slice(0, 200)
+        : state.alerts,
+      sensor:
+        prefillCount > 0
+          ? { temperature: 76.4, vibration: 46.8 }
+          : state.sensor,
       thresholds: {
         ...state.thresholds,
         [orderId]: {
