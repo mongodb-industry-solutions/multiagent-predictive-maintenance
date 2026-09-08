@@ -231,19 +231,19 @@ export default function AnalyticsDashboard({
       )}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {[
-          ["Units produced", kpis.total_units ?? 0, "today"],
+          ["Units produced", kpis.total_units ?? 0, "this order"],
           [
             "First-pass yield",
             `${Number(kpis.first_pass_yield || 0).toFixed(1)}%`,
-            "today",
+            "this order",
           ],
           [
             "Average cycle",
             `${Number(kpis.avg_cycle_time_sec || 0).toFixed(2)}s`,
             "per unit",
           ],
-          ["Active orders", kpis.active_orders ?? 0, "running"],
-          ["Open alerts", kpis.open_alerts ?? 0, "today"],
+          ["Active orders", kpis.active_orders ?? 0, "factory-wide"],
+          ["Open alerts", kpis.open_alerts ?? 0, "this order"],
         ].map(([label, value, detail]) => (
           <div
             key={label}
@@ -261,7 +261,7 @@ export default function AnalyticsDashboard({
       <section className="grid gap-5 lg:grid-cols-2">
         <ChartCard
           title="Throughput"
-          description="Completed units per hour today"
+          description="Completed units per hour for this order"
           pipeline={pipelines.throughput}
           onOpenPipeline={onOpenPipeline}
         >
@@ -300,7 +300,7 @@ export default function AnalyticsDashboard({
         <div className="lg:col-span-2">
           <ChartCard
             title="Defects by station"
-            description="Failed quality checks in today's completed units"
+            description="Failed quality checks in this order"
             pipeline={pipelines.defects}
             onOpenPipeline={onOpenPipeline}
           >

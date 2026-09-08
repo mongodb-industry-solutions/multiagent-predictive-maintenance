@@ -23,7 +23,11 @@ function eventSummary(metrics = {}) {
  * `children` is rendered as a row between "Start production / Orders" and
  * "Machine events / Recent production units" (used for condition monitoring).
  */
-export default function OperationsWorkspace({ onOpenDocument, children }) {
+export default function OperationsWorkspace({
+  onOpenDocument,
+  onOpenAnalytics,
+  children,
+}) {
   const {
     products,
     stations,
@@ -251,99 +255,108 @@ export default function OperationsWorkspace({ onOpenDocument, children }) {
                       ? "Running"
                       : "Stopped";
                 return (
-                  <div
+                  <article
                     key={order.order_id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => selectOrder(order.order_id)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        selectOrder(order.order_id);
-                      }
-                    }}
-                    className={`rounded-xl border p-4 text-left transition ${
+                    className={`rounded-xl border p-4 transition ${
                       selected
                         ? "border-[#00A35C] bg-[#E3FCF7]"
-                        : "border-[#D8E3DF] bg-[#F8FAF9] hover:border-[#889397]"
+                        : "border-[#D8E3DF] bg-[#F8FAF9]"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <Body
-                          weight="medium"
-                          className="truncate text-[#112733]"
-                        >
-                          {order.order_id}
-                        </Body>
-                        <Description className="mt-1 truncate">
-                          {order.customer || "Factory customer"} ·{" "}
-                          {order.sales_order || order.product_id}
-                        </Description>
-                      </div>
-                      <span
-                        className={`inline-flex shrink-0 items-center gap-1.5 text-xs font-medium ${
-                          running
-                            ? "text-[#00684A]"
-                            : order.status === "complete"
-                              ? "text-[#3D4F58]"
-                              : "text-[#5C6C75]"
-                        }`}
-                      >
+                    <button
+                      type="button"
+                      onClick={() => selectOrder(order.order_id)}
+                      aria-pressed={selected}
+                      className="block w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-[#00A35C] focus-visible:ring-offset-2"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <Body
+                            weight="medium"
+                            className="truncate text-[#112733]"
+                          >
+                            {order.order_id}
+                          </Body>
+                          <Description className="mt-1 truncate">
+                            {order.customer || "Factory customer"} ·{" "}
+                            {order.sales_order || order.product_id}
+                          </Description>
+                        </div>
                         <span
-                          className={`h-2 w-2 rounded-full ${
+                          className={`inline-flex shrink-0 items-center gap-1.5 text-xs font-medium ${
                             running
-                              ? "animate-pulse bg-[#00A35C]"
+                              ? "text-[#00684A]"
                               : order.status === "complete"
-                                ? "bg-[#3D4F58]"
-                                : "bg-[#889397]"
+                                ? "text-[#3D4F58]"
+                                : "text-[#5C6C75]"
                           }`}
+                        >
+                          <span
+                            className={`h-2 w-2 rounded-full ${
+                              running
+                                ? "animate-pulse bg-[#00A35C]"
+                                : order.status === "complete"
+                                  ? "bg-[#3D4F58]"
+                                  : "bg-[#889397]"
+                            }`}
+                          />
+                          {statusLabel}
+                        </span>
+                      </div>
+                      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            running ? "bg-[#00A35C]" : "bg-[#889397]"
+                          }`}
+                          style={{ width: `${progress}%` }}
                         />
-                        {statusLabel}
-                      </span>
-                    </div>
-                    <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          running ? "bg-[#00A35C]" : "bg-[#889397]"
-                        }`}
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                    <div className="mt-3 flex h-6 items-center justify-between">
+                      </div>
+                    </button>
+                    <div className="mt-3 flex min-h-8 items-center justify-between gap-3">
                       <Description className="text-xs">
                         {completedBatches} / {order.quantity || "?"} units
                       </Description>
-                      {selected && isOrderLoading && (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#00684A]">
-                          <Icon
-                            glyph="Refresh"
-                            size={13}
-                            className="animate-spin"
-                          />
-                          Loading data…
-                        </span>
-                      )}
-                      {running && (
+                      <div className="flex items-center gap-1">
+                        {selected && isOrderLoading && (
+                          <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-medium text-[#00684A]">
+                            <Icon
+                              glyph="Refresh"
+                              size={13}
+                              className="animate-spin"
+                            />
+                            Loading…
+                          </span>
+                        )}
                         <button
                           type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            if (
-                              window.confirm(
-                                `Stop simulation for ${order.order_id}?`,
-                              )
-                            ) {
-                              stopOrder(order.order_id);
-                            }
-                          }}
-                          className="rounded-md px-2 py-1 text-xs font-medium text-[#B1371F] hover:bg-[#FDEDEB]"
+                          onClick={() => onOpenAnalytics(order.order_id)}
+                          aria-label={`View analytics for ${order.order_id}`}
+                          title="View order analytics"
+                          className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-[#00684A] hover:bg-white"
                         >
-                          Stop
+                          <Icon glyph="Charts" size={14} />
+                          Analytics
                         </button>
-                      )}
+                        {running && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Stop simulation for ${order.order_id}?`,
+                                )
+                              ) {
+                                stopOrder(order.order_id);
+                              }
+                            }}
+                            className="rounded-md px-2 py-1 text-xs font-medium text-[#B1371F] hover:bg-[#FDEDEB]"
+                          >
+                            Stop
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </article>
                 );
               })
             )}

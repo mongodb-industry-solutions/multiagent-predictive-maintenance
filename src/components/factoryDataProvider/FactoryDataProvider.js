@@ -19,6 +19,7 @@ import {
 } from "@/lib/factory/factoryClient";
 import {
   advanceLocalFactory,
+  buildLocalAnalytics,
   buildLocalSnapshot,
   createInitialLocalFactoryState,
   createLocalOrder,
@@ -261,8 +262,25 @@ export default function FactoryDataProvider({ children }) {
         buildUnitsFromEvents(selectedOrder, recorded)
       );
     }
+    const analytics = selectedOrder?.order_id
+      ? buildLocalAnalytics(
+          {
+            productionUnits,
+            alerts: base.alerts || [],
+            orders,
+          },
+          selectedOrder.order_id
+        )
+      : base.analytics;
     return enrichRemoteSnapshot(
-      { ...base, orders, selectedOrder, events, productionUnits },
+      {
+        ...base,
+        orders,
+        selectedOrder,
+        events,
+        productionUnits,
+        analytics,
+      },
       sensor
     );
   }, []);

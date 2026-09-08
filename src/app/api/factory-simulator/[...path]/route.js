@@ -46,7 +46,7 @@ async function proxyFactoryRequest(request, context) {
   if (!isAllowed(method, path)) {
     return NextResponse.json(
       { error: "Factory simulator route is not allowed" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -57,7 +57,7 @@ async function proxyFactoryRequest(request, context) {
         error:
           "Leafy Factory is not configured. Set FACTORY_SIMULATOR_API_URL.",
       },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
@@ -65,11 +65,14 @@ async function proxyFactoryRequest(request, context) {
   try {
     const baseUrl = new URL(configuredBaseUrl);
     const query = new URL(request.url).search;
-    upstreamUrl = new URL(`${path}${query}`, `${baseUrl.toString().replace(/\/?$/, "/")}`);
+    upstreamUrl = new URL(
+      `${path}${query}`,
+      `${baseUrl.toString().replace(/\/?$/, "/")}`,
+    );
   } catch {
     return NextResponse.json(
       { error: "FACTORY_SIMULATOR_API_URL is invalid" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -101,16 +104,16 @@ async function proxyFactoryRequest(request, context) {
         {
           error: errorMessage(
             payload,
-            `Factory simulator returned ${response.status}`
+            `Factory simulator returned ${response.status}`,
           ),
         },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
     return NextResponse.json(
       payload && typeof payload === "object" ? payload : {},
-      { status: response.status }
+      { status: response.status },
     );
   } catch (error) {
     const timedOut = error?.name === "TimeoutError";
@@ -120,7 +123,7 @@ async function proxyFactoryRequest(request, context) {
           ? "Factory simulator request timed out"
           : "Factory simulator is unavailable",
       },
-      { status: timedOut ? 504 : 502 }
+      { status: timedOut ? 504 : 502 },
     );
   }
 }

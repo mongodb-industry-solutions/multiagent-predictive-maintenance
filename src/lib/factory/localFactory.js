@@ -495,13 +495,15 @@ export function buildLocalAnalytics(state, orderId) {
   dayStart.setHours(0, 0, 0, 0);
   const units = state.productionUnits.filter(
     (unit) =>
-      new Date(unit.completed_at) >= dayStart &&
-      (!orderId || unit.order_id === orderId)
+      orderId
+        ? unit.order_id === orderId
+        : new Date(unit.completed_at) >= dayStart
   );
   const alerts = state.alerts.filter(
     (alert) =>
-      new Date(alert.timestamp) >= dayStart &&
-      (!orderId || alert.order_id === orderId)
+      orderId
+        ? alert.order_id === orderId
+        : new Date(alert.timestamp) >= dayStart
   );
   const pass = units.filter((unit) => unit.final_status === "pass").length;
   const fail = units.length - pass;
@@ -528,6 +530,9 @@ export function buildLocalAnalytics(state, orderId) {
     ["Pouch / Pack Sealing", "pack_sealing", "seal_ok"],
     ["Helium Leak Test", "leak_test", "pass"],
   ];
+  const scopeMatch = orderId
+    ? { order_id: orderId }
+    : { completed_at: { $gte: dayStart.toISOString() } };
 
   return {
     kpis: {
@@ -562,7 +567,7 @@ export function buildLocalAnalytics(state, orderId) {
     pipelines: {
       collection: "production_units",
       throughput: [
-        { $match: { completed_at: { $gte: dayStart.toISOString() } } },
+        { $match: scopeMatch },
         {
           $group: {
             _id: { $dateTrunc: { date: "$completed_at", unit: "hour" } },
@@ -571,7 +576,7 @@ export function buildLocalAnalytics(state, orderId) {
         },
       ],
       yield: [
-        { $match: { completed_at: { $gte: dayStart.toISOString() } } },
+        { $match: scopeMatch },
         {
           $group: {
             _id: "$final_status",
@@ -580,15 +585,17 @@ export function buildLocalAnalytics(state, orderId) {
         },
       ],
       cycle_time: [
+        { $match: scopeMatch },
         { $sort: { completed_at: -1 } },
         { $limit: 20 },
       ],
       grade: [
+        { $match: scopeMatch },
         { $unwind: "$cells" },
         { $group: { _id: "$cells.grade", count: { $sum: 1 } } },
       ],
       defects: [
-        { $match: { completed_at: { $gte: dayStart.toISOString() } } },
+        { $match: scopeMatch },
         { $project: { process: 1 } },
       ],
     },
