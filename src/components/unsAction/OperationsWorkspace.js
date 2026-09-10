@@ -537,7 +537,7 @@ export default function OperationsWorkspace({
                         ? "Pass"
                         : unit.final_status === "fail"
                           ? "Fail"
-                          : "Complete"}
+                          : "Pending"}
                     </span>
                     <button
                       type="button"

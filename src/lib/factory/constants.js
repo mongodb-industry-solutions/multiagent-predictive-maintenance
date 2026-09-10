@@ -118,3 +118,8 @@ export const DEFAULT_THRESHOLDS = {
   temperature_threshold: 80,
   vibration_threshold: 50,
 };
+
+export const DEFAULT_SENSOR_READINGS = {
+  temperature: 68,
+  vibration: 24,
+};
