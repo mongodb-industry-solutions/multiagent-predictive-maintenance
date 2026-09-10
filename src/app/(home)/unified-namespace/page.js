@@ -7,8 +7,8 @@ const useCases = [
     title: "Leafy Factory",
     description:
       "Follow the EV battery module line and inspect the contextual events published by every station.",
+    href: "/unified-namespace/leafy-factory",
     glyph: "Diagram",
-    comingSoon: true,
   },
   {
     title: "UNS in Action",
@@ -54,7 +54,7 @@ export default function UnifiedNamespacePage() {
         subtitle="Persist live factory signals with their OT and IT context to create a durable operational truth for applications, analytics, and AI."
         image="/img/uns-overview.png"
         imageAlt="MongoDB-backed unified namespace architecture"
-        startHref="/unified-namespace/uns-in-action"
+        startHref="/unified-namespace/leafy-factory"
         useCases={useCases}
         resources={resources}
     />
