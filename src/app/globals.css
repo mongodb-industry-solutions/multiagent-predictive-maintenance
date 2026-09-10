@@ -53,11 +53,50 @@ html {
   animation: leafy-ring-pulse 3.2s ease-out infinite;
 }
 
+/* ---------- Leafy Factory explainer motion ---------- */
+
+@keyframes leafy-factory-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+.leafy-factory-enter {
+  animation: leafy-factory-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes leafy-factory-line-flow {
+  from { transform: translate3d(-100%, 0, 0); }
+  to { transform: translate3d(800%, 0, 0); }
+}
+.leafy-factory-line-flow {
+  animation: leafy-factory-line-flow 4.5s linear infinite;
+}
+
+@keyframes leafy-factory-data-flow {
+  to { stroke-dashoffset: -32; }
+}
+.leafy-factory-data-flow {
+  animation: leafy-factory-data-flow 1.8s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .leafy-rise,
   .leafy-fade-in,
-  .leafy-ring-pulse {
+  .leafy-ring-pulse,
+  .leafy-factory-enter,
+  .leafy-factory-line-flow,
+  .leafy-factory-data-flow {
     animation: none;
+  }
+
+  .leafy-factory-enter {
+    opacity: 1;
+    transform: none;
   }
 }
 

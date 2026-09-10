@@ -13,6 +13,11 @@ export const STORY_STAGES = [
         description: "Why a unified namespace needs memory.",
       },
       {
+        label: "Leafy Factory",
+        href: "/unified-namespace/leafy-factory",
+        description: "Explore the simulated factory line and architecture.",
+      },
+      {
         label: "UNS in Action",
         href: "/unified-namespace/uns-in-action",
         description: "Run orders and inspect live operational data.",

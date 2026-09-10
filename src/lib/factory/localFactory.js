@@ -1,4 +1,5 @@
 import {
+  DEFAULT_SENSOR_READINGS,
   DEFAULT_THRESHOLDS,
   FACTORY_STATIONS,
   PRODUCTS,
@@ -268,7 +269,7 @@ export function createInitialLocalFactoryState() {
       },
     ],
     thresholds: {},
-    sensor: { temperature: 68, vibration: 24 },
+    sensor: { ...DEFAULT_SENSOR_READINGS },
   };
 }
 
@@ -375,7 +376,7 @@ export function createLocalOrder(state, input) {
       sensor:
         prefillCount > 0
           ? { temperature: 76.4, vibration: 46.8 }
-          : state.sensor,
+          : { ...DEFAULT_SENSOR_READINGS },
       thresholds: {
         ...state.thresholds,
         [orderId]: {
@@ -571,7 +572,8 @@ export function buildLocalAnalytics(state, orderId) {
         : new Date(alert.timestamp) >= dayStart
   );
   const pass = units.filter((unit) => unit.final_status === "pass").length;
-  const fail = units.length - pass;
+  const fail = units.filter((unit) => unit.final_status === "fail").length;
+  const finalized = pass + fail;
   const cycleAverage = units.length
     ? units.reduce((sum, unit) => sum + unit.cycle_time_sec, 0) / units.length
     : 0;
@@ -602,7 +604,7 @@ export function buildLocalAnalytics(state, orderId) {
   return {
     kpis: {
       total_units: units.length,
-      first_pass_yield: units.length ? round((pass / units.length) * 100, 1) : 0,
+      first_pass_yield: finalized ? round((pass / finalized) * 100, 1) : 0,
       avg_cycle_time_sec: round(cycleAverage, 2),
       active_orders: state.orders.filter((order) => order.status === "running")
         .length,
@@ -720,6 +722,8 @@ export function buildLocalSnapshot(state, selectedOrderId) {
     analytics: buildLocalAnalytics(state, orderId),
     thresholds:
       (orderId && state.thresholds[orderId]) || DEFAULT_THRESHOLDS,
-    sensor: state.sensor,
+    sensor: isRunningOrder(selectedOrder)
+      ? state.sensor
+      : { ...DEFAULT_SENSOR_READINGS },
   };
 }

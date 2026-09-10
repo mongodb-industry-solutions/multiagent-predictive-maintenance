@@ -87,8 +87,9 @@ export function mergeEvents(existing = [], incoming = []) {
  * Production units for every completed batch of `order`. A batch counts as
  * complete when the order's progress counter (`completed_units`, maintained
  * from SCADA frames) has passed it or its final-station event was observed.
- * Units built from partial telemetry carry `telemetry: "partial"` and an
- * unknown pass/fail outcome (`final_status: "complete"`).
+ * Session-derived units never claim a pass/fail outcome. The event ledger can
+ * miss an earlier failed station even when it observes a passing EOL event, so
+ * only the persisted production-unit document has the authoritative result.
  */
 export function buildUnitsFromEvents(order, events = []) {
   if (!order?.order_id) return [];
@@ -134,11 +135,7 @@ export function buildUnitsFromEvents(order, events = []) {
       cycle_time_sec: eol
         ? Math.round(((time(eol.ts) - time(first.ts)) / 1000) * 100) / 100
         : null,
-      final_status: eol
-        ? eol.metrics?.pass === false
-          ? "fail"
-          : "pass"
-        : "complete",
+      final_status: "pending",
       telemetry: eol ? "complete" : "partial",
       stations_observed: sorted.length,
       order: {

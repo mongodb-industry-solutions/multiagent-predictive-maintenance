@@ -4,6 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Icon from "@leafygreen-ui/icon";
 import { H2, H3, Body, Description } from "@leafygreen-ui/typography";
 import { useFactoryData } from "@/components/factoryDataProvider/FactoryDataProvider";
+import {
+  DEFAULT_SENSOR_READINGS,
+  DEFAULT_THRESHOLDS,
+} from "@/lib/factory/constants";
 import { isRunningOrder } from "@/lib/factory/sessionOrders";
 
 function severityClass(severity) {
@@ -193,45 +197,49 @@ export default function ConditionWorkspace() {
     busyAction,
   } = useFactoryData();
   // Readings and thresholds can only be pushed to a running factory runtime.
-  const canControl = !isOrderLoading && isRunningOrder(selectedOrder);
+  const selectedOrderRunning = isRunningOrder(selectedOrder);
+  const canControl = !isOrderLoading && selectedOrderRunning;
   const [alertFilter, setAlertFilter] = useState("all");
   const [message, setMessage] = useState("");
 
-  // Thresholds are a slider setting, not a per-order reading: keep whatever
-  // the user last set (or the first value loaded) and never reset it when a
-  // different order is selected. Switching orders only enables/disables the
-  // sliders via `canControl`; it does not move the threshold handle.
   const [thresholds, setThresholds] = useState(() => ({
     temperature_threshold: Number(
-      snapshot.thresholds?.temperature_threshold ?? 80
+      snapshot.thresholds?.temperature_threshold ??
+        DEFAULT_THRESHOLDS.temperature_threshold
     ),
     vibration_threshold: Number(
-      snapshot.thresholds?.vibration_threshold ?? 50
+      snapshot.thresholds?.vibration_threshold ??
+        DEFAULT_THRESHOLDS.vibration_threshold
     ),
   }));
-  const thresholdsInitialized = useRef(
-    snapshot.thresholds?.temperature_threshold != null ||
-      snapshot.thresholds?.vibration_threshold != null
-  );
   useEffect(() => {
-    // Pick up the first real thresholds fetched from the backend (they load
-    // asynchronously after mount), but only once — later order switches or
-    // refreshes must not override the user's current slider positions.
-    if (thresholdsInitialized.current || !snapshot.thresholds) return;
-    thresholdsInitialized.current = true;
+    // A stopped/completed order freezes the controls in their safe defaults,
+    // and a new order also starts there until its own thresholds are loaded.
+    if (!selectedOrderRunning || !snapshot.thresholds) {
+      setThresholds({ ...DEFAULT_THRESHOLDS });
+      return;
+    }
+    // While running, keep the handles aligned with the selected order's
+    // actual backend thresholds.
     setThresholds({
       temperature_threshold: Number(
-        snapshot.thresholds.temperature_threshold ?? 80
+        snapshot.thresholds.temperature_threshold ??
+          DEFAULT_THRESHOLDS.temperature_threshold
       ),
       vibration_threshold: Number(
-        snapshot.thresholds.vibration_threshold ?? 50
+        snapshot.thresholds.vibration_threshold ??
+          DEFAULT_THRESHOLDS.vibration_threshold
       ),
     });
-  }, [snapshot.thresholds]);
+  }, [selectedOrderId, selectedOrderRunning, snapshot.thresholds]);
   const readings = useMemo(
     () => ({
-      temperature: Number(snapshot.sensor?.temperature ?? 68),
-      vibration: Number(snapshot.sensor?.vibration ?? 24),
+      temperature: Number(
+        snapshot.sensor?.temperature ?? DEFAULT_SENSOR_READINGS.temperature
+      ),
+      vibration: Number(
+        snapshot.sensor?.vibration ?? DEFAULT_SENSOR_READINGS.vibration
+      ),
     }),
     [snapshot.sensor]
   );
@@ -247,7 +255,10 @@ export default function ConditionWorkspace() {
   const commitReading = async (key, value) => {
     setMessage("");
     try {
-      const result = await sendMetrics({ ...readings, [key]: value });
+      const result = await sendMetrics(
+        { ...readings, [key]: value },
+        thresholds
+      );
       setMessage(
         result.alerts_generated?.length
           ? `Generated ${result.alerts_generated.join(" and ")} alert.`
@@ -260,19 +271,23 @@ export default function ConditionWorkspace() {
 
   const commitThreshold = async (key, value) => {
     setMessage("");
+    const previous = thresholds;
     const next = { ...thresholds, [key]: value };
-    // Reflect the change immediately and keep it regardless of order
-    // switches; only a further user edit or the very first load moves it.
+    // Reflect the change immediately; the backend response remains the source
+    // of truth and the optimistic value is rolled back if persistence fails.
     setThresholds(next);
     try {
       await saveThresholds(next);
       setMessage("Threshold saved.");
     } catch {
+      setThresholds(previous);
       // Provider displays the detailed error.
     }
   };
 
   const busy = busyAction === "metrics" || busyAction === "thresholds";
+  const controlsDisabled =
+    !canControl || busy || busyAction === "start-order";
 
   return (
     <section className="grid gap-5 lg:grid-cols-[7fr_13fr]">
@@ -288,7 +303,7 @@ export default function ConditionWorkspace() {
             max={200}
             value={readings.temperature}
             threshold={thresholds.temperature_threshold}
-            disabled={!canControl}
+            disabled={controlsDisabled}
             onCommitValue={(value) => commitReading("temperature", value)}
             onCommitThreshold={(value) =>
               commitThreshold("temperature_threshold", value)
@@ -301,7 +316,7 @@ export default function ConditionWorkspace() {
             max={120}
             value={readings.vibration}
             threshold={thresholds.vibration_threshold}
-            disabled={!canControl}
+            disabled={controlsDisabled}
             onCommitValue={(value) => commitReading("vibration", value)}
             onCommitThreshold={(value) =>
               commitThreshold("vibration_threshold", value)

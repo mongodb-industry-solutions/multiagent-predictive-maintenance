@@ -30,6 +30,7 @@ import {
   stopLocalOrder,
 } from "@/lib/factory/localFactory";
 import {
+  DEFAULT_SENSOR_READINGS,
   DEFAULT_THRESHOLDS,
   FACTORY_SOURCES,
   FACTORY_STATIONS,
@@ -100,14 +101,17 @@ const EMPTY_SNAPSHOT = {
     pipelines: {},
   },
   thresholds: DEFAULT_THRESHOLDS,
-  sensor: { temperature: 68, vibration: 24 },
+  sensor: { ...DEFAULT_SENSOR_READINGS },
 };
 
 const FactoryDataContext = createContext(null);
 
 function enrichRemoteSnapshot(snapshot, sensor) {
   const scadaState = snapshot?.scadaState;
-  if (!scadaState) return { ...snapshot, sensor };
+  const displayedSensor = isRunningOrder(snapshot?.selectedOrder)
+    ? sensor
+    : { ...DEFAULT_SENSOR_READINGS };
+  if (!scadaState) return { ...snapshot, sensor: displayedSensor };
 
   const liveEvents = Object.values(scadaState.last_results || {}).map(
     (event) => ({
@@ -165,7 +169,7 @@ function enrichRemoteSnapshot(snapshot, sensor) {
 
   return {
     ...snapshot,
-    sensor,
+    sensor: displayedSensor,
     events,
     liveProductionUnit,
   };
@@ -188,8 +192,7 @@ export default function FactoryDataProvider({ children }) {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [remoteSensor, setRemoteSensor] = useState({
-    temperature: 68,
-    vibration: 24,
+    ...DEFAULT_SENSOR_READINGS,
   });
   // Orders this user started against Leafy Factory in this browser session,
   // plus every machine event observed for them (keyed by order_id). The
@@ -523,6 +526,7 @@ export default function FactoryDataProvider({ children }) {
                 productionUnits: [],
                 alerts: [],
                 analytics: EMPTY_SNAPSHOT.analytics,
+                thresholds: null,
               },
               sessionOrdersRef.current,
               selectedOrder,
@@ -721,7 +725,11 @@ export default function FactoryDataProvider({ children }) {
         ]);
         selectedOrderIdRef.current = order.order_id;
         setSelectedOrderId(order.order_id);
-        await loadRemote(order.order_id);
+        setRemoteSensor({ ...DEFAULT_SENSOR_READINGS });
+        setRemoteSnapshot((current) =>
+          current ? { ...current, thresholds: null } : current
+        );
+        await loadRemote(order.order_id, DEFAULT_SENSOR_READINGS);
         setLastUpdated(new Date());
         return order;
       }),
@@ -744,7 +752,8 @@ export default function FactoryDataProvider({ children }) {
         commitSessionOrders(
           markSessionOrderStopped(sessionOrdersRef.current, orderId)
         );
-        await loadRemote(selectedOrderId);
+        setRemoteSensor({ ...DEFAULT_SENSOR_READINGS });
+        await loadRemote(selectedOrderId, DEFAULT_SENSOR_READINGS);
         return result;
       }),
     [commitLocalState, commitSessionOrders, loadRemote, runAction, selectedOrderId, source]
@@ -773,7 +782,7 @@ export default function FactoryDataProvider({ children }) {
   );
 
   const sendMetrics = useCallback(
-    (values) =>
+    (values, fallbackThresholds = DEFAULT_THRESHOLDS) =>
       runAction("metrics", async () => {
         if (!selectedOrderId) throw new Error("Select an active order first");
         setRemoteSensor({
@@ -789,6 +798,24 @@ export default function FactoryDataProvider({ children }) {
           commitLocalState(result.state);
           return result.result;
         }
+        // A newly-created remote order may not have threshold state until the
+        // thresholds endpoint is called. Initialize it from the values shown
+        // in the UI before applying readings so both APIs use the same limits.
+        const loadedThresholds = remoteSnapshot?.thresholds;
+        const thresholdsBelongToAnotherOrder =
+          loadedThresholds?.order_id &&
+          loadedThresholds.order_id !== selectedOrderId;
+        if (!loadedThresholds || thresholdsBelongToAnotherOrder) {
+          const initializedThresholds = await setRemoteThresholds(
+            selectedOrderId,
+            fallbackThresholds
+          );
+          setRemoteSnapshot((current) =>
+            current
+              ? { ...current, thresholds: initializedThresholds }
+              : current
+          );
+        }
         const result = await sendRemoteMetrics(selectedOrderId, values);
         await loadRemote(selectedOrderId, {
           temperature: Number(values.temperature),
@@ -796,7 +823,14 @@ export default function FactoryDataProvider({ children }) {
         });
         return result;
       }),
-    [commitLocalState, loadRemote, runAction, selectedOrderId, source]
+    [
+      commitLocalState,
+      loadRemote,
+      remoteSnapshot?.thresholds,
+      runAction,
+      selectedOrderId,
+      source,
+    ]
   );
 
   const snapshot = useMemo(() => {
