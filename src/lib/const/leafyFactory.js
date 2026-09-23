@@ -280,14 +280,16 @@ export const ARCHITECTURE_MODULES = [
   {
     id: "erp",
     shortLabel: "ERP",
-    title: "ERP (ERPNext)",
+    title: "ERP",
     type: "Business planning",
+    implementation: "ERPNext · Docker Compose",
+    icon: "Diagram",
     purpose:
       "Owns customer and sales-order context, bills of material, inventory, and the commercial view of production.",
     build:
       "A containerized ERPNext stack restored from seeded demo data and integrated through its REST API.",
     components: ["ERPNext frontend", "ERPNext backend", "MariaDB", "Redis cache", "Redis queue"],
-    position: { left: "2%", top: "4%", width: "27%" },
+    position: { left: "2%", top: "4%", width: "28%" },
     links: [
       {
         label: "Open Leafy ERP",
@@ -319,14 +321,16 @@ export const ARCHITECTURE_MODULES = [
   {
     id: "mes",
     shortLabel: "MES",
-    title: "MES (Libre)",
+    title: "MES",
     type: "Manufacturing operations",
+    implementation: "Libre MES · Docker Compose",
+    icon: "Charts",
     purpose:
       "Tracks products, order performance, availability, quality, and production-rate measurements for the line.",
     build:
       "A Libre MES stack with seeded operational and time-series data, dashboards, and a REST-facing data service.",
     components: ["PostgreSQL", "InfluxDB", "Grafana", "PostgREST"],
-    position: { left: "2%", top: "27%", width: "27%" },
+    position: { left: "2%", top: "27%", width: "28%" },
     links: [
       {
         label: "Open Leafy MES",
@@ -353,14 +357,16 @@ export const ARCHITECTURE_MODULES = [
   {
     id: "scada",
     shortLabel: "SCADA",
-    title: "SCADA (Python script)",
+    title: "SCADA",
     type: "Supervisory control",
+    implementation: "Python · FastAPI service",
+    icon: "Charts",
     purpose:
       "Gives an operator a per-order view of line state and controls the start, pause, and stop lifecycle.",
     build:
       "A Python/FastAPI service renders the SCADA UI and exposes order-scoped state and control endpoints.",
-    components: ["FastAPI", "Jinja templates", "Browser UI", "Order-scoped REST API"],
-    position: { left: "2%", top: "56%", width: "27%" },
+    components: ["FastAPI", "Browser UI", "Order-scoped REST API"],
+    position: { left: "2%", top: "56%", width: "28%" },
     links: [
       {
         label: "Open Leafy SCADA",
@@ -381,14 +387,16 @@ export const ARCHITECTURE_MODULES = [
   {
     id: "machines",
     shortLabel: "Machines",
-    title: "Machines Simulators (Python scripts)",
+    title: "Machine simulators",
     type: "Physical process simulation",
+    implementation: "Python · in-process runtime",
+    icon: "Wrench",
     purpose:
       "Simulates each machine, its cycle, measurements, quality result, and the genealogy of cells moving through the line.",
     build:
       "Python station functions generate deterministic process metrics while an in-process runtime advances each order.",
     components: ["Order runtime", "Station models", "Metric generators", "Line-state model"],
-    position: { left: "2%", top: "82%", width: "27%" },
+    position: { left: "2%", top: "80%", width: "28%" },
     links: [
       {
         label: "View simulator source",
@@ -406,14 +414,16 @@ export const ARCHITECTURE_MODULES = [
   {
     id: "mqtt",
     shortLabel: "MQTT",
-    title: "MQTT Broker (Mosquitto)",
+    title: "MQTT broker",
     type: "Event backbone",
+    implementation: "Eclipse Mosquitto · Docker service",
+    icon: "Diagram",
     purpose:
       "Decouples station publishers from operational consumers and carries line state, station, and MES events.",
     build:
-      "Eclipse Mosquitto runs as a dedicated service; the Python simulator publishes compact JSON payloads with Paho MQTT.",
-    components: ["Eclipse Mosquitto", "Paho MQTT", "Topic hierarchy", "JSON events"],
-    position: { left: "36%", top: "56%", width: "27%" },
+      "Eclipse Mosquitto runs as a dedicated broker service. The separate Python simulator connects to it through Paho MQTT clients.",
+    components: ["Eclipse Mosquitto", "Broker configuration", "MQTT port 1883"],
+    position: { left: "36%", top: "56%", width: "28%" },
     links: [
       {
         label: "Mosquitto project",
@@ -442,11 +452,21 @@ export const ARCHITECTURE_MODULES = [
     shortLabel: "MongoDB",
     title: "MongoDB",
     type: "Unified namespace persistence",
+    implementation: "MongoDB · document database",
+    icon: "Database",
     purpose:
       "Persists raw events with business context and materializes one traceable production-unit document per completed pack.",
     build:
       "MongoDB stores order context, current MES state, machine events, alerts, and denormalized production genealogy.",
-    components: ["machine_events", "production_units", "orders_current", "products", "alerts"],
+    components: [
+      "simulator_orders",
+      "orders_current",
+      "products",
+      "machine_events",
+      "production_units",
+      "machine_alerts",
+      "machine_thresholds",
+    ],
     position: { left: "72%", top: "56%", width: "26%" },
     links: [
       {
@@ -495,36 +515,399 @@ export const ARCHITECTURE_FLOWS = [
     from: "erp",
     to: "mongodb",
     label: "Order context",
-    path: "M 290 61 L 850 61 L 850 291",
+    path: "M 300 83 H 850 V 381",
   },
   {
     id: "mqtt-mes",
     from: "mqtt",
     to: "mes",
     label: "Production state",
-    path: "M 495 291 L 495 236 L 155 236 L 155 211",
+    path: "M 500 381 V 330 H 160 V 296",
   },
   {
     id: "scada-mqtt",
     from: "scada",
     to: "mqtt",
     label: "Machine events",
-    path: "M 290 330 L 360 330",
+    path: "M 300 437 H 360",
   },
   {
     id: "mqtt-mongodb",
     from: "mqtt",
     to: "mongodb",
     label: "Contextual events",
-    path: "M 630 330 L 720 330",
+    path: "M 640 437 H 720",
   },
   {
     id: "machines-scada",
     from: "machines",
     to: "scada",
     label: "Control and telemetry",
-    path: "M 155 426 L 155 371",
+    path: "M 160 544 V 493",
     bidirectional: true,
+  },
+];
+
+export const ARCHITECTURE_DETAIL_GROUPS = [
+  {
+    id: "erp",
+    position: { x: 20, y: 20, width: 370, height: 300 },
+    nodes: [
+      {
+        id: "erp-frontend",
+        label: "ERPNext frontend",
+        kind: "Interface",
+        icon: "Charts",
+        position: { x: 40, y: 70, width: 150 },
+      },
+      {
+        id: "erp-backend",
+        label: "ERPNext backend",
+        kind: "Service",
+        icon: "Diagram",
+        position: { x: 220, y: 70, width: 150 },
+      },
+      {
+        id: "erp-mariadb",
+        label: "MariaDB",
+        kind: "Database",
+        icon: "Database",
+        position: { x: 40, y: 165, width: 150 },
+      },
+      {
+        id: "erp-redis-cache",
+        label: "Redis cache",
+        kind: "Cache",
+        icon: "Database",
+        position: { x: 220, y: 165, width: 150 },
+      },
+      {
+        id: "erp-redis-queue",
+        label: "Redis queue",
+        kind: "Queue",
+        icon: "Diagram",
+        position: { x: 130, y: 245, width: 150 },
+      },
+    ],
+  },
+  {
+    id: "mes",
+    position: { x: 415, y: 20, width: 370, height: 300 },
+    nodes: [
+      {
+        id: "mes-postgres",
+        label: "PostgreSQL",
+        kind: "Operational data",
+        icon: "Database",
+        position: { x: 435, y: 70, width: 150 },
+      },
+      {
+        id: "mes-influx",
+        label: "InfluxDB",
+        kind: "Time series",
+        icon: "Database",
+        position: { x: 615, y: 70, width: 150 },
+      },
+      {
+        id: "mes-postgrest",
+        label: "PostgREST",
+        kind: "Data API",
+        icon: "Diagram",
+        position: { x: 435, y: 210, width: 150 },
+      },
+      {
+        id: "mes-grafana",
+        label: "Grafana",
+        kind: "Dashboards",
+        icon: "Charts",
+        position: { x: 615, y: 210, width: 150 },
+      },
+    ],
+  },
+  {
+    id: "mongodb",
+    position: { x: 810, y: 20, width: 370, height: 300 },
+    nodes: [
+      {
+        id: "mongo-simulator-orders",
+        label: "simulator_orders",
+        kind: "Collection",
+        icon: "Database",
+        position: { x: 830, y: 70, width: 150 },
+      },
+      {
+        id: "mongo-orders-current",
+        label: "orders_current",
+        kind: "Collection",
+        icon: "Database",
+        position: { x: 1010, y: 70, width: 150 },
+      },
+      {
+        id: "mongo-products",
+        label: "products",
+        kind: "Collection",
+        icon: "Database",
+        position: { x: 830, y: 160, width: 150 },
+      },
+      {
+        id: "mongo-events",
+        label: "machine_events",
+        kind: "Collection",
+        icon: "Database",
+        position: { x: 1010, y: 160, width: 150 },
+      },
+      {
+        id: "mongo-units",
+        label: "production_units",
+        kind: "Collection",
+        icon: "Database",
+        position: { x: 830, y: 250, width: 150 },
+      },
+      {
+        id: "mongo-maintenance",
+        label: "Maintenance data",
+        kind: "Alerts + thresholds",
+        icon: "Warning",
+        position: { x: 1010, y: 250, width: 150 },
+      },
+    ],
+  },
+  {
+    id: "machines",
+    position: { x: 20, y: 400, width: 370, height: 300 },
+    nodes: [
+      {
+        id: "machines-orders",
+        label: "Order service",
+        kind: "ERP + MES orchestration",
+        icon: "Diagram",
+        position: { x: 40, y: 455, width: 150 },
+      },
+      {
+        id: "machines-runtime",
+        label: "Order runtime",
+        kind: "In-process thread",
+        icon: "Diagram",
+        position: { x: 220, y: 455, width: 150 },
+      },
+      {
+        id: "machines-line-state",
+        label: "Line-state model",
+        kind: "Runtime state",
+        icon: "Diagram",
+        position: { x: 40, y: 525, width: 150 },
+      },
+      {
+        id: "machines-stations",
+        label: "Station simulation",
+        kind: "Metrics + process events",
+        icon: "Wrench",
+        position: { x: 220, y: 525, width: 150 },
+      },
+      {
+        id: "machines-mqtt-clients",
+        label: "Paho MQTT client",
+        kind: "Publisher + subscribers",
+        icon: "Diagram",
+        position: { x: 40, y: 595, width: 150 },
+      },
+      {
+        id: "machines-workers",
+        label: "Event workers",
+        kind: "Consumers + MES poller",
+        icon: "Diagram",
+        position: { x: 220, y: 595, width: 150 },
+      },
+    ],
+  },
+  {
+    id: "scada",
+    position: { x: 415, y: 400, width: 370, height: 300 },
+    nodes: [
+      {
+        id: "scada-browser",
+        label: "Browser UI",
+        kind: "HTTP polling",
+        icon: "Charts",
+        position: { x: 435, y: 475, width: 150 },
+      },
+      {
+        id: "scada-fastapi",
+        label: "SCADA API",
+        kind: "SCADA API",
+        icon: "Diagram",
+        position: { x: 615, y: 475, width: 150 },
+      },
+    ],
+  },
+  {
+    id: "mqtt",
+    position: { x: 810, y: 400, width: 370, height: 300 },
+    nodes: [
+      {
+        id: "mqtt-mosquitto",
+        label: "Eclipse Mosquitto",
+        kind: "MQTT broker sidecar",
+        icon: "Diagram",
+        position: { x: 920, y: 520, width: 150 },
+      },
+    ],
+  },
+];
+
+export const ARCHITECTURE_DETAIL_FLOWS = [
+  {
+    id: "erp-frontend-backend",
+    from: "erp-frontend",
+    to: "erp-backend",
+    label: "HTTPS",
+    path: "M 190 96 H 220",
+    labelPosition: { x: 205, y: 56 },
+  },
+  {
+    id: "erp-backend-mariadb",
+    from: "erp-backend",
+    to: "erp-mariadb",
+    label: "SQL",
+    path: "M 295 122 V 140 H 115 V 165",
+    labelPosition: { x: 200, y: 136 },
+  },
+  {
+    id: "erp-backend-cache",
+    from: "erp-backend",
+    to: "erp-redis-cache",
+    label: "cache",
+    path: "M 295 122 V 165",
+    labelPosition: { x: 318, y: 144 },
+  },
+  {
+    id: "erp-backend-queue",
+    from: "erp-backend",
+    to: "erp-redis-queue",
+    label: "jobs",
+    path: "M 295 122 V 140 H 205 V 245",
+    labelPosition: { x: 224, y: 214 },
+  },
+  {
+    id: "mes-postgres-postgrest",
+    from: "mes-postgres",
+    to: "mes-postgrest",
+    label: "REST",
+    path: "M 510 122 V 210",
+    labelPosition: { x: 532, y: 166 },
+  },
+  {
+    id: "mes-postgres-grafana",
+    from: "mes-postgres",
+    to: "mes-grafana",
+    label: "dashboards",
+    path: "M 510 122 V 150 H 690 V 210",
+    labelPosition: { x: 600, y: 140 },
+  },
+  {
+    id: "mes-influx-grafana",
+    from: "mes-influx",
+    to: "mes-grafana",
+    label: "time series",
+    path: "M 690 122 V 210",
+    labelPosition: { x: 715, y: 166 },
+  },
+  {
+    id: "machines-orders-runtime",
+    from: "machines-orders",
+    to: "machines-runtime",
+    label: "Order lifecycle",
+    path: "M 190 481 H 220",
+  },
+  {
+    id: "machines-runtime-state",
+    from: "machines-runtime",
+    to: "machines-line-state",
+    label: "Runtime state",
+    path: "M 295 507 V 516 H 115 V 525",
+  },
+  {
+    id: "machines-runtime-stations",
+    from: "machines-runtime",
+    to: "machines-stations",
+    label: "Station execution",
+    path: "M 295 507 V 525",
+  },
+  {
+    id: "machines-stations-mqtt",
+    from: "machines-stations",
+    to: "machines-mqtt-clients",
+    label: "Publish station events",
+    path: "M 295 577 V 586 H 115 V 595",
+  },
+  {
+    id: "machines-mqtt-workers",
+    from: "machines-mqtt-clients",
+    to: "machines-workers",
+    label: "Subscriber callbacks",
+    relatedGroups: ["mqtt"],
+    path: "M 190 621 H 220",
+  },
+  {
+    id: "scada-browser-api",
+    from: "scada-browser",
+    to: "scada-fastapi",
+    label: "HTTP polling and controls",
+    bidirectional: true,
+    path: "M 585 501 H 615",
+  },
+  {
+    id: "scada-api-order-service",
+    from: "scada-fastapi",
+    to: "machines-orders",
+    label: "Order lifecycle",
+    path: "M 690 527 V 430 H 115 V 455",
+  },
+  {
+    id: "scada-api-line-state",
+    from: "scada-fastapi",
+    to: "machines-line-state",
+    label: "Runtime snapshots",
+    path: "M 690 527 V 580 H 115 V 577",
+  },
+  {
+    id: "simulator-mqtt-broker",
+    from: "machines-mqtt-clients",
+    to: "mqtt-mosquitto",
+    label: "MQTT publish and subscribe",
+    bidirectional: true,
+    path: "M 115 647 V 680 H 995 V 572",
+  },
+  {
+    id: "order-service-erp",
+    from: "machines-orders",
+    to: "erp-backend",
+    label: "ERPNext REST API",
+    path: "M 115 455 V 350 H 400 V 96 H 370",
+  },
+  {
+    id: "erp-mongodb-detail",
+    from: "erp-backend",
+    to: "mongo-orders-current",
+    toLabel: "MongoDB",
+    label: "Order context",
+    path: "M 370 96 V 10 H 995 V 20",
+  },
+  {
+    id: "mqtt-mongodb-detail",
+    from: "mqtt-mosquitto",
+    to: "mongo-events",
+    toLabel: "MongoDB",
+    label: "Contextual events",
+    path: "M 995 520 V 320",
+  },
+  {
+    id: "mqtt-mes-detail",
+    from: "mqtt-mosquitto",
+    to: "mes-influx",
+    toLabel: "MES",
+    label: "Production state",
+    path: "M 995 572 V 680 H 795 V 350 H 600 V 320",
   },
 ];
 

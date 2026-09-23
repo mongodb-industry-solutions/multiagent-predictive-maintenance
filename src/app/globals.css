@@ -78,10 +78,10 @@ html {
 }
 
 @keyframes leafy-factory-data-flow {
-  to { stroke-dashoffset: -32; }
+  to { stroke-dashoffset: -19; }
 }
 .leafy-factory-data-flow {
-  animation: leafy-factory-data-flow 1.8s linear infinite;
+  animation: leafy-factory-data-flow 1s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
