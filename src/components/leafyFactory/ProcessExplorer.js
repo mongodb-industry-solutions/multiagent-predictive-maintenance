@@ -1,7 +1,24 @@
 "use client";
 
-import Icon from "@leafygreen-ui/icon";
-import JsonViewer from "./JsonViewer";
+import Image from "next/image";
+
+const MACHINE_IMAGES = {
+  "cell-screening":
+    "/img/machines/Cell-Screening-and-Grading-Station.png",
+  "tab-processing": "/img/machines/Tab-Processing-Station.png",
+  "z-fold": "/img/machines/Z-Fold-Stacking-Cell.png",
+  "module-assembly":
+    "/img/machines/Module-Assembly-and-Fixture-Cell.png",
+  "laser-welding": "/img/machines/Tab-Laser-Welding-Cell.png",
+  "ultrasonic-welding":
+    "/img/machines/Busbar-Ultrasonic-Welding-Cell.png",
+  "weld-monitoring":
+    "/img/machines/Weld-Monitoring-and-Thermal-Imaging.png",
+  "cooling-plate": "/img/machines/Cooling-Plate-Assembly-Cell.png",
+  "pouch-sealing": "/img/machines/Pouch-Sealing-Cell-(Top+Side).png",
+  "helium-test": "/img/machines/Helium-Leak-Test-Station.png",
+  "eol-test": "/img/machines/EOL-Electrical-Test-Bench.png",
+};
 
 const TONES = {
   emerald: {
@@ -54,65 +71,95 @@ function MetricChip({ children }) {
   );
 }
 
-function MachineDetail({ phase, machine }) {
+function MachineArtwork({ machine, large = false }) {
   return (
-    <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-      <article className="min-w-0 rounded-2xl border border-[#D8E3DF] bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-[#E3FCF7] px-2.5 py-1 text-xs font-semibold text-[#00684A]">
-            {phase.number} · {phase.title}
-          </span>
-          <span className="rounded-full border border-[#D8E3DF] px-2.5 py-1 text-xs text-[#5C6C75]">
-            Simulator: {machine.implementation}
-          </span>
+    <span
+      className={`relative flex shrink-0 items-center justify-center overflow-hidden ${
+        large ? "h-24 w-24" : "h-12 w-12"
+      }`}
+    >
+      <Image
+        src={MACHINE_IMAGES[machine.id]}
+        alt={large ? `${machine.title} icon` : ""}
+        fill
+        sizes={large ? "96px" : "48px"}
+        className="object-contain p-1"
+      />
+    </span>
+  );
+}
+
+function MachineDetail({ phase, machine, onOpenDocument }) {
+  return (
+    <article className="min-w-0 border-t border-[#D8E3DF] py-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-4">
+          <MachineArtwork machine={machine} large />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-[#E3FCF7] px-2.5 py-1 text-xs font-semibold text-[#00684A]">
+                {phase.number} · {phase.title}
+              </span>
+              <span className="rounded-full border border-[#D8E3DF] px-2.5 py-1 text-xs text-[#5C6C75]">
+                Simulator: {machine.implementation}
+              </span>
+            </div>
+            <h3
+              id="selected-machine-title"
+              className="mt-4 text-xl font-semibold tracking-[-0.015em] text-[#112733]"
+            >
+              {machine.title}
+            </h3>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#3D4F58]">
+              {machine.purpose}
+            </p>
+          </div>
         </div>
-        <h3
-          id="selected-machine-title"
-          className="mt-4 text-xl font-semibold tracking-[-0.015em] text-[#112733]"
+        <button
+          type="button"
+          onClick={() =>
+            onOpenDocument(
+              machine.sampleLabel,
+              `${machine.title} · sample payload`,
+              machine.sample
+            )
+          }
+          aria-label={`View ${machine.sampleLabel}`}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#C1C7C6] bg-white font-mono text-sm font-semibold text-[#00684A] transition hover:border-[#00684A] hover:bg-[#E3FCF7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8]"
         >
-          {machine.title}
-        </h3>
-        <p className="mt-3 text-sm leading-6 text-[#3D4F58]">
-          {machine.purpose}
-        </p>
+          {"{}"}
+        </button>
+      </div>
 
-        <dl className="mt-6 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl bg-[#F1F5F3] p-4">
-            <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5C6C75]">
-              Material in
-            </dt>
-            <dd className="mt-1.5 text-sm font-medium leading-5 text-[#112733]">
-              {machine.input}
-            </dd>
-          </div>
-          <div className="rounded-xl bg-[#E3FCF7] p-4">
-            <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#00684A]">
-              Context out
-            </dt>
-            <dd className="mt-1.5 text-sm font-medium leading-5 text-[#112733]">
-              {machine.output}
-            </dd>
-          </div>
-        </dl>
-
-        <div className="mt-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5C6C75]">
+      <dl className="mt-5 grid border-y border-[#D8E3DF] md:grid-cols-3 md:divide-x md:divide-[#D8E3DF]">
+        <div className="py-4 md:pr-5">
+          <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5C6C75]">
+            Material in
+          </dt>
+          <dd className="mt-1.5 text-sm font-medium leading-5 text-[#112733]">
+            {machine.input}
+          </dd>
+        </div>
+        <div className="border-t border-[#D8E3DF] py-4 md:border-t-0 md:px-5">
+          <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#00684A]">
+            Context out
+          </dt>
+          <dd className="mt-1.5 text-sm font-medium leading-5 text-[#112733]">
+            {machine.output}
+          </dd>
+        </div>
+        <div className="border-t border-[#D8E3DF] py-4 md:border-t-0 md:pl-5">
+          <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5C6C75]">
             Published metrics
-          </p>
-          <div className="mt-2.5 flex flex-wrap gap-2">
+          </dt>
+          <dd className="mt-2.5 flex flex-wrap gap-2">
             {machine.metrics.map((metric) => (
               <MetricChip key={metric}>{metric}</MetricChip>
             ))}
-          </div>
+          </dd>
         </div>
-      </article>
-
-      <JsonViewer
-        label={machine.sampleLabel}
-        value={machine.sample}
-        maxHeight="390px"
-      />
-    </div>
+      </dl>
+    </article>
   );
 }
 
@@ -120,6 +167,7 @@ export default function ProcessExplorer({
   phases,
   selectedMachineId,
   onSelectMachine,
+  onOpenDocument,
 }) {
   const selectedPhase =
     phases.find((phase) =>
@@ -132,28 +180,16 @@ export default function ProcessExplorer({
 
   return (
     <section id="process" aria-labelledby="process-title" className="scroll-mt-5">
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#00684A]">
-            01 · Production process
-          </p>
-          <h2
-            id="process-title"
-            className="mt-2 text-3xl font-semibold tracking-[-0.025em] text-[#112733]"
-          >
-            Follow one module from cell to finished pack
-          </h2>
-          <p className="mt-3 text-base leading-7 text-[#5C6C75]">
-            Five phases coordinate eleven machines. Select any station to inspect
-            the material transition and the JSON context it publishes.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-xs font-medium text-[#5C6C75]">
-          <span className="h-2 w-2 rounded-full bg-[#00A35C]" />
-          Physical flow
-          <span className="ml-2 h-px w-8 bg-[#889397]" />
-          Digital trace
-        </div>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h1
+          id="process-title"
+          className="text-xl font-semibold tracking-[-0.015em] text-[#112733]"
+        >
+          Production process
+        </h1>
+        <span className="text-xs font-medium text-[#5C6C75]">
+          5 phases · 11 machines
+        </span>
       </div>
 
       <div className="cardlist-scrollbar overflow-x-auto pb-3">
@@ -166,7 +202,7 @@ export default function ProcessExplorer({
           </div>
 
           {phases.map((phase, phaseIndex) => {
-            const tone = TONES[phase.tone];
+            const tone = TONES.emerald;
             const phaseSelected = phase.id === selectedPhase.id;
             return (
               <article
@@ -190,13 +226,6 @@ export default function ProcessExplorer({
                   <span className="mt-3 text-sm font-semibold leading-5">
                     {phase.title}
                   </span>
-                  {phaseIndex < phases.length - 1 && (
-                    <Icon
-                      glyph="ArrowRight"
-                      size={16}
-                      className="absolute right-3 top-4 opacity-55"
-                    />
-                  )}
                 </button>
 
                 <div className="mt-3 flex flex-col gap-2">
@@ -210,27 +239,12 @@ export default function ProcessExplorer({
                         aria-pressed={selected}
                         aria-controls="selected-machine-detail"
                         className={`group flex min-h-[70px] items-center gap-3 rounded-xl border p-3 text-left transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8] ${
-                          selected ? tone.selected : tone.machine
+                          selected
+                            ? "border-[#82CDB1] bg-[#F8FAF9] shadow-[0_12px_30px_-20px_rgba(0,104,74,0.35)]"
+                            : "border-[#E8EDEB] bg-[#FBFCFC] hover:border-[#C6D8D4] hover:bg-white"
                         }`}
                       >
-                        <span
-                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold ${
-                            selected
-                              ? tone.number
-                              : "bg-white text-[#5C6C75] shadow-sm"
-                          }`}
-                        >
-                          {String(
-                            phases
-                              .slice(0, phaseIndex)
-                              .reduce(
-                                (total, item) => total + item.machines.length,
-                                0
-                              ) +
-                              phase.machines.indexOf(machine) +
-                              1
-                          ).padStart(2, "0")}
-                        </span>
+                        <MachineArtwork machine={machine} />
                         <span className="min-w-0 text-xs font-semibold leading-4 text-[#112733]">
                           {machine.title}
                         </span>
@@ -239,7 +253,7 @@ export default function ProcessExplorer({
                   })}
                 </div>
 
-                <div className="mt-3 rounded-lg border border-dashed border-[#C1C7C6] px-3 py-2 text-[11px] leading-4 text-[#5C6C75]">
+                <div className="mt-3 border-t border-dashed border-[#C1C7C6] px-1 pt-2 text-[11px] leading-4 text-[#5C6C75]">
                   <span className="font-semibold text-[#3D4F58]">Output:</span>{" "}
                   {phase.outcome}
                 </div>
@@ -254,7 +268,11 @@ export default function ProcessExplorer({
         className="mt-5"
         aria-labelledby="selected-machine-title"
       >
-        <MachineDetail phase={selectedPhase} machine={selectedMachine} />
+        <MachineDetail
+          phase={selectedPhase}
+          machine={selectedMachine}
+          onOpenDocument={onOpenDocument}
+        />
       </div>
     </section>
   );
