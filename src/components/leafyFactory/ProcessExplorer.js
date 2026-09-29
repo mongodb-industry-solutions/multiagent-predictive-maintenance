@@ -3,17 +3,13 @@
 import Image from "next/image";
 
 const MACHINE_IMAGES = {
-  "cell-screening":
-    "/img/machines/Cell-Screening-and-Grading-Station.png",
+  "cell-screening": "/img/machines/Cell-Screening-and-Grading-Station.png",
   "tab-processing": "/img/machines/Tab-Processing-Station.png",
   "z-fold": "/img/machines/Z-Fold-Stacking-Cell.png",
-  "module-assembly":
-    "/img/machines/Module-Assembly-and-Fixture-Cell.png",
+  "module-assembly": "/img/machines/Module-Assembly-and-Fixture-Cell.png",
   "laser-welding": "/img/machines/Tab-Laser-Welding-Cell.png",
-  "ultrasonic-welding":
-    "/img/machines/Busbar-Ultrasonic-Welding-Cell.png",
-  "weld-monitoring":
-    "/img/machines/Weld-Monitoring-and-Thermal-Imaging.png",
+  "ultrasonic-welding": "/img/machines/Busbar-Ultrasonic-Welding-Cell.png",
+  "weld-monitoring": "/img/machines/Weld-Monitoring-and-Thermal-Imaging.png",
   "cooling-plate": "/img/machines/Cooling-Plate-Assembly-Cell.png",
   "pouch-sealing": "/img/machines/Pouch-Sealing-Cell-(Top+Side).png",
   "helium-test": "/img/machines/Helium-Leak-Test-Station.png",
@@ -65,7 +61,7 @@ const TONES = {
 
 function MetricChip({ children }) {
   return (
-    <code className="rounded-md border border-[#D8E3DF] bg-[#F1F5F3] px-2 py-1 text-[11px] text-[#3D4F58]">
+    <code className="rounded-md border border-[#D8E3DF] bg-[#F1F5F3] px-2 py-1 text-sm text-[#3D4F58]">
       {children}
     </code>
   );
@@ -97,20 +93,20 @@ function MachineDetail({ phase, machine, onOpenDocument }) {
           <MachineArtwork machine={machine} large />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-[#E3FCF7] px-2.5 py-1 text-xs font-semibold text-[#00684A]">
+              <span className="rounded-full bg-[#E3FCF7] px-2.5 py-1 text-sm font-semibold text-[#00684A]">
                 {phase.number} · {phase.title}
               </span>
-              <span className="rounded-full border border-[#D8E3DF] px-2.5 py-1 text-xs text-[#5C6C75]">
+              <span className="rounded-full border border-[#D8E3DF] px-2.5 py-1 text-sm text-[#5C6C75]">
                 Simulator: {machine.implementation}
               </span>
             </div>
             <h3
               id="selected-machine-title"
-              className="mt-4 text-xl font-semibold tracking-[-0.015em] text-[#112733]"
+              className="mt-4 text-2xl font-semibold tracking-[-0.015em] text-[#112733]"
             >
               {machine.title}
             </h3>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#3D4F58]">
+            <p className="mt-2 max-w-3xl text-base leading-6 text-[#3D4F58]">
               {machine.purpose}
             </p>
           </div>
@@ -121,11 +117,11 @@ function MachineDetail({ phase, machine, onOpenDocument }) {
             onOpenDocument(
               machine.sampleLabel,
               `${machine.title} · sample payload`,
-              machine.sample
+              machine.sample,
             )
           }
           aria-label={`View ${machine.sampleLabel}`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#C1C7C6] bg-white font-mono text-sm font-semibold text-[#00684A] transition hover:border-[#00684A] hover:bg-[#E3FCF7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8]"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#C1C7C6] bg-white font-mono text-base font-semibold text-[#00684A] transition hover:border-[#00684A] hover:bg-[#E3FCF7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8]"
         >
           {"{}"}
         </button>
@@ -133,23 +129,23 @@ function MachineDetail({ phase, machine, onOpenDocument }) {
 
       <dl className="mt-5 grid border-y border-[#D8E3DF] md:grid-cols-3 md:divide-x md:divide-[#D8E3DF]">
         <div className="py-4 md:pr-5">
-          <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5C6C75]">
+          <dt className="text-sm font-semibold uppercase tracking-[0.12em] text-[#5C6C75]">
             Material in
           </dt>
-          <dd className="mt-1.5 text-sm font-medium leading-5 text-[#112733]">
+          <dd className="mt-1.5 text-base font-medium leading-6 text-[#112733]">
             {machine.input}
           </dd>
         </div>
         <div className="border-t border-[#D8E3DF] py-4 md:border-t-0 md:px-5">
-          <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#00684A]">
+          <dt className="text-sm font-semibold uppercase tracking-[0.12em] text-[#00684A]">
             Context out
           </dt>
-          <dd className="mt-1.5 text-sm font-medium leading-5 text-[#112733]">
+          <dd className="mt-1.5 text-base font-medium leading-6 text-[#112733]">
             {machine.output}
           </dd>
         </div>
         <div className="border-t border-[#D8E3DF] py-4 md:border-t-0 md:pl-5">
-          <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5C6C75]">
+          <dt className="text-sm font-semibold uppercase tracking-[0.12em] text-[#5C6C75]">
             Published metrics
           </dt>
           <dd className="mt-2.5 flex flex-wrap gap-2">
@@ -171,32 +167,36 @@ export default function ProcessExplorer({
 }) {
   const selectedPhase =
     phases.find((phase) =>
-      phase.machines.some((machine) => machine.id === selectedMachineId)
+      phase.machines.some((machine) => machine.id === selectedMachineId),
     ) || phases[0];
   const selectedMachine =
     selectedPhase.machines.find(
-      (machine) => machine.id === selectedMachineId
+      (machine) => machine.id === selectedMachineId,
     ) || selectedPhase.machines[0];
 
   return (
-    <section id="process" aria-labelledby="process-title" className="scroll-mt-5">
+    <section
+      id="process"
+      aria-labelledby="process-title"
+      className="scroll-mt-5"
+    >
       <div className="mb-4 flex items-center justify-between gap-4">
         <h1
           id="process-title"
-          className="text-xl font-semibold tracking-[-0.015em] text-[#112733]"
+          className="text-2xl font-semibold tracking-[-0.015em] text-[#112733]"
         >
           Production process
         </h1>
-        <span className="text-xs font-medium text-[#5C6C75]">
+        <span className="text-sm font-medium text-[#5C6C75]">
           5 phases · 11 machines
         </span>
       </div>
 
-      <div className="cardlist-scrollbar overflow-x-auto pb-3">
-        <div className="relative grid min-w-[1120px] grid-cols-5 gap-3 pt-2">
+      <div className="relative w-full min-w-0">
+        <div className="relative grid w-full grid-cols-5 items-start gap-2 pt-2 sm:gap-3">
           <div
             aria-hidden="true"
-            className="absolute left-[9%] right-[9%] top-[42px] h-px bg-[#9DB7B2]"
+            className="pointer-events-none absolute left-[9%] right-[9%] top-[36px] z-0 h-px bg-[#9DB7B2]"
           >
             <span className="leafy-factory-line-flow absolute inset-y-[-1px] left-0 w-28 bg-gradient-to-r from-transparent via-[#00A35C] to-transparent" />
           </div>
@@ -207,23 +207,23 @@ export default function ProcessExplorer({
             return (
               <article
                 key={phase.id}
-                className="leafy-factory-enter relative min-w-0"
+                className="leafy-factory-enter relative z-10 flex min-w-0 flex-col"
                 style={{ animationDelay: `${phaseIndex * 90}ms` }}
               >
                 <button
                   type="button"
                   onClick={() => onSelectMachine(phase.machines[0].id)}
                   aria-pressed={phaseSelected}
-                  className={`relative z-10 flex min-h-[128px] w-full flex-col rounded-2xl border p-4 text-left transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8] ${tone.phase} ${
-                    phaseSelected ? "shadow-md" : "opacity-90 hover:opacity-100"
+                  className={`relative z-10 flex w-full shrink-0 flex-col rounded-2xl border p-3 text-left transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8] ${tone.phase} ${
+                    phaseSelected ? "shadow-md" : "hover:shadow-sm"
                   }`}
                 >
                   <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${tone.number}`}
+                    className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${tone.number}`}
                   >
                     {phase.number}
                   </span>
-                  <span className="mt-3 text-sm font-semibold leading-5">
+                  <span className="mt-2 min-h-12 text-base font-semibold leading-6">
                     {phase.title}
                   </span>
                 </button>
@@ -245,7 +245,7 @@ export default function ProcessExplorer({
                         }`}
                       >
                         <MachineArtwork machine={machine} />
-                        <span className="min-w-0 text-xs font-semibold leading-4 text-[#112733]">
+                        <span className="min-w-0 text-sm font-semibold leading-5 text-[#112733]">
                           {machine.title}
                         </span>
                       </button>
@@ -253,7 +253,7 @@ export default function ProcessExplorer({
                   })}
                 </div>
 
-                <div className="mt-3 border-t border-dashed border-[#C1C7C6] px-1 pt-2 text-[11px] leading-4 text-[#5C6C75]">
+                <div className="mt-3 border-t border-dashed border-[#C1C7C6] px-1 pt-2 text-sm leading-5 text-[#5C6C75]">
                   <span className="font-semibold text-[#3D4F58]">Output:</span>{" "}
                   {phase.outcome}
                 </div>

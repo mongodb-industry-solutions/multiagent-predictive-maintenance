@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Icon from "@leafygreen-ui/icon";
-import { Modal } from "@leafygreen-ui/modal";
+import { Icon } from "@via-ds/icons";
+import { Content, Dialog, DialogRoot, Header, Text } from "@via-ds/components";
 
 const DETAIL_CANVAS = { width: 1200, height: 720 };
 const DETAIL_NODE_HEIGHT = 52;
@@ -16,7 +16,7 @@ function ArchitectureModeSwitch({ mode, onChange }) {
     >
       {[
         { value: "simplified", label: "Simplified view", glyph: "Diagram" },
-        { value: "detailed", label: "Detailed view", glyph: "Charts" },
+        { value: "detailed", label: "Detailed view", glyph: "Chart" },
       ].map((option) => {
         const selected = mode === option.value;
         return (
@@ -61,7 +61,7 @@ function ModuleCard({
       onFocus={() => onHighlight(module.id)}
       onBlur={clearHighlight}
       className={`group min-w-0 rounded-xl border text-left transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8] ${
-        compact ? "relative p-4" : "absolute min-h-[112px] p-3.5"
+        compact ? "relative px-3 py-2.5" : "absolute px-3 py-2.5"
       } ${
         highlighted
           ? "border-[#00A35C] bg-white shadow-[0_14px_30px_-24px_rgba(0,104,74,0.5)]"
@@ -75,28 +75,26 @@ function ModuleCard({
         aria-label={`View ${module.title} details`}
         className="absolute inset-0 z-0 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8]"
       />
-      <div className="pointer-events-none relative z-10 flex items-start gap-3">
+      <span className="pointer-events-none relative z-10 block whitespace-nowrap text-[11px] font-semibold uppercase leading-none tracking-normal text-[#00684A]">
+        {module.type}
+      </span>
+      <div className="pointer-events-none relative z-10 mt-1.5 flex items-center gap-2">
         <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
             highlighted
               ? "bg-[#00684A] text-white"
               : "bg-[#E8F3EF] text-[#00684A]"
           }`}
         >
-          <Icon glyph={module.icon} size={18} />
+          <Icon glyph={module.icon} size={15} />
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-[9px] font-semibold uppercase tracking-[0.13em] text-[#00684A]">
-            {module.type}
-          </span>
-          <span className="mt-0.5 block text-sm font-semibold leading-5 text-[#112733]">
-            {module.title}
-          </span>
+        <span className="min-w-0 truncate text-sm font-semibold leading-5 text-[#112733]">
+          {module.title}
         </span>
       </div>
 
-      <p className="pointer-events-none relative z-10 mt-2.5 border-l-2 border-[#82CDB1] pl-2 text-[11px] leading-4 text-[#3D4F58]">
-        <span className="mr-1 font-semibold uppercase tracking-[0.08em] text-[#00684A]">
+      <p className="pointer-events-none relative z-10 mt-1.5 border-l-2 border-[#82CDB1] pl-2 text-sm leading-4 text-[#3D4F58]">
+        <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#00684A]">
           Built with
         </span>
         {module.implementation}
@@ -113,7 +111,7 @@ function ArchitectureCanvas({
   onOpenModule,
 }) {
   return (
-    <div className="relative h-[680px] overflow-hidden rounded-2xl border border-[#C6D8D4] bg-[#F8FAF9]">
+    <div className="relative aspect-[1200/720] w-full overflow-hidden rounded-2xl border border-[#C6D8D4] bg-[#F8FAF9]">
       <div
         aria-hidden="true"
         className="absolute inset-0 opacity-55 [background-image:radial-gradient(rgba(0,104,74,0.16)_1px,transparent_1px)] [background-size:22px_22px]"
@@ -133,9 +131,7 @@ function ArchitectureCanvas({
               <path
                 d={flow.path}
                 fill="none"
-                stroke={
-                  active ? "rgba(0,163,92,0.3)" : "rgba(82,110,114,0.28)"
-                }
+                stroke={active ? "rgba(0,163,92,0.3)" : "rgba(82,110,114,0.28)"}
                 strokeWidth={active ? 1.2 : 1}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -144,9 +140,7 @@ function ArchitectureCanvas({
               <path
                 d={flow.path}
                 fill="none"
-                stroke={
-                  active ? "rgba(0,163,92,0.9)" : "rgba(82,110,114,0.75)"
-                }
+                stroke={active ? "rgba(0,163,92,0.9)" : "rgba(82,110,114,0.75)"}
                 strokeWidth={active ? 1.9 : 1.7}
                 strokeLinecap="round"
                 strokeDasharray="2 17"
@@ -174,19 +168,19 @@ function ArchitectureCanvas({
 
 function FlowList({ flows, modules }) {
   const moduleById = Object.fromEntries(
-    modules.map((module) => [module.id, module])
+    modules.map((module) => [module.id, module]),
   );
 
   return (
     <div className="rounded-xl border border-[#D8E3DF] bg-[#F1F5F3] p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[#5C6C75]">
+      <p className="text-sm font-semibold uppercase tracking-[0.13em] text-[#5C6C75]">
         Supplied data routes
       </p>
       <ol className="mt-3 grid gap-2">
         {flows.map((flow) => (
           <li
             key={flow.id}
-            className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 rounded-lg border border-[#D8E3DF] bg-white px-3 py-2 text-xs text-[#3D4F58]"
+            className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 rounded-lg border border-[#D8E3DF] bg-white px-3 py-2 text-sm text-[#3D4F58]"
           >
             <span className="min-w-0 truncate font-semibold">
               {moduleById[flow.from].shortLabel}
@@ -197,7 +191,7 @@ function FlowList({ flows, modules }) {
             <span className="min-w-0 truncate text-right font-semibold">
               {moduleById[flow.to].shortLabel}
             </span>
-            <span className="col-span-3 text-[10px] text-[#5C6C75]">
+            <span className="col-span-3 text-sm text-[#5C6C75]">
               {flow.label}
             </span>
           </li>
@@ -215,94 +209,106 @@ function ModuleDetailModal({ module, onClose, onOpenDocument }) {
     onOpenDocument(
       module.sampleLabel,
       `${module.title} · sample payload`,
-      module.sample
+      module.sample,
     );
   };
 
   return (
-    <Modal
-      open
-      setOpen={(open) => {
-        if (!open) onClose();
+    <DialogRoot
+      isOpen
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
       }}
-      size="large"
-      style={{ width: "min(92vw, 880px)", maxWidth: "880px" }}
     >
-      <article className="max-h-[78vh] overflow-y-auto p-1 pr-3">
-        <header className="flex items-start gap-4 border-b border-[#D8E3DF] pb-5 pr-8">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E3FCF7] text-[#00684A]">
-              <Icon glyph={module.icon} size={22} />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#00684A]">
-                {module.type}
+      <Dialog
+        size="large"
+        style={{ width: "min(92vw, 880px)", maxWidth: "880px" }}
+      >
+        <Header>
+          <Text slot="title">{module.title}</Text>
+        </Header>
+        <Content>
+          <article className="max-h-[78vh] overflow-y-auto p-1 pr-3">
+            <header className="flex items-start gap-4 border-b border-[#D8E3DF] pb-5 pr-8">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E3FCF7] text-[#00684A]">
+                  <Icon glyph={module.icon} size={22} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold uppercase tracking-[0.15em] text-[#00684A]">
+                    {module.type}
+                  </p>
+                  <h3 className="mt-1 text-3xl font-semibold tracking-[-0.02em] text-[#112733]">
+                    {module.title}
+                  </h3>
+                  <p className="mt-1 text-base font-medium text-[#5C6C75]">
+                    {module.implementation}
+                  </p>
+                </div>
+              </div>
+            </header>
+
+            <p className="mt-5 text-base leading-6 text-[#3D4F58]">
+              {module.purpose}
+            </p>
+
+            <section className="mt-5 rounded-xl border border-[#D8E3DF] bg-[#F4F9F7] p-4">
+              <h4 className="text-sm font-semibold uppercase tracking-[0.12em] text-[#5C6C75]">
+                How it is built
+              </h4>
+              <p className="mt-1.5 text-base leading-6 text-[#273C45]">
+                {module.build}
               </p>
-              <h3 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-[#112733]">
-                {module.title}
-              </h3>
-              <p className="mt-1 text-sm font-medium text-[#5C6C75]">
-                {module.implementation}
-              </p>
-            </div>
-          </div>
-        </header>
+            </section>
 
-        <p className="mt-5 text-sm leading-6 text-[#3D4F58]">
-          {module.purpose}
-        </p>
+            <section className="mt-5">
+              <h4 className="text-sm font-semibold uppercase tracking-[0.12em] text-[#5C6C75]">
+                Components
+              </h4>
+              <ul className="mt-2.5 grid gap-2 sm:grid-cols-2">
+                {module.components.map((component) => (
+                  <li
+                    key={component}
+                    className="flex items-center gap-2 rounded-lg border border-[#D8E3DF] bg-white px-3 py-2 text-sm font-medium text-[#3D4F58]"
+                  >
+                    <Icon
+                      glyph="Checkmark"
+                      size={14}
+                      className="text-[#00A35C]"
+                    />
+                    {component}
+                  </li>
+                ))}
+              </ul>
+            </section>
 
-        <section className="mt-5 rounded-xl border border-[#D8E3DF] bg-[#F4F9F7] p-4">
-          <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5C6C75]">
-            How it is built
-          </h4>
-          <p className="mt-1.5 text-sm leading-6 text-[#273C45]">
-            {module.build}
-          </p>
-        </section>
-
-        <section className="mt-5">
-          <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5C6C75]">
-            Components
-          </h4>
-          <ul className="mt-2.5 grid gap-2 sm:grid-cols-2">
-            {module.components.map((component) => (
-              <li
-                key={component}
-                className="flex items-center gap-2 rounded-lg border border-[#D8E3DF] bg-white px-3 py-2 text-xs font-medium text-[#3D4F58]"
+            <footer className="mt-6 flex flex-wrap items-center gap-2 border-t border-[#D8E3DF] pt-5">
+              <button
+                type="button"
+                onClick={openSample}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#00684A] px-3 py-2 text-base font-semibold text-white transition hover:bg-[#00593F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8]"
               >
-                <Icon glyph="Checkmark" size={12} className="text-[#00A35C]" />
-                {component}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <footer className="mt-6 flex flex-wrap items-center gap-2 border-t border-[#D8E3DF] pt-5">
-          <button
-            type="button"
-            onClick={openSample}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#00684A] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#00593F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8]"
-          >
-            <span className="font-mono">{"{}"}</span>
-            View sample payload
-          </button>
-          {module.links.length > 0 &&
-            module.links.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[#B8C5C1] px-3 py-2 text-sm font-semibold text-[#00684A] transition hover:border-[#00684A] hover:bg-[#F1F5F3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8]"
-              >
-                {link.label}
-                <Icon glyph="ArrowRight" size={14} />
-              </a>
-            ))}
-        </footer>
-      </article>
-    </Modal>
+                <span className="font-mono">{"{}"}</span>
+                View sample payload
+              </button>
+              {module.links.length > 0 &&
+                module.links.map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#B8C5C1] px-3 py-2 text-base font-semibold text-[#00684A] transition hover:border-[#00684A] hover:bg-[#F1F5F3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8]"
+                  >
+                    {link.label}
+                    <Icon glyph="ArrowRight" size={16} />
+                  </a>
+                ))}
+            </footer>
+          </article>
+        </Content>
+      </Dialog>
+    </DialogRoot>
   );
 }
 
@@ -336,15 +342,9 @@ function getFlowGeometry(flow, nodeById) {
   return {
     path: `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${finish.x} ${finish.y}`,
     labelX:
-      start.x * 0.25 +
-      control.x * 0.5 +
-      finish.x * 0.25 +
-      (flow.labelDx || 0),
+      start.x * 0.25 + control.x * 0.5 + finish.x * 0.25 + (flow.labelDx || 0),
     labelY:
-      start.y * 0.25 +
-      control.y * 0.5 +
-      finish.y * 0.25 +
-      (flow.labelDy || 0),
+      start.y * 0.25 + control.y * 0.5 + finish.y * 0.25 + (flow.labelDy || 0),
   };
 }
 
@@ -352,7 +352,7 @@ function DetailedArchitecture({ groups, flows, modules, onOpenModule }) {
   const [highlightedGroupId, setHighlightedGroupId] = useState(null);
   const moduleById = useMemo(
     () => Object.fromEntries(modules.map((module) => [module.id, module])),
-    [modules]
+    [modules],
   );
   const nodes = useMemo(
     () =>
@@ -360,13 +360,13 @@ function DetailedArchitecture({ groups, flows, modules, onOpenModule }) {
         group.nodes.map((node) => ({
           ...node,
           detailGroupId: group.id,
-        }))
+        })),
       ),
-    [groups]
+    [groups],
   );
   const nodeById = useMemo(
     () => Object.fromEntries(nodes.map((node) => [node.id, node])),
-    [nodes]
+    [nodes],
   );
 
   return (
@@ -424,9 +424,7 @@ function DetailedArchitecture({ groups, flows, modules, onOpenModule }) {
                 height={group.position.height}
                 rx="14"
                 fill={
-                  selected
-                    ? "rgba(255,255,255,0.64)"
-                    : "rgba(255,255,255,0.24)"
+                  selected ? "rgba(255,255,255,0.64)" : "rgba(255,255,255,0.24)"
                 }
                 stroke={
                   selected ? "rgba(0,163,92,0.58)" : "rgba(82,110,114,0.28)"
@@ -437,7 +435,7 @@ function DetailedArchitecture({ groups, flows, modules, onOpenModule }) {
               <text
                 x={group.position.x + 14}
                 y={group.position.y + 27}
-                fontSize="12"
+                fontSize="14"
                 fontWeight="650"
                 fill="#3D4F58"
               >
@@ -459,9 +457,7 @@ function DetailedArchitecture({ groups, flows, modules, onOpenModule }) {
               <path
                 d={geometry.path}
                 fill="none"
-                stroke={
-                  active ? "rgba(0,163,92,0.3)" : "rgba(82,110,114,0.28)"
-                }
+                stroke={active ? "rgba(0,163,92,0.3)" : "rgba(82,110,114,0.28)"}
                 strokeWidth={active ? 1.2 : 1}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -470,9 +466,7 @@ function DetailedArchitecture({ groups, flows, modules, onOpenModule }) {
               <path
                 d={geometry.path}
                 fill="none"
-                stroke={
-                  active ? "rgba(0,163,92,0.9)" : "rgba(82,110,114,0.75)"
-                }
+                stroke={active ? "rgba(0,163,92,0.9)" : "rgba(82,110,114,0.75)"}
                 strokeWidth={active ? 1.9 : 1.7}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -501,7 +495,7 @@ function DetailedArchitecture({ groups, flows, modules, onOpenModule }) {
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#E8F3EF] text-[#00684A]">
                   <Icon glyph={node.icon} size={15} />
                 </span>
-                <span className="min-w-0 truncate text-[10px] font-semibold text-[#112733]">
+                <span className="min-w-0 truncate text-sm font-semibold text-[#112733]">
                   {node.label}
                 </span>
               </div>
@@ -552,11 +546,11 @@ export default function ArchitectureExplorer({
           <div>
             <h2
               id="architecture-title"
-              className="text-xl font-semibold tracking-[-0.015em] text-[#112733]"
+              className="text-2xl font-semibold tracking-[-0.015em] text-[#112733]"
             >
               Architecture
             </h2>
-            <p className="mt-1 text-xs text-[#5C6C75]">
+            <p className="mt-1 text-sm text-[#5C6C75]">
               {mode === "simplified"
                 ? "Core systems and the technologies used to build them"
                 : "Services, data stores, and the connections between them"}
@@ -566,10 +560,10 @@ export default function ArchitectureExplorer({
             href={sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-1 py-2 text-xs font-medium text-[#5C6C75] transition hover:text-[#00684A] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8]"
+            className="inline-flex items-center gap-1.5 px-1 py-2 text-sm font-medium text-[#5C6C75] transition hover:text-[#00684A] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#016BF8]"
           >
             Source code
-            <Icon glyph="ArrowRight" size={12} />
+            <Icon glyph="ArrowRight" size={14} />
           </a>
         </div>
 

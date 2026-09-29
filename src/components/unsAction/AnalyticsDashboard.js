@@ -1,7 +1,7 @@
 "use client";
 
-import Icon from "@leafygreen-ui/icon";
-import { H3, Body, Description } from "@leafygreen-ui/typography";
+import { Icon } from "@via-ds/icons";
+import { Body, Description, H3 } from "@via-ds/components";
 
 function EmptyChart() {
   return (
@@ -19,7 +19,7 @@ function ChartCard({ title, description, pipeline, onOpenPipeline, children }) {
         <div>
           <H3 className="!text-base !leading-6 text-[#112733]">{title}</H3>
           {description && (
-            <Description className="mt-1 text-xs">{description}</Description>
+            <Description className="mt-1 text-sm">{description}</Description>
           )}
         </div>
         {pipeline && (
@@ -51,7 +51,7 @@ function BarChart({ data, color = "#00684A" }) {
             className="flex h-full min-w-0 flex-1 flex-col justify-end"
             title={`${item.label}: ${item.value}`}
           >
-            <span className="mb-1 text-center text-xs font-semibold text-[#3D4F58]">
+            <span className="mb-1 text-center text-sm font-semibold text-[#3D4F58]">
               {item.value}
             </span>
             <span
@@ -164,7 +164,7 @@ function DonutChart({ entries, colors }) {
       >
         <div className="absolute inset-7 flex flex-col items-center justify-center rounded-full bg-white">
           <span className="text-2xl font-semibold text-[#112733]">{total}</span>
-          <Description className="text-xs">total</Description>
+          <Description className="text-sm">total</Description>
         </div>
       </div>
       <div className="grid gap-2">
@@ -253,7 +253,7 @@ export default function AnalyticsDashboard({
             <p className="mt-2 text-3xl font-semibold tracking-tight text-[#112733]">
               {value}
             </p>
-            <Body className="mt-1 text-xs text-[#00684A]">{detail}</Body>
+            <Body className="mt-1 text-sm text-[#00684A]">{detail}</Body>
           </div>
         ))}
       </section>

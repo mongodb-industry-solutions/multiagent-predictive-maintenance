@@ -1,7 +1,7 @@
 "use client";
 
-import Icon from "@leafygreen-ui/icon";
-import { Body, Description } from "@leafygreen-ui/typography";
+import { Icon } from "@via-ds/icons";
+import { Body, Description } from "@via-ds/components";
 import { useFactoryData } from "@/components/factoryDataProvider/FactoryDataProvider";
 import FactorySourceSelector from "@/components/factorySourceSelector/FactorySourceSelector";
 
@@ -81,12 +81,12 @@ export default function FactorySourceBar({ compact = false }) {
 
         <div className="flex min-w-0 items-center gap-3">
           <div className="min-w-0 text-right">
-            <Body weight="medium" className="text-sm text-[#112733]">
+            <Body className="text-sm text-[#112733] font-medium">
               {source === sources.LOCAL
                 ? "Resilient browser simulation"
                 : "External simulator API"}
             </Body>
-            <Description className="truncate text-xs">
+            <Description className="truncate text-sm">
               {error ||
                 (lastUpdated
                   ? `Updated ${lastUpdated.toLocaleTimeString()}`

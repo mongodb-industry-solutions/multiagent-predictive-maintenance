@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import Icon from "@leafygreen-ui/icon";
-import { Step, Stepper } from "@leafygreen-ui/stepper";
+import { Icon } from "@via-ds/icons";
+import { Step, Stepper } from "@via-ds/components";
 import NextStepButton from "@/components/nextStepButton/NextStepButton";
 import { fetchAlerts } from "@/lib/api/alerts";
 import { fetchIncidentReports } from "@/lib/api/incidentReports";
@@ -130,12 +130,10 @@ export default function AgenticDemoStepper() {
   };
 
   const handleStepperClick = (event) => {
-    if (event.target.closest("a, button")) return;
-
     const stepElement = event.target.closest("li");
-    if (!stepElement) return;
+    if (!stepElement || !event.currentTarget.contains(stepElement)) return;
 
-    const stepIndex = Array.from(event.currentTarget.children).indexOf(
+    const stepIndex = Array.from(stepElement.parentElement.children).indexOf(
       stepElement,
     );
     const step = STEPS[stepIndex];
@@ -171,14 +169,6 @@ export default function AgenticDemoStepper() {
     );
   }
 
-  const currentViewStep = pathname.startsWith("/agentic-ai/workorder-scheduler")
-    ? 3
-    : pathname.startsWith("/agentic-ai/workorder-generation")
-      ? 2
-      : progress >= 1
-        ? 1
-        : 0;
-
   const nextAction =
     pathname.startsWith("/agentic-ai/failure-prediction") && progress >= 2
       ? {
@@ -203,49 +193,21 @@ export default function AgenticDemoStepper() {
           <span className="hidden sm:inline">Back to overview</span>
         </Link>
 
-        <div className="min-w-[520px] flex-1 overflow-x-auto px-2">
+        <div
+          className="min-w-[520px] flex-1 overflow-x-auto px-2"
+          onClickCapture={handleStepperClick}
+        >
           <Stepper
             currentStep={Math.min(progress, STEPS.length)}
-            maxDisplayedSteps={STEPS.length}
-            onClick={handleStepperClick}
+            maxDisplaySteps={STEPS.length}
+            aria-label="Agentic demo steps"
             className="min-w-[500px] [&>li]:cursor-pointer"
           >
-            {STEPS.map((step, index) => {
-              const enabled = navigationProgress >= step.requiredProgress;
-              const current = index === currentViewStep;
-
-              return (
-                <Step key={step.label}>
-                  {enabled ? (
-                    <Link
-                      href={step.href}
-                      className={`inline-flex items-center gap-1.5 px-2 text-[13px] leading-4 no-underline transition-colors ${
-                        current
-                          ? "font-semibold text-[#00684A]"
-                          : "font-normal text-[#3D4F58] hover:bg-[#F1F5F3] hover:text-[#00684A]"
-                      }`}
-                    >
-                      {step.label}
-                    </Link>
-                  ) : (
-                    <button
-                      type="button"
-                      aria-disabled="true"
-                      title={step.blockedReason}
-                      onClick={(event) =>
-                        showBlockedMessage(
-                          step.blockedReason,
-                          event.currentTarget,
-                        )
-                      }
-                      className="cursor-not-allowed rounded-md px-2 text-[13px] leading-4 text-[#889397] opacity-70"
-                    >
-                      {step.label}
-                    </button>
-                  )}
-                </Step>
-              );
-            })}
+            {STEPS.map((step, index) => (
+              <Step key={String(index)} textValue={step.label}>
+                {step.label}
+              </Step>
+            ))}
           </Stepper>
         </div>
 
@@ -269,7 +231,7 @@ export default function AgenticDemoStepper() {
           role="status"
           aria-live="polite"
           style={{ left: blockedMessage.left }}
-          className="absolute top-full z-30 mt-1 max-w-[300px] -translate-x-1/2 rounded-md bg-[#112733] px-3 py-2 text-center text-xs text-white"
+          className="absolute top-full z-30 mt-1 max-w-[300px] -translate-x-1/2 rounded-md bg-[#112733] px-3 py-2 text-center text-sm text-white"
         >
           {blockedMessage.text}
         </div>

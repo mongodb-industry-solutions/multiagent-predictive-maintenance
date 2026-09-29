@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Icon } from "@leafygreen-ui/icon";
-import { Button } from "@leafygreen-ui/button";
-import { H1, H3, Body, Description } from "@leafygreen-ui/typography";
+import { Icon } from "@via-ds/icons";
+import { LinkButton, Body, Description, H2, H3 } from "@via-ds/components";
 import InfoWizard from "@/components/infoWizard/InfoWizard";
 import {
   UNS_TALK_TRACK,
@@ -15,7 +14,7 @@ import {
 
 function ComingSoonBadge() {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FFDD49]/70 bg-[#FEF7DB] px-2.5 py-1 text-xs font-medium text-[#944F01]">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FFDD49]/70 bg-[#FEF7DB] px-2.5 py-1 text-sm font-medium text-[#944F01]">
       <Icon glyph="Clock" size={12} />
       Coming soon
     </span>
@@ -60,7 +59,7 @@ function UseCaseCard({ item }) {
       className="group flex min-h-[210px] flex-col rounded-2xl border border-[#D8E3DF] bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-[#00A35C] hover:shadow-md"
     >
       {content}
-      <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#00684A]">
+      <span className="mt-5 inline-flex items-center gap-1.5 font-medium text-[#00684A]">
         Open use case
         <Icon
           glyph="ArrowRight"
@@ -76,10 +75,7 @@ function UseCaseCatalog({ items }) {
   return (
     <section>
       <div className="mb-4">
-        <Body
-          weight="medium"
-          className="uppercase tracking-[0.13em] text-[#00684A]"
-        >
+        <Body className="uppercase tracking-[0.13em] text-[#00684A] font-medium">
           Use cases
         </Body>
       </div>
@@ -96,10 +92,7 @@ function ResourceCatalog({ items }) {
   return (
     <section>
       <div className="mb-4">
-        <Body
-          weight="medium"
-          className="uppercase tracking-[0.13em] text-[#3D4F58]"
-        >
+        <Body className="uppercase tracking-[0.13em] text-[#3D4F58] font-medium">
           Related resources
         </Body>
       </div>
@@ -120,7 +113,7 @@ function ResourceCatalog({ items }) {
               className="shrink-0 object-contain"
             />
             <span className="min-w-0 flex-1">
-              <span className="text-xs font-medium uppercase tracking-[0.1em] text-[#5C6C75]">
+              <span className="text-sm font-medium uppercase tracking-[0.1em] text-[#5C6C75]">
                 {item.type}
               </span>
               <span className="mt-1 block font-medium text-[#112733]">
@@ -172,23 +165,20 @@ export default function SectionHome({
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-2 py-6 sm:px-4 lg:px-6">
         <section className="grid min-h-[390px] overflow-hidden rounded-2xl bg-[#0B2A3C] lg:grid-cols-[9fr_11fr]">
           <div className="flex flex-col justify-center px-7 py-10 sm:px-10 lg:py-12">
-            <H1 darkMode className="text-balance !text-white">
-              {title}
-            </H1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-[#DCEBE7]">
+            <H2 className="text-balance !text-white">{title}</H2>
+            <p className="mt-5 max-w-xl text-lg leading-7 text-[#DCEBE7]">
               {subtitle}
             </p>
             <div className="mt-7 flex items-center gap-2">
               {startHref && (
-                <Button
+                <LinkButton
                   href={startHref}
-                  onClick={onStart}
+                  onPress={onStart}
                   variant="primary"
-                  darkMode={false}
-                  rightGlyph={<Icon glyph="ArrowRight" />}
                 >
                   Start demo
-                </Button>
+                  <Icon glyph="ArrowRight" />
+                </LinkButton>
               )}
               <InfoWizard
                 open={infoOpen}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Body, Description } from "@leafygreen-ui/typography";
+import { Body, Description } from "@via-ds/components";
 import { STORY_STAGES, getStageForPath } from "@/lib/const/navigation";
 
 export default function StoryStepper({ activeStageId }) {
@@ -27,7 +27,7 @@ export default function StoryStepper({ activeStageId }) {
                 }`}
               >
                 <span
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
                     isActive
                       ? "bg-[#00684A] text-white"
                       : "bg-[#F1F5F3] text-[#3D4F58] group-hover:bg-[#E3FCF7]"
@@ -37,9 +37,8 @@ export default function StoryStepper({ activeStageId }) {
                 </span>
                 <span className="min-w-0">
                   <Body
-                    as="span"
-                    weight="medium"
-                    className={isActive ? "text-[#00684A]" : "text-[#112733]"}
+                    elementType="span"
+                    className={`font-medium ${isActive ? "text-[#00684A]" : "text-[#112733]"}`}
                   >
                     {stage.label}
                   </Body>

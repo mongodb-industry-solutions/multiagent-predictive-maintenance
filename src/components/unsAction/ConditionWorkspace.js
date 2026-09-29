@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Icon from "@leafygreen-ui/icon";
-import { H2, H3, Body, Description } from "@leafygreen-ui/typography";
+import { Icon } from "@via-ds/icons";
+import { Body, Description, H2, H3 } from "@via-ds/components";
 import { useFactoryData } from "@/components/factoryDataProvider/FactoryDataProvider";
 import {
   DEFAULT_SENSOR_READINGS,
@@ -121,10 +121,10 @@ function SensorSlider({
   return (
     <div className={`grid gap-1 ${disabled ? "opacity-50" : ""}`}>
       <div className="flex items-baseline justify-between gap-2">
-        <Body weight="medium" className="text-sm text-[#3D4F58]">
+        <Body className="text-sm text-[#3D4F58] font-medium">
           {label}
         </Body>
-        <span className="flex items-baseline gap-3 font-mono text-xs">
+        <span className="flex items-baseline gap-3 font-mono text-sm">
           <span className="text-[#944F01]" title="Alert threshold">
             ▮ {draftThreshold} {unit}
           </span>
@@ -324,7 +324,7 @@ export default function ConditionWorkspace() {
           />
         </div>
 
-        <div className="mt-auto flex min-h-[20px] items-center justify-between gap-2 pt-3 text-xs">
+        <div className="mt-auto flex min-h-[20px] items-center justify-between gap-2 pt-3 text-sm">
           <span className="flex items-center gap-3 text-[#5C6C75]">
             <span className="flex items-center gap-1">
               <span className="inline-block h-3 w-3 rounded-full border-2 border-[#00A35C] bg-white" />
@@ -421,7 +421,7 @@ export default function ConditionWorkspace() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-semibold uppercase ${severityClass(
+                    className={`rounded-full px-2.5 py-1 text-sm font-semibold uppercase ${severityClass(
                       alert.severity
                     )}`}
                   >

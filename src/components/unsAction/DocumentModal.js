@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-import Icon from "@leafygreen-ui/icon";
-import dynamic from "next/dynamic";
-import { H3, Description } from "@leafygreen-ui/typography";
-
-const Code = dynamic(
-  () => import("@leafygreen-ui/code").then((mod) => mod.Code),
-  { ssr: false }
-);
+import { Icon } from "@via-ds/icons";
+import {
+  Button,
+  CodeBlock,
+  CodeSnippet,
+  CopyButton,
+  Description,
+  H3,
+} from "@via-ds/components";
 
 export default function DocumentModal({ open, title, subtitle, value, onClose }) {
   const serialized = JSON.stringify(value, null, 2);
@@ -56,7 +57,14 @@ export default function DocumentModal({ open, title, subtitle, value, onClose })
           </div>
         </header>
         <div className="cardlist-scrollbar min-h-[320px] flex-1 overflow-auto p-5">
-          <Code language="json">{serialized}</Code>
+          <CodeBlock language="json">
+            <CodeSnippet>{serialized}</CodeSnippet>
+            <CopyButton copyText={serialized}>
+              <Button aria-label="Copy code">
+                <Icon glyph="Copy" />
+              </Button>
+            </CopyButton>
+          </CodeBlock>
         </div>
       </div>
     </div>

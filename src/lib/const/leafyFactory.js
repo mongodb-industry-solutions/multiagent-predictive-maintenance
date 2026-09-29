@@ -324,7 +324,7 @@ export const ARCHITECTURE_MODULES = [
     title: "MES",
     type: "Manufacturing operations",
     implementation: "Libre MES · Docker Compose",
-    icon: "Charts",
+    icon: "Chart",
     purpose:
       "Tracks products, order performance, availability, quality, and production-rate measurements for the line.",
     build:
@@ -360,7 +360,7 @@ export const ARCHITECTURE_MODULES = [
     title: "SCADA",
     type: "Supervisory control",
     implementation: "Python · FastAPI service",
-    icon: "Charts",
+    icon: "Chart",
     purpose:
       "Gives an operator a per-order view of line state and controls the start, pause, and stop lifecycle.",
     build:
@@ -557,7 +557,7 @@ export const ARCHITECTURE_DETAIL_GROUPS = [
         id: "erp-frontend",
         label: "ERPNext frontend",
         kind: "Interface",
-        icon: "Charts",
+        icon: "Chart",
         position: { x: 40, y: 70, width: 150 },
       },
       {
@@ -619,7 +619,7 @@ export const ARCHITECTURE_DETAIL_GROUPS = [
         id: "mes-grafana",
         label: "Grafana",
         kind: "Dashboards",
-        icon: "Charts",
+        icon: "Chart",
         position: { x: 615, y: 210, width: 150 },
       },
     ],
@@ -714,7 +714,7 @@ export const ARCHITECTURE_DETAIL_GROUPS = [
         id: "scada-browser",
         label: "Browser UI",
         kind: "HTTP polling",
-        icon: "Charts",
+        icon: "Chart",
         position: { x: 435, y: 475, width: 150 },
       },
       {
@@ -891,7 +891,7 @@ export const ARCHITECTURE_DETAIL_FLOWS = [
     to: "mongo-orders-current",
     toLabel: "MongoDB",
     label: "Order context",
-    path: "M 370 96 V 10 H 995 V 20",
+    path: "M 295 70 V 10 H 995 V 20",
   },
   {
     id: "mqtt-mongodb-detail",

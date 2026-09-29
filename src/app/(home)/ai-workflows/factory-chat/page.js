@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Icon from "@leafygreen-ui/icon";
+import { Icon } from "@via-ds/icons";
 import FactorySourceSelector from "@/components/factorySourceSelector/FactorySourceSelector";
 import { useFactoryData } from "@/components/factoryDataProvider/FactoryDataProvider";
 import FactoryChat from "@/components/unsChat/FactoryChat";
@@ -29,7 +29,7 @@ export default function FactoryChatPage() {
           <span>Back to overview</span>
         </Link>
         <div className="flex items-center gap-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#D8E3DF] bg-[#F8FAF9] px-3 py-2 text-xs font-medium text-[#3D4F58]">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#D8E3DF] bg-[#F8FAF9] px-3 py-2 text-sm font-medium text-[#3D4F58]">
             <Icon glyph="Diagram" size={14} />
             <span className="text-base font-semibold text-[#112733]">
               {activeOrderCount}

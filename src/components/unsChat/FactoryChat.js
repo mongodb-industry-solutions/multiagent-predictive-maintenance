@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Icon from "@leafygreen-ui/icon";
-import { Avatar } from "@leafygreen-ui/avatar";
+import { Icon } from "@via-ds/icons";
+import { Logo } from "@via-ds/components";
 import FactoryChart from "./FactoryChart";
 import useFactoryChat, { formatToolName } from "./useFactoryChat";
 
@@ -22,7 +22,7 @@ const LOCAL_QUESTIONS = [
     label: "Yield and cycle time",
     prompt:
       "Show first-pass yield and the cycle-time trend for the active order.",
-    glyph: "Charts",
+    glyph: "Chart",
   },
   {
     label: "Alerts and limits",
@@ -40,7 +40,7 @@ const LOCAL_QUESTIONS = [
     label: "Cell grades",
     prompt:
       "Show the cell-grade distribution for the active order as a chart.",
-    glyph: "Charts",
+    glyph: "Chart",
   },
   {
     label: "Current station",
@@ -78,7 +78,7 @@ const LEAFY_QUESTIONS = [
     label: "Cycle-time trend",
     prompt:
       "Chart cycle times for the latest completed units and explain the variation.",
-    glyph: "Charts",
+    glyph: "Chart",
   },
   {
     label: "Alerts and thresholds",
@@ -90,7 +90,7 @@ const LEAFY_QUESTIONS = [
     label: "Live cell-grade mix",
     prompt:
       "Chart the live cell-grade mix from recent Cell Screening events, including in-process cells.",
-    glyph: "Charts",
+    glyph: "Chart",
   },
 ];
 
@@ -104,10 +104,11 @@ function ChatAvatar({ role, large = false }) {
         }`}
         aria-label="Factory Chat"
       >
-        <Avatar
-          name="Factory Chat"
-          format="mongodb"
-          size={large ? "large" : "default"}
+        <Logo
+          logo="MongoDBLogoMark"
+          size={large ? "large" : "medium"}
+          hasColor
+          aria-label="Factory Chat"
         />
       </span>
     );
@@ -157,7 +158,7 @@ function InlineText({ children }) {
         return (
           <code
             key={index}
-            className="rounded bg-[#F1F5F3] px-1 py-0.5 text-xs text-[#112733]"
+            className="rounded bg-[#F1F5F3] px-1 py-0.5 text-sm text-[#112733]"
           >
             {part.slice(1, -1)}
           </code>
@@ -197,7 +198,7 @@ function MessageContent({ content }) {
       index -= 1;
       blocks.push(
         <div key={`table-${index}`} className="my-3 overflow-x-auto">
-          <table className="w-full min-w-[480px] border-collapse text-left text-xs">
+          <table className="w-full min-w-[480px] border-collapse text-left text-sm">
             <thead>
               <tr>
                 {headers.map((header, cellIndex) => (
@@ -281,7 +282,7 @@ function EvidenceCard({ entry }) {
       <div className="overflow-hidden rounded-xl border border-[#D8E3DF] bg-[#F8FAF9]">
         <div className="flex flex-wrap items-center gap-2 px-3.5 py-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-[#00684A] shadow-sm">
-            <Icon glyph={isChart ? "Charts" : "Wrench"} size={15} />
+            <Icon glyph={isChart ? "Chart" : "Wrench"} size={15} />
           </span>
           <span className="min-w-0 flex-1 text-sm font-medium text-[#112733]">
             {formatToolName(entry.toolName)}
@@ -296,7 +297,7 @@ function EvidenceCard({ entry }) {
           </span>
         </div>
         {Object.keys(entry.input || {}).length > 0 && (
-          <div className="border-t border-[#E8EDEB] px-3.5 py-2 text-xs text-[#5C6C75]">
+          <div className="border-t border-[#E8EDEB] px-3.5 py-2 text-sm text-[#5C6C75]">
             {Object.entries(entry.input)
               .map(
                 ([key, value]) =>
@@ -307,7 +308,7 @@ function EvidenceCard({ entry }) {
         )}
         {!entry.loading && entry.result && !isChart && (
           <details className="border-t border-[#E8EDEB]">
-            <summary className="cursor-pointer px-3.5 py-2.5 text-xs font-medium text-[#00684A] hover:bg-white">
+            <summary className="cursor-pointer px-3.5 py-2.5 text-sm font-medium text-[#00684A] hover:bg-white">
               Inspect JSON evidence
             </summary>
             <pre className="max-h-64 overflow-auto border-t border-[#E8EDEB] bg-white p-3.5 text-[11px] leading-5 text-[#263238]">
@@ -403,7 +404,7 @@ function ConversationPicker({
         disabled={loading}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#C1C7C6] px-3 text-xs font-medium text-[#3D4F58] hover:bg-[#F1F5F3] disabled:opacity-50"
+        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#C1C7C6] px-3 text-sm font-medium text-[#3D4F58] hover:bg-[#F1F5F3] disabled:opacity-50"
       >
         <Icon glyph="Clock" size={14} />
         Conversations
@@ -431,7 +432,7 @@ function ConversationPicker({
           </div>
           <div className="max-h-80 overflow-y-auto p-2">
             {threads.length === 0 ? (
-              <p className="px-2 py-4 text-center text-xs text-[#889397]">
+              <p className="px-2 py-4 text-center text-sm text-[#889397]">
                 {loading ? "Loading conversations…" : "No saved sessions yet"}
               </p>
             ) : (
@@ -509,7 +510,7 @@ export default function FactoryChat() {
                   UNS Factory Chat
                 </p>
                 <p
-                  className="flex items-center gap-1.5 truncate text-xs text-[#5C6C75]"
+                  className="flex items-center gap-1.5 truncate text-sm text-[#5C6C75]"
                   aria-live="polite"
                 >
                   <span
@@ -577,7 +578,7 @@ export default function FactoryChat() {
                   );
                 })}
                 {loading && !entries.some((entry) => entry.loading) && (
-                  <div className="ml-11 flex items-center gap-2 text-xs text-[#5C6C75]">
+                  <div className="ml-11 flex items-center gap-2 text-sm text-[#5C6C75]">
                     <span className="h-2 w-2 animate-pulse rounded-full bg-[#00A35C]" />
                     {processingLabel}
                   </div>
@@ -615,7 +616,7 @@ export default function FactoryChat() {
                 {threadId && <span>Session checkpointed</span>}
               </div>
               {error && (
-                <p className="mt-2 text-xs text-[#8C210F]">{error}</p>
+                <p className="mt-2 text-sm text-[#8C210F]">{error}</p>
               )}
             </div>
           </div>
@@ -623,7 +624,7 @@ export default function FactoryChat() {
 
         <aside className="grid h-full min-h-0 overflow-hidden">
           <section className="h-full rounded-2xl border border-[#D8E3DF] bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#00684A]">
+            <p className="text-sm font-medium uppercase tracking-[0.12em] text-[#00684A]">
               Try asking
             </p>
             <div className="mt-2 grid gap-0.5">
@@ -642,7 +643,7 @@ export default function FactoryChat() {
                     <span className="block text-sm font-medium text-[#112733]">
                       {question.label}
                     </span>
-                    <span className="mt-0.5 block text-xs leading-4 text-[#5C6C75]">
+                    <span className="mt-0.5 block text-sm leading-4 text-[#5C6C75]">
                       {question.prompt}
                     </span>
                   </span>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Icon from "@leafygreen-ui/icon";
-import { Body } from "@leafygreen-ui/typography";
+import { Icon } from "@via-ds/icons";
+import { Body } from "@via-ds/components";
 import { FACTORY_SOURCES } from "@/lib/factory/constants";
 
 const SOURCE_OPTIONS = [
@@ -75,8 +75,7 @@ export default function FactorySourceSelector({
           }`}
         >
           <Body
-            weight="medium"
-            className="px-2 pb-2 text-xs uppercase tracking-[0.12em] text-[#5C6C75]"
+            className="px-2 pb-2 text-sm uppercase tracking-[0.12em] text-[#5C6C75] font-medium"
           >
             Data source
           </Body>

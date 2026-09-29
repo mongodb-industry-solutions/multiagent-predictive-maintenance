@@ -1,7 +1,7 @@
 "use client";
 
-import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
+import { ViaProvider } from "@via-ds/components";
 
 export default function Providers({ children }) {
-  return <LeafyGreenProvider baseFontSize={16}>{children}</LeafyGreenProvider>;
+  return <ViaProvider colorScheme="light">{children}</ViaProvider>;
 }

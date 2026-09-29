@@ -53,7 +53,7 @@ src/
     workorder-generation/  Work Order Generation page
     workorder-scheduler/   Work Order Scheduler page
     agent-sandbox/         manual agent testing UI
-  components/        React UI components (LeafyGreen + MUI)
+  components/        React UI components (Via + MUI)
   integrations/
     mongodb/client.js        MongoClient singleton — sets appName
     mongodb/vectorSearch.js  vector index creation and $vectorSearch queries

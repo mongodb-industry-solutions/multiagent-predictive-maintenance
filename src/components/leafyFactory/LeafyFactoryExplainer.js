@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Icon from "@leafygreen-ui/icon";
+import { Icon } from "@via-ds/icons";
 import DocumentModal from "@/components/unsAction/DocumentModal";
 import NextStepButton from "@/components/nextStepButton/NextStepButton";
 import {
@@ -56,9 +56,9 @@ export default function LeafyFactoryExplainer() {
         <div className="flex items-center">
           <Link
             href="/unified-namespace"
-            className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-[#00684A] hover:underline"
+            className="flex shrink-0 items-center gap-1.5 text-base font-medium text-[#00684A] hover:underline"
           >
-            <Icon glyph="ArrowLeft" size={16} />
+            <Icon glyph="ArrowLeft" size={18} />
             Back to overview
           </Link>
         </div>

@@ -61,6 +61,7 @@ export default function AiWorkflowsPage() {
         subtitle="Ground natural-language experiences and governed AI workflows in the same trusted operational context created by the unified namespace."
         image="/img/ai-workloads-overview.png"
         imageAlt="AI workflows and agentic workloads overview"
+        startHref="/ai-workflows/factory-chat"
         useCases={useCases}
         resources={resources}
     />

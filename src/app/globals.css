@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@via-ds/components/index.css";
 
 :root {
   --leafy-ink: #112733;
@@ -218,7 +219,7 @@ button {
   color: #112733 !important;
 }
 .fc-button, .fc-button-primary {
-  font-size: 0.85rem !important; /* Tailwind text-xs */
+  font-size: 0.875rem !important; /* Tailwind text-sm */
   padding: 0.25rem 0.5rem !important; /* Tailwind px-2 py-1 */
   border-radius: 0.375rem !important; /* Tailwind rounded-md */
   background-color: #112733 !important;
@@ -226,7 +227,7 @@ button {
   border: none !important;
 }
 .fc-button-group > .fc-button {
-  font-size: 0.85rem !important;
+  font-size: 0.875rem !important;
   padding: 0.25rem 0.5rem !important;
   background-color: #112733 !important;
   color: #fff !important;
@@ -241,5 +242,142 @@ button {
 .fc-daygrid-event,
 .fc-col-header-cell,
 .fc-daygrid-day {
-  font-size: 0.85rem !important; /* Tailwind text-xs/sm */
+  font-size: 0.875rem !important; /* Tailwind text-sm */
+}
+
+/* Step circles only. Via icon glyphs also use an "_icon" class, so keep this scoped to the stepper module. */
+.agentic-demo-stepper [class*="Stepper-module"][class*="_icon"]:not([class*="_iconNumber"]) {
+  z-index: 2;
+  background-color: var(--leafy-canvas);
+  border-color: #7d9a94;
+  box-shadow: none;
+}
+.agentic-demo-stepper [class*="Stepper-module"][class*="_icon"][class*="_current"]:not([class*="_iconNumber"]) {
+  background-color: var(--leafy-mint);
+  border-color: var(--leafy-green);
+  color: var(--leafy-green);
+}
+.agentic-demo-stepper [class*="Stepper-module"][class*="_icon"][class*="_completed"]:not([class*="_iconNumber"]) {
+  background-color: var(--leafy-green);
+  border-color: var(--leafy-green);
+  color: #fff;
+}
+.agentic-demo-stepper [class*="Stepper-module"][class*="_icon"][class*="_completed"]:not([class*="_iconNumber"]) svg {
+  color: #fff;
+}
+
+/* Form / JSON toggle: selected label stays readable on the light indicator. */
+.view-toggle [class*="_item"][aria-checked="true"] {
+  color: #112733;
+}
+.view-toggle [class*="_selectionIndicator"] {
+  background-color: #fff;
+}
+
+/* Live telemetry, alerts, and card JSON views keep a white code surface. */
+.code-block-white,
+.code-block-white pre {
+  background: #fff !important;
+  --scroll-shadow-surface: #fff;
+}
+
+/* Telemetry code wraps sideways and scrolls vertically through the full payload. */
+.telemetry-code {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.telemetry-code > * {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.telemetry-code pre {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+.telemetry-code [class*="_content"] {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Tighter disclosure cards, with room between the row and the chevron. */
+.pm-disclosure [class*="_header"] {
+  column-gap: 1.25rem;
+  padding-block: 0.55rem;
+}
+.pm-disclosure-with-radio [class*="_header"] {
+  padding-inline-start: 2.75rem;
+}
+.pm-disclosure-selected [class*="_header"]:hover {
+  --via-disclosure-color-background: transparent;
+  background-color: transparent;
+}
+.pm-disclosure [class*="_panelInner"] {
+  padding-block: 0.75rem 1rem;
+  padding-inline: 1rem;
+}
+
+/* User, agent, and tool messages share one bubble size. */
+.agent-log-mark {
+  display: flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 9999px;
+}
+.agent-log-bubble {
+  width: 100%;
+  max-width: 32rem;
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 4px 12px -8px rgba(17, 39, 51, 0.45);
+}
+.agent-log-bubble-user,
+.agent-log-bubble-agent {
+  max-width: calc(50% + 16rem);
+  padding-inline: 0.5rem;
+  border: 1px solid #d8e3df;
+  background-color: #fff;
+}
+.agent-log-bubble-error {
+  background-color: #ffeae5;
+}
+.agent-log-tool {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.agent-log-tool [class*="_header"] {
+  border-radius: 1rem;
+  background-color: #f4f6f5;
+  color: #3d4f58;
+  box-shadow: 0 4px 12px -8px rgba(17, 39, 51, 0.45);
+  padding: 0.75rem 1rem;
+}
+.agent-log-tool [class*="_panelInner"] {
+  padding-block: 0.75rem 0;
+}
+
+/* Form inputs use a white field with a thin border. */
+.form-fields [class*="_inputWrapper"] {
+  background-color: #fff !important;
+  border: 1px solid #d8e3df !important;
+}
+.incident-form [class*="_inputWrapper"] {
+  min-height: 0;
+  block-size: auto;
+}
+.incident-form textarea {
+  field-sizing: content;
+  height: auto;
+  min-height: 2.75rem;
 }

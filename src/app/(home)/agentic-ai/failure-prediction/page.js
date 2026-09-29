@@ -1,17 +1,12 @@
 "use client";
 import React from "react";
-import dynamic from "next/dynamic";
-import Button from "@leafygreen-ui/button";
+import { Button, CodeBlock, CodeSnippet, CopyButton } from "@via-ds/components";
+import { Icon } from "@via-ds/icons";
 import { useFailureDetectionPage } from "./hooks";
 import MachineController from "@/components/machineController/MachineController";
 import CardList from "@/components/cardList/CardList";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
 import FactorySourceSelector from "@/components/factorySourceSelector/FactorySourceSelector";
-
-const Code = dynamic(
-  () => import("@leafygreen-ui/code").then((mod) => mod.Code),
-  { ssr: false }
-);
 
 export default function Page() {
   const {
@@ -27,9 +22,20 @@ export default function Page() {
     handleStop,
     handleSourceChange,
     agentLogs,
+    agentThreadId,
     showTelemetry,
     setShowTelemetry,
   } = useFailureDetectionPage();
+
+  const telemetryJson = sim.machineData
+    ? JSON.stringify(
+        Object.fromEntries(
+          Object.entries(sim.machineData).filter(([key]) => key !== "_id")
+        ),
+        null,
+        2
+      )
+    : "{}";
 
   return (
     <main className="flex flex-col w-full h-full">
@@ -58,14 +64,14 @@ export default function Page() {
                   menuAlign="left"
                 />
                 {sim.sourceError && (
-                  <p className="text-xs font-medium text-[#B1371F]">
+                  <p className="text-sm font-medium text-[#B1371F]">
                     {sim.sourceError}
                   </p>
                 )}
                 <Button
                   variant={sim.isRunning ? "danger" : "primary"}
-                  onClick={sim.isRunning ? handleStop : handleStart}
-                  disabled={sim.isStarting}
+                  onPress={sim.isRunning ? handleStop : handleStart}
+                  isDisabled={sim.isStarting}
                   className="w-full"
                 >
                   {sim.isStarting
@@ -95,7 +101,7 @@ export default function Page() {
                   >
                     <span
                       aria-hidden="true"
-                      className="font-mono text-xs font-semibold"
+                      className="font-mono text-sm font-semibold"
                     >
                       {"{}"}
                     </span>
@@ -114,24 +120,19 @@ export default function Page() {
                       ? "Leafy Factory Telemetry"
                       : "Machine Telemetry"}
                   </div>
-                  <div className="flex-1 min-h-0 max-h-full overflow-y-auto">
-                    <Code
+                  <div className="telemetry-code min-h-0 max-h-full flex-1">
+                    <CodeBlock
                       language="json"
-                      className="flex-1 min-h-0 max-h-full h-full overflow-y-auto"
+                      className="code-block-white h-full min-h-0"
                       style={{ minHeight: 0 }}
                     >
-                      {sim.machineData
-                        ? JSON.stringify(
-                            Object.fromEntries(
-                              Object.entries(sim.machineData).filter(
-                                ([key]) => key !== "_id"
-                              )
-                            ),
-                            null,
-                            2
-                          )
-                        : {}}
-                    </Code>
+                      <CodeSnippet>{telemetryJson}</CodeSnippet>
+                      <CopyButton copyText={telemetryJson}>
+                        <Button aria-label="Copy code">
+                          <Icon glyph="Copy" />
+                        </Button>
+                      </CopyButton>
+                    </CodeBlock>
                   </div>
                 </div>
                 {/* Right: Alerts */}
@@ -176,6 +177,7 @@ export default function Page() {
                   setShowModal={setShowModal}
                   modalContent={modalContent}
                   logs={agentLogs || []}
+                  threadId={agentThreadId}
                   statusText="Agent"
                   activeText="Active"
                   inactiveText="Inactive"

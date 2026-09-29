@@ -41,7 +41,7 @@ function DonutChart({ chart }) {
             <span className="block text-2xl font-semibold text-[#112733]">
               {formatValue(total)}
             </span>
-            <span className="text-xs text-[#5C6C75]">
+            <span className="text-sm text-[#5C6C75]">
               {chart.unit || "total"}
             </span>
           </span>
@@ -200,7 +200,7 @@ function CartesianChart({ chart }) {
           {chart.series.map((entry, index) => (
             <span
               key={entry.name}
-              className="inline-flex items-center gap-1.5 text-xs text-[#5C6C75]"
+              className="inline-flex items-center gap-1.5 text-sm text-[#5C6C75]"
             >
               <span
                 className="h-2.5 w-2.5 rounded-full"
@@ -222,7 +222,7 @@ export default function FactoryChart({ chart }) {
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-[#112733]">{chart.title}</h3>
         {chart.description && (
-          <p className="mt-1 text-xs leading-5 text-[#5C6C75]">
+          <p className="mt-1 text-sm leading-5 text-[#5C6C75]">
             {chart.description}
           </p>
         )}
@@ -233,10 +233,10 @@ export default function FactoryChart({ chart }) {
         <CartesianChart chart={chart} />
       )}
       <details className="mt-4 border-t border-[#E8EDEB] pt-3">
-        <summary className="cursor-pointer text-xs font-medium text-[#00684A]">
+        <summary className="cursor-pointer text-sm font-medium text-[#00684A]">
           View chart data
         </summary>
-        <div className="mt-2 max-h-36 overflow-auto text-xs text-[#5C6C75]">
+        <div className="mt-2 max-h-36 overflow-auto text-sm text-[#5C6C75]">
           {chart.series.map((entry) => (
             <div key={entry.name} className="mb-2">
               <span className="font-medium text-[#112733]">{entry.name}: </span>

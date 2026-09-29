@@ -62,6 +62,7 @@ export function factoryAlertKey(alert) {
 export function toWorkflowAlert(factoryAlert, machineData) {
   const isVibration = factoryAlert?.metric === "vibration";
   const timestamp = factoryAlert?.timestamp || new Date().toISOString();
+  const capturedValue = finiteNumber(factoryAlert?.value, undefined);
 
   return {
     _id: `leafy-${factoryAlertKey(factoryAlert)}`,
@@ -70,8 +71,12 @@ export function toWorkflowAlert(factoryAlert, machineData) {
     machine_id: "M1",
     ts: timestamp,
     details: {
-      temperature: machineData.temperature.value,
-      vibration: machineData.vibration.value,
+      temperature: isVibration
+        ? machineData.temperature.value
+        : capturedValue ?? machineData.temperature.value,
+      vibration: isVibration
+        ? capturedValue ?? machineData.vibration.value
+        : machineData.vibration.value,
     },
   };
 }

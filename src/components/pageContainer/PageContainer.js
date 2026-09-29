@@ -1,4 +1,4 @@
-import { H1, Body, Description } from "@leafygreen-ui/typography";
+import { H1, Body, Description } from "@via-ds/components";
 import StoryStepper from "@/components/storyStepper/StoryStepper";
 
 export default function PageContainer({
@@ -21,9 +21,8 @@ export default function PageContainer({
           <div className="relative max-w-4xl">
             {eyebrow && (
               <Body
-                as="p"
-                weight="medium"
-                className="mb-3 uppercase tracking-[0.16em] text-[#00684A]"
+                elementType="p"
+                className="mb-3 uppercase tracking-[0.16em] text-[#00684A] font-medium"
               >
                 {eyebrow}
               </Body>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Icon from "@leafygreen-ui/icon";
-import { H2, H3, Body, Description } from "@leafygreen-ui/typography";
+import { Icon } from "@via-ds/icons";
+import { Body, Description, H2, H3 } from "@via-ds/components";
 import { useFactoryData } from "@/components/factoryDataProvider/FactoryDataProvider";
 import { isRunningOrder } from "@/lib/factory/sessionOrders";
 
@@ -271,10 +271,7 @@ export default function OperationsWorkspace({
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <Body
-                            weight="medium"
-                            className="truncate text-[#112733]"
-                          >
+                          <Body className="truncate text-[#112733] font-medium">
                             {order.order_id}
                           </Body>
                           <Description className="mt-1 truncate">
@@ -283,7 +280,7 @@ export default function OperationsWorkspace({
                           </Description>
                         </div>
                         <span
-                          className={`inline-flex shrink-0 items-center gap-1.5 text-xs font-medium ${
+                          className={`inline-flex shrink-0 items-center gap-1.5 text-sm font-medium ${
                             running
                               ? "text-[#00684A]"
                               : order.status === "complete"
@@ -313,12 +310,12 @@ export default function OperationsWorkspace({
                       </div>
                     </button>
                     <div className="mt-3 flex min-h-8 items-center justify-between gap-3">
-                      <Description className="text-xs">
+                      <Description className="text-sm">
                         {completedBatches} / {order.quantity || "?"} units
                       </Description>
                       <div className="flex items-center gap-1">
                         {selected && isOrderLoading && (
-                          <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-medium text-[#00684A]">
+                          <span className="mr-1 inline-flex items-center gap-1.5 text-sm font-medium text-[#00684A]">
                             <Icon
                               glyph="Refresh"
                               size={13}
@@ -332,9 +329,9 @@ export default function OperationsWorkspace({
                           onClick={() => onOpenAnalytics(order.order_id)}
                           aria-label={`View analytics for ${order.order_id}`}
                           title="View order analytics"
-                          className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-[#00684A] hover:bg-white"
+                          className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold text-[#00684A] hover:bg-white"
                         >
-                          <Icon glyph="Charts" size={14} />
+                          <Icon glyph="Chart" size={14} />
                           Analytics
                         </button>
                         {running && (
@@ -349,7 +346,7 @@ export default function OperationsWorkspace({
                                 stopOrder(order.order_id);
                               }
                             }}
-                            className="rounded-md px-2 py-1 text-xs font-medium text-[#B1371F] hover:bg-[#FDEDEB]"
+                            className="rounded-md px-2 py-1 text-sm font-medium text-[#B1371F] hover:bg-[#FDEDEB]"
                           >
                             Stop
                           </button>
@@ -375,7 +372,7 @@ export default function OperationsWorkspace({
               </H2>
             </div>
             {orderDataLoading.events && (
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#5C6C75]">
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#5C6C75]">
                 <Icon glyph="Refresh" size={14} className="animate-spin" />
                 Loading…
               </span>
@@ -404,27 +401,43 @@ export default function OperationsWorkspace({
                     : "Select an order to see its machine events."}
               </div>
             ) : (
-              <ol className="relative ml-1 border-l border-[#D8E3DF] pl-6">
-                {visibleEvents.map((event) => (
-                  <li key={event.event_id} className="relative pb-5">
-                    <span
-                      className={`absolute -left-[29px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white ${
-                        event.ok === false ? "bg-[#DB3030]" : "bg-[#00A35C]"
+              <ol>
+                {visibleEvents.map((event, index) => (
+                  <li key={event.event_id} className="flex gap-3">
+                    <div className="flex w-2.5 shrink-0 flex-col items-center">
+                      {index === 0 ? (
+                        <span className="h-1.5 shrink-0" />
+                      ) : (
+                        <span className="h-1.5 w-px shrink-0 bg-[#D8E3DF]" />
+                      )}
+                      <span
+                        className={`z-10 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-white ${
+                          event.ok === false ? "bg-[#DB3030]" : "bg-[#00A35C]"
+                        }`}
+                      />
+                      {index < visibleEvents.length - 1 && (
+                        <span className="w-px flex-1 bg-[#D8E3DF]" />
+                      )}
+                    </div>
+                    <div
+                      className={`min-w-0 flex-1 ${
+                        index < visibleEvents.length - 1 ? "pb-5" : ""
                       }`}
-                    />
-                    <div className="flex items-start justify-between gap-3">
-                      <Body weight="medium" className="text-sm text-[#112733]">
-                        {event.station}
-                      </Body>
-                      <Description className="shrink-0 text-[11px]">
-                        {event.ts
-                          ? new Date(event.ts).toLocaleTimeString()
-                          : "Now"}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <Body className="text-sm font-medium text-[#112733]">
+                          {event.station}
+                        </Body>
+                        <Description className="shrink-0 text-[11px]">
+                          {event.ts
+                            ? new Date(event.ts).toLocaleTimeString()
+                            : "Now"}
+                        </Description>
+                      </div>
+                      <Description className="mt-1 break-words text-sm leading-5">
+                        Batch {event.batch_id} · {eventSummary(event.metrics)}
                       </Description>
                     </div>
-                    <Description className="mt-1 break-words text-xs leading-5">
-                      Batch {event.batch_id} · {eventSummary(event.metrics)}
-                    </Description>
                   </li>
                 ))}
               </ol>
@@ -438,7 +451,7 @@ export default function OperationsWorkspace({
               Recent production units
             </H2>
             {orderDataLoading.productionUnits && (
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#5C6C75]">
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#5C6C75]">
                 <Icon glyph="Refresh" size={14} className="animate-spin" />
                 Loading…
               </span>
@@ -450,17 +463,17 @@ export default function OperationsWorkspace({
               <article className="rounded-xl border border-[#00A35C] bg-[#E3FCF7] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <Body weight="medium" className="truncate text-[#112733]">
+                    <Body className="truncate text-[#112733] font-medium">
                       Batch {snapshot.liveProductionUnit.batch_id} ·{" "}
                       {snapshot.liveProductionUnit.order_id}
                     </Body>
-                    <Description className="mt-1 truncate text-xs">
+                    <Description className="mt-1 truncate text-sm">
                       {snapshot.liveProductionUnit.current_stage_label ||
                         "Starting production"}
                     </Description>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#00684A]">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-sm font-semibold text-[#00684A]">
                       <span className="h-2 w-2 animate-pulse rounded-full bg-[#00A35C]" />
                       In progress
                     </span>
@@ -480,7 +493,7 @@ export default function OperationsWorkspace({
                     </button>
                   </div>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#3D4F58]">
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#3D4F58]">
                   <span>
                     {
                       Object.keys(snapshot.liveProductionUnit.process || {})
@@ -513,10 +526,10 @@ export default function OperationsWorkspace({
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <Body weight="medium" className="truncate text-[#112733]">
+                    <Body className="truncate text-[#112733] font-medium">
                       Batch {unit.batch_id} · {unit.order_id}
                     </Body>
-                    <Description className="mt-1 truncate text-xs">
+                    <Description className="mt-1 truncate text-sm">
                       {unit.order?.customer || "Factory customer"}
                       {Number.isFinite(unit.cycle_time_sec)
                         ? ` · ${Number(unit.cycle_time_sec).toFixed(2)}s cycle`
@@ -525,7 +538,7 @@ export default function OperationsWorkspace({
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      className={`rounded-full px-2.5 py-1 text-sm font-semibold ${
                         unit.final_status === "pass"
                           ? "bg-[#E3FCF7] text-[#00684A]"
                           : unit.final_status === "fail"
@@ -555,7 +568,7 @@ export default function OperationsWorkspace({
                     </button>
                   </div>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5C6C75]">
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#5C6C75]">
                   <span>{unit.cells?.length || 0} cells</span>
                   <span>
                     {Object.keys(unit.process || {}).length} processes
