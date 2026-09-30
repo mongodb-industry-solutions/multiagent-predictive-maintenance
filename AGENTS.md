@@ -81,31 +81,34 @@ Notable files:
 
 ## API overview
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| POST | `/api/action/[action]` | Generic MongoDB data access (`find`, `insertOne`, …). Parses the body with `EJSON` so BSON types survive. |
-| POST | `/api/chat` | Invoke an agent and stream the response |
-| POST | `/api/chat/[threadId]` | Continue an existing agent thread |
-| GET | `/api/agent/options` | List available agents |
-| GET | `/api/agent/visualize` | Return an agent's graph structure |
+| Method | Path                   | Purpose                                                                                                   |
+| ------ | ---------------------- | --------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/action/[action]` | Generic MongoDB data access (`find`, `insertOne`, …). Parses the body with `EJSON` so BSON types survive. |
+| POST   | `/api/chat`            | Invoke an agent and stream the response                                                                   |
+| POST   | `/api/chat/[threadId]` | Continue an existing agent thread                                                                         |
+| GET    | `/api/agent/options`   | List available agents                                                                                     |
+| GET    | `/api/agent/visualize` | Return an agent's graph structure                                                                         |
 
 ## Environment variables and configuration
 
 Copy `.env.example` to `.env` (`cp .env.example .env`) and fill in the values.
 
-| Name | Required | Example | Description |
-| --- | --- | --- | --- |
-| `MONGODB_URI` | yes | `mongodb+srv://…` | **Atlas** connection string. A local `mongod` will not work — see below. |
-| `DATABASE_NAME` | yes | `agentic_predictive_maintenance` | Target database |
-| `CHAT_PROVIDER` | yes | `bedrock` \| `grove` | Completion provider |
-| `COMPLETION_MODEL` | yes | `us.anthropic.claude-haiku-4-5-20251001-v1:0` | Model ID valid **for the selected provider** |
-| `EMBEDDING_PROVIDER` | yes | `voyage` \| `bedrock` | Embedding provider |
-| `EMBEDDING_MODEL` | yes | `voyage-4` | Embedding model |
-| `EMBEDDING_DIMENSIONS` | yes | `1024` | Must match the embedding model's output |
-| `GROVE_API_KEY` | if `grove` | — | Grove gateway key |
-| `VOYAGE_API_KEY` | if `voyage` | — | Voyage AI key |
-| `AWS_REGION` | if `bedrock` | `us-east-1` | Bedrock region |
-| `AWS_PROFILE` | optional | `default` | Omit to use the default AWS credential chain |
+| Name                   | Required     | Example                                       | Description                                                              |
+| ---------------------- | ------------ | --------------------------------------------- | ------------------------------------------------------------------------ |
+| `MONGODB_URI`          | yes          | `mongodb+srv://…`                             | **Atlas** connection string. A local `mongod` will not work — see below. |
+| `DATABASE_NAME`        | yes          | `agentic_predictive_maintenance`              | Target database                                                          |
+| `CHAT_PROVIDER`        | yes          | `bedrock` \| `grove`                          | Completion provider                                                      |
+| `COMPLETION_MODEL`     | yes          | `us.anthropic.claude-haiku-4-5-20251001-v1:0` | Model ID valid **for the selected provider**                             |
+| `EMBEDDING_PROVIDER`   | yes          | `voyage` \| `bedrock`                         | Embedding provider                                                       |
+| `EMBEDDING_MODEL`      | yes          | `voyage-4`                                    | Embedding model                                                          |
+| `EMBEDDING_DIMENSIONS` | yes          | `1024`                                        | Must match the embedding model's output                                  |
+| `GROVE_API_KEY`        | if `grove`   | —                                             | Grove gateway key                                                        |
+| `VOYAGE_API_KEY`       | if `voyage`  | —                                             | Voyage AI key                                                            |
+| `AWS_REGION`           | if `bedrock` | `us-east-1`                                   | Bedrock region                                                           |
+| `AWS_PROFILE`          | optional     | `default`                                     | Omit to use the default AWS credential chain                             |
+| `LEAFY_ERP_URL`        | optional     | —                                             | Architecture modal link for ERP. Hidden when unset.                      |
+| `LEAFY_MES_URL`        | optional     | —                                             | Architecture modal link for MES. Hidden when unset.                      |
+| `LEAFY_SCADA_URL`      | optional     | —                                             | Architecture modal link for SCADA. Hidden when unset.                    |
 
 Constraints worth knowing before you debug a failure:
 

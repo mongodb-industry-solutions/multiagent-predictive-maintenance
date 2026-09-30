@@ -293,7 +293,7 @@ export const ARCHITECTURE_MODULES = [
     links: [
       {
         label: "Open Leafy ERP",
-        href: "https://factory-simulator-erp.industrysolutions.staging.corp.mongodb.com/",
+        env: "LEAFY_ERP_URL",
       },
       {
         label: "ERPNext source",
@@ -334,7 +334,7 @@ export const ARCHITECTURE_MODULES = [
     links: [
       {
         label: "Open Leafy MES",
-        href: "https://factory-simulator-mes.industrysolutions.staging.corp.mongodb.com/?orgId=1",
+        env: "LEAFY_MES_URL",
       },
     ],
     sampleLabel: "MES order update",
@@ -370,7 +370,7 @@ export const ARCHITECTURE_MODULES = [
     links: [
       {
         label: "Open Leafy SCADA",
-        href: "https://factory-simulator.industrysolutions.staging.corp.mongodb.com/scada",
+        env: "LEAFY_SCADA_URL",
       },
     ],
     sampleLabel: "SCADA line state",
@@ -913,3 +913,19 @@ export const ARCHITECTURE_DETAIL_FLOWS = [
 
 export const FACTORY_SOURCE_URL =
   "https://github.com/mongodb-industry-solutions/ist-factory-simulator";
+
+function configuredHref(urls, name) {
+  const value = urls?.[name];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function resolveArchitectureLinks(modules, urls = {}) {
+  return modules.map((module) => ({
+    ...module,
+    links: (module.links || []).flatMap((link) => {
+      if (!link.env) return link.href ? [link] : [];
+      const href = configuredHref(urls, link.env);
+      return href ? [{ label: link.label, href }] : [];
+    }),
+  }));
+}

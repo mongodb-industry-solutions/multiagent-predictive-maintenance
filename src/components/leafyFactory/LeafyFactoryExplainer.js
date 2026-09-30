@@ -12,13 +12,14 @@ import {
   ARCHITECTURE_MODULES,
   FACTORY_SOURCE_URL,
   PROCESS_PHASES,
+  resolveArchitectureLinks,
 } from "@/lib/const/leafyFactory";
 import ArchitectureExplorer from "./ArchitectureExplorer";
 import ProcessExplorer from "./ProcessExplorer";
 
-export default function LeafyFactoryExplainer() {
+export default function LeafyFactoryExplainer({ externalUrls = {} }) {
   const [selectedMachineId, setSelectedMachineId] = useState(
-    PROCESS_PHASES[0].machines[0].id
+    PROCESS_PHASES[0].machines[0].id,
   );
   const [showNextStep, setShowNextStep] = useState(false);
   const endOfPageRef = useRef(null);
@@ -35,6 +36,10 @@ export default function LeafyFactoryExplainer() {
   const closeDocument = useCallback(() => {
     setDocument((current) => ({ ...current, open: false }));
   }, []);
+  const architectureModules = resolveArchitectureLinks(
+    ARCHITECTURE_MODULES,
+    externalUrls,
+  );
 
   useEffect(() => {
     const endOfPage = endOfPageRef.current;
@@ -44,7 +49,7 @@ export default function LeafyFactoryExplainer() {
       ([entry]) => {
         setShowNextStep(entry.isIntersecting);
       },
-      { threshold: 1 }
+      { threshold: 1 },
     );
     observer.observe(endOfPage);
     return () => observer.disconnect();
@@ -70,7 +75,7 @@ export default function LeafyFactoryExplainer() {
           onOpenDocument={openDocument}
         />
         <ArchitectureExplorer
-          modules={ARCHITECTURE_MODULES}
+          modules={architectureModules}
           flows={ARCHITECTURE_FLOWS}
           detailGroups={ARCHITECTURE_DETAIL_GROUPS}
           detailFlows={ARCHITECTURE_DETAIL_FLOWS}

@@ -306,6 +306,12 @@ button {
   word-break: break-word;
 }
 
+/* Document modal JSON. The snippet traps wheel events, so it has to be the scroller. */
+.document-json-code pre {
+  max-height: calc(100dvh - 14rem);
+  overflow: auto !important;
+}
+
 /* Tighter disclosure cards, with room between the row and the chevron. */
 .pm-disclosure [class*="_header"] {
   column-gap: 1.25rem;

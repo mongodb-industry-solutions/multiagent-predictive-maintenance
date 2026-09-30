@@ -12,12 +12,8 @@ import DocumentModal from "@/components/unsAction/DocumentModal";
 import { useFactoryData } from "@/components/factoryDataProvider/FactoryDataProvider";
 
 export default function UnsInActionPage() {
-  const {
-    snapshot,
-    selectedOrderId,
-    selectOrder,
-    orderDataLoading,
-  } = useFactoryData();
+  const { snapshot, selectedOrderId, selectOrder, orderDataLoading } =
+    useFactoryData();
   const router = useRouter();
   const searchParams = useSearchParams();
   const analyticsOrderId = searchParams.get("order");

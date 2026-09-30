@@ -82,7 +82,10 @@ const InfoWizard = (props) => {
                         <div key={sectionIndex} className="mb-4">
                           {section.heading && (
                             <H3
-                              style={{ marginTop: "20px", marginBottom: "10px" }}
+                              style={{
+                                marginTop: "20px",
+                                marginBottom: "10px",
+                              }}
                             >
                               {section.heading}
                             </H3>

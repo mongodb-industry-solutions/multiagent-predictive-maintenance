@@ -15,6 +15,9 @@ env:
   EMBEDDING_DIMENSIONS: "1024"
   FACTORY_SIMULATOR_API_URL: http://factory-simulator-web-app.industrysolutions.svc.cluster.local
   NEXT_PUBLIC_ENV: staging
+  LEAFY_ERP_URL: "https://factory-simulator-erp.industrysolutions.staging.corp.mongodb.com/"
+  LEAFY_MES_URL: "https://factory-simulator-mes.industrysolutions.staging.corp.mongodb.com/?orgId=1"
+  LEAFY_SCADA_URL: "https://factory-simulator.industrysolutions.staging.corp.mongodb.com/scada"
 
 serviceAccount:
   enabled: true

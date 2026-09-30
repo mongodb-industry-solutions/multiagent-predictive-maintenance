@@ -224,11 +224,11 @@ function ModuleDetailModal({ module, onClose, onOpenDocument }) {
         size="large"
         style={{ width: "min(92vw, 880px)", maxWidth: "880px" }}
       >
-        <Header>
+        <Header className="sr-only">
           <Text slot="title">{module.title}</Text>
         </Header>
-        <Content>
-          <article className="max-h-[78vh] overflow-y-auto p-1 pr-3">
+        <Content style={{ paddingBlock: "var(--via-space-600)" }}>
+          <article className="max-h-[78vh] overflow-y-auto pr-2">
             <header className="flex items-start gap-4 border-b border-[#D8E3DF] pb-5 pr-8">
               <div className="flex min-w-0 items-start gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E3FCF7] text-[#00684A]">
@@ -291,8 +291,9 @@ function ModuleDetailModal({ module, onClose, onOpenDocument }) {
                 <span className="font-mono">{"{}"}</span>
                 View sample payload
               </button>
-              {module.links.length > 0 &&
-                module.links.map((link) => (
+              {(module.links || [])
+                .filter((link) => link.href)
+                .map((link) => (
                   <a
                     key={link.href}
                     href={link.href}
