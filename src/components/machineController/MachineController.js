@@ -1,6 +1,6 @@
 import React from "react";
 import Slider from "@mui/material/Slider";
-import Icon from "@leafygreen-ui/icon";
+import { Icon } from "@via-ds/icons";
 import Image from "next/image";
 import { useMachineController } from "./hooks";
 

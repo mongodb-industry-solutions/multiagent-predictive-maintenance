@@ -5,6 +5,9 @@ export function useInfoWizard({
   setOpen,
   tooltipText = "Learn more",
   iconGlyph = "Wizard",
+  triggerText = "Tell me more!",
+  iconOnly = false,
+  darkMode = false,
   sections = [],
 }) {
   const [selected, setSelected] = useState(0);
@@ -13,6 +16,9 @@ export function useInfoWizard({
     setOpen,
     tooltipText,
     iconGlyph,
+    triggerText,
+    iconOnly,
+    darkMode,
     sections,
     selected,
     setSelected,

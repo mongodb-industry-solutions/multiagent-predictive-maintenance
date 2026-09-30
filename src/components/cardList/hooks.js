@@ -61,8 +61,8 @@ export function useCardList(
             title: `${item.err_code || ""}${
               item.err_code && item.err_name ? " - " : ""
             }${item.err_name || "Unknown Error"}`,
-            flagText: formatTimestamp(item.ts),
-            description: "",
+            flagText: undefined,
+            description: formatTimestamp(item.ts),
             icon,
             titleColor,
             descColor,

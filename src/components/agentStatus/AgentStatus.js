@@ -1,20 +1,13 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
-import { Modal } from "@leafygreen-ui/modal";
-import { Icon } from "@leafygreen-ui/icon";
-import dynamic from "next/dynamic";
-import { Body } from "@leafygreen-ui/typography";
+import { Body, ProgressCircle } from "@via-ds/components";
+import { Icon } from "@via-ds/icons";
 import { useAgentStatus } from "./hooks";
 import AgentLogs from "@/components/agentLogs/AgentLogs";
 
-const Spinner = dynamic(
-  () => import("@leafygreen-ui/loading-indicator").then((mod) => mod.Spinner),
-  { ssr: false },
-);
-
 export default function AgentStatus({
   isActive,
-  modalContent,
   showModal,
   onCloseModal,
   setShowModal,
@@ -36,8 +29,21 @@ export default function AgentStatus({
     closeLogsDrawer,
   } = useAgentStatus({ isActive, showModal, onCloseModal, setShowModal, logs });
 
-  // Height offset for navbar (assume 64px)
-  const navbarHeight = 64;
+  const [navbarHeight, setNavbarHeight] = useState(64);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const nav = document.querySelector("nav");
+    if (!nav) return undefined;
+    const measure = () => {
+      setNavbarHeight(nav.getBoundingClientRect().height);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <>
@@ -45,17 +51,17 @@ export default function AgentStatus({
         {/* Left: Agent Bubble (fixed width) */}
         <div className="flex items-center justify-start h-full">
           <button
-            className={`relative flex items-center w-full h-full rounded-full px-3 py-5 shadow-md transition-all duration-200 focus:outline-none group border border-gray-200 bg-white`}
+            className={`relative flex items-center w-full h-full rounded-full px-3 py-2 shadow-md transition-all duration-200 focus:outline-none group border border-gray-200 bg-white`}
             // Remove onClick, aria-label, tabIndex to disable modal
             type="button"
             disabled
-            style={{ height: "96px", width: "100%", cursor: "default" }}
+            style={{ height: "76px", width: "100%", cursor: "default" }}
           >
             {/* Pulsing Glow Effect */}
             {showGlow && (
               <span className="absolute inset-0 rounded-full pointer-events-none animate-agent-glow"></span>
             )}
-            <div className="flex items-center justify-center w-20 h-20 rounded-full bg-white mr-4">
+            <div className="mr-3 flex h-16 w-16 items-center justify-center rounded-full bg-white">
               <Image
                 src={agentImgSrc}
                 alt="Agent"
@@ -76,7 +82,7 @@ export default function AgentStatus({
                 <span
                   className={`w-3 h-3 rounded-full mr-2 ${statusBubbleColor} border border-gray-300`}
                 ></span>
-                <span className={`text-xs font-medium ${agentTextColor}`}>
+                <span className={`text-sm font-medium ${agentTextColor}`}>
                   {statusLabel}
                 </span>
               </div>
@@ -103,11 +109,7 @@ export default function AgentStatus({
                   style={{ width: 22, height: 22, minWidth: 22 }}
                 >
                   {log.loading ? (
-                    <Spinner
-                      direction="horizontal"
-                      description=""
-                      size="small"
-                    />
+                    <ProgressCircle size="small" aria-label="Loading" />
                   ) : (
                     <Icon
                       glyph="CheckmarkWithCircle"
@@ -143,11 +145,7 @@ export default function AgentStatus({
             aria-label="See full logs"
             style={{ userSelect: "none" }}
           >
-            <Body
-              as="span"
-              baseFontSize={16}
-              className="text-gray-700 font-medium"
-            >
+            <Body elementType="span" className="text-gray-700 font-medium">
               See full logs
             </Body>
             <span className="ml-2">
@@ -155,45 +153,40 @@ export default function AgentStatus({
             </span>
           </div>
         </div>
-        {/* Modal (disabled) */}
-        {/* <Modal open={showModal} setOpen={onCloseModal} size="small">
-          {modalContent}
-        </Modal> */}
       </div>
-      {/* Logs Drawer and Overlay */}
-      {/* Overlay (fills entire width, always behind the right drawer) */}
-      <div
-        className={
-          "fixed top-0 left-0 z-40 transition-opacity duration-200" +
-          (logsDrawerOpen
-            ? " opacity-100 pointer-events-auto"
-            : " opacity-0 pointer-events-none")
-        }
-        style={{
-          width: "100vw",
-          height: `calc(100vh - ${navbarHeight}px)`,
-          top: navbarHeight,
-          left: 0,
-          background: "rgba(0, 30, 43, 0.6)",
-          backgroundColor: "rgba(0, 30, 43, 0.6)",
-        }}
-        onClick={closeLogsDrawer}
-        aria-label="Close logs drawer"
-      />
-      {logsDrawerOpen && (
-        <div
-          className={
-            "fixed top-0 right-0 z-50 h-full bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-in-out translate-x-0"
-          }
-          style={{
-            width: "40vw",
-            height: `calc(100vh - ${navbarHeight}px)`,
-            top: navbarHeight,
-            right: 0,
-            minWidth: 400,
-            maxWidth: 800,
-          }}
-        >
+      {/* Logs Drawer and Overlay, portaled so they sit flush under the navbar. */}
+      {mounted &&
+        createPortal(
+          <>
+            <div
+              className={
+                "fixed left-0 z-40 transition-opacity duration-200" +
+                (logsDrawerOpen
+                  ? " opacity-100 pointer-events-auto"
+                  : " opacity-0 pointer-events-none")
+              }
+              style={{
+                top: navbarHeight,
+                left: 0,
+                width: "100vw",
+                height: `calc(100dvh - ${navbarHeight}px)`,
+                background: "rgba(0, 30, 43, 0.6)",
+              }}
+              onClick={closeLogsDrawer}
+              aria-label="Close logs drawer"
+            />
+            {logsDrawerOpen && (
+              <div
+                className="fixed right-0 z-50 flex flex-col bg-white shadow-[-16px_0_32px_rgba(0,30,43,0.18)]"
+                style={{
+                  top: navbarHeight,
+                  right: 0,
+                  width: "40vw",
+                  height: `calc(100dvh - ${navbarHeight}px)`,
+                  minWidth: 400,
+                  maxWidth: 800,
+                }}
+              >
           <button
             className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 bg-white border border-gray-300 rounded-full shadow p-2 flex items-center justify-center z-50"
             style={{ width: 36, height: 36 }}
@@ -207,10 +200,14 @@ export default function AgentStatus({
               logs={logs}
               threadId={threadId}
               onNewThread={onNewThread}
+              allowNewThread={false}
             />
           </div>
-        </div>
-      )}
+              </div>
+            )}
+          </>,
+          document.body
+        )}
     </>
   );
 }

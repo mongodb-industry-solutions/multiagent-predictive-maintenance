@@ -12,7 +12,11 @@ env:
   EMBEDDING_PROVIDER: voyage
   EMBEDDING_MODEL: voyage-4-lite
   EMBEDDING_DIMENSIONS: "1024"
+  FACTORY_SIMULATOR_API_URL: http://factory-simulator-web-app.industrysolutions.svc.cluster.local
   NEXT_PUBLIC_ENV: production
+  LEAFY_ERP_URL: "https://factory-simulator-erp.industrysolutions.prod.corp.mongodb.com/"
+  LEAFY_MES_URL: "https://factory-simulator-mes.industrysolutions.prod.corp.mongodb.com/?orgId=1"
+  LEAFY_SCADA_URL: "https://factory-simulator.industrysolutions.prod.corp.mongodb.com/scada"
 
 serviceAccount:
   enabled: true

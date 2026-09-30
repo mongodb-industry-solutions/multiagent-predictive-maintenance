@@ -4,6 +4,7 @@ import { createAgentGraph as createSupervisorAgentGraph } from "./supervisor/gra
 import { createAgentGraph as createFailureAgentGraph } from "./failure/graph.js";
 import { createAgentGraph as createWorkorderAgentGraph } from "./workorder/graph.js";
 import { createAgentGraph as createPlanningAgentGraph } from "./planning/graph.js";
+import { createAgentGraph as createUnsChatAgentGraph } from "./uns-chat/graph.js";
 
 export const AGENTS = [
   {
@@ -37,6 +38,13 @@ export const AGENTS = [
     name: "Planning Agent",
     createGraph: createPlanningAgentGraph,
     description: "Schedules workorder execution based on context.",
+  },
+  {
+    id: "uns-chat",
+    name: "UNS Factory Chat",
+    createGraph: createUnsChatAgentGraph,
+    description:
+      "Answers manufacturing operations questions from live or locally simulated Unified Namespace data.",
   },
 ];
 
