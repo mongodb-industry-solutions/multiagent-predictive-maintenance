@@ -293,7 +293,7 @@ export const ARCHITECTURE_MODULES = [
     links: [
       {
         label: "Open Leafy ERP",
-        href: "https://factory-simulator-erp.industrysolutions.staging.corp.mongodb.com/",
+        env: "LEAFY_ERP_URL",
       },
       {
         label: "ERPNext source",
@@ -324,7 +324,7 @@ export const ARCHITECTURE_MODULES = [
     title: "MES",
     type: "Manufacturing operations",
     implementation: "Libre MES · Docker Compose",
-    icon: "Charts",
+    icon: "Chart",
     purpose:
       "Tracks products, order performance, availability, quality, and production-rate measurements for the line.",
     build:
@@ -334,7 +334,7 @@ export const ARCHITECTURE_MODULES = [
     links: [
       {
         label: "Open Leafy MES",
-        href: "https://factory-simulator-mes.industrysolutions.staging.corp.mongodb.com/?orgId=1",
+        env: "LEAFY_MES_URL",
       },
     ],
     sampleLabel: "MES order update",
@@ -360,7 +360,7 @@ export const ARCHITECTURE_MODULES = [
     title: "SCADA",
     type: "Supervisory control",
     implementation: "Python · FastAPI service",
-    icon: "Charts",
+    icon: "Chart",
     purpose:
       "Gives an operator a per-order view of line state and controls the start, pause, and stop lifecycle.",
     build:
@@ -370,7 +370,7 @@ export const ARCHITECTURE_MODULES = [
     links: [
       {
         label: "Open Leafy SCADA",
-        href: "https://factory-simulator.industrysolutions.staging.corp.mongodb.com/scada",
+        env: "LEAFY_SCADA_URL",
       },
     ],
     sampleLabel: "SCADA line state",
@@ -557,7 +557,7 @@ export const ARCHITECTURE_DETAIL_GROUPS = [
         id: "erp-frontend",
         label: "ERPNext frontend",
         kind: "Interface",
-        icon: "Charts",
+        icon: "Chart",
         position: { x: 40, y: 70, width: 150 },
       },
       {
@@ -619,7 +619,7 @@ export const ARCHITECTURE_DETAIL_GROUPS = [
         id: "mes-grafana",
         label: "Grafana",
         kind: "Dashboards",
-        icon: "Charts",
+        icon: "Chart",
         position: { x: 615, y: 210, width: 150 },
       },
     ],
@@ -714,7 +714,7 @@ export const ARCHITECTURE_DETAIL_GROUPS = [
         id: "scada-browser",
         label: "Browser UI",
         kind: "HTTP polling",
-        icon: "Charts",
+        icon: "Chart",
         position: { x: 435, y: 475, width: 150 },
       },
       {
@@ -891,7 +891,7 @@ export const ARCHITECTURE_DETAIL_FLOWS = [
     to: "mongo-orders-current",
     toLabel: "MongoDB",
     label: "Order context",
-    path: "M 370 96 V 10 H 995 V 20",
+    path: "M 295 70 V 10 H 995 V 20",
   },
   {
     id: "mqtt-mongodb-detail",
@@ -913,3 +913,19 @@ export const ARCHITECTURE_DETAIL_FLOWS = [
 
 export const FACTORY_SOURCE_URL =
   "https://github.com/mongodb-industry-solutions/ist-factory-simulator";
+
+function configuredHref(urls, name) {
+  const value = urls?.[name];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function resolveArchitectureLinks(modules, urls = {}) {
+  return modules.map((module) => ({
+    ...module,
+    links: (module.links || []).flatMap((link) => {
+      if (!link.env) return link.href ? [link] : [];
+      const href = configuredHref(urls, link.env);
+      return href ? [{ label: link.label, href }] : [];
+    }),
+  }));
+}

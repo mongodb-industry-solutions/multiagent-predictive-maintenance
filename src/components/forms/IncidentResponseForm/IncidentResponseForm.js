@@ -1,38 +1,71 @@
-import React from "react";
-import TextArea from "@leafygreen-ui/text-area";
+"use client";
+
+import { useEffect, useState } from "react";
+import EditableField, {
+  EditSlot,
+  FormEditButton,
+} from "@/components/forms/EditableField";
 import { useIncidentResponseForm } from "./hooks";
 
 export default function IncidentResponseForm({
   rootCause,
   repairInstructions,
+  editSlotId,
   className = "",
 }) {
-  useIncidentResponseForm(); // For future extensibility
+  useIncidentResponseForm();
+  const [saved, setSaved] = useState({
+    rootCause: rootCause || "",
+    repairInstructions: repairInstructions || "",
+  });
+  const [draft, setDraft] = useState(saved);
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    const next = {
+      rootCause: rootCause || "",
+      repairInstructions: repairInstructions || "",
+    };
+    setSaved(next);
+    setDraft(next);
+    setEditing(false);
+  }, [rootCause, repairInstructions]);
+
+  const values = editing ? draft : saved;
+
   return (
-    <div
-      className={`flex flex-col w-full h-full gap-2 ${className}`}
-      style={{ minHeight: 0 }}
-    >
-      <div className="flex flex-col flex-[1_1_0%] min-h-0">
-        <TextArea
-          label="Root cause"
-          value={rootCause}
-          readOnly
-          className="resize-none mb-1 h-full"
-          rows={3}
-          style={{ flex: 1, minHeight: 120, height: "100%" }}
+    <div className={`incident-form form-fields flex w-full flex-col gap-2 ${className}`}>
+      <EditSlot slotId={editSlotId}>
+        <FormEditButton
+          editing={editing}
+          onEdit={() => {
+            setDraft(saved);
+            setEditing(true);
+          }}
+          onSave={() => {
+            setSaved(draft);
+            setEditing(false);
+          }}
         />
-      </div>
-      <div className="flex flex-col flex-[3_3_0%] min-h-0">
-        <TextArea
-          label="Repair instructions"
-          value={repairInstructions}
-          readOnly
-          className="resize-none h-full"
-          rows={8}
-          style={{ flex: 1, minHeight: 250 }}
-        />
-      </div>
+      </EditSlot>
+      <EditableField
+        label="Root cause"
+        value={values.rootCause}
+        onChange={(value) =>
+          setDraft((current) => ({ ...current, rootCause: value }))
+        }
+        editing={editing}
+        multiline
+      />
+      <EditableField
+        label="Repair instructions"
+        value={values.repairInstructions}
+        onChange={(value) =>
+          setDraft((current) => ({ ...current, repairInstructions: value }))
+        }
+        editing={editing}
+        multiline
+      />
     </div>
   );
 }

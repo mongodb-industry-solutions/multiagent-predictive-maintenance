@@ -1,26 +1,35 @@
-import React from "react";
-import { Body } from "@leafygreen-ui/typography";
-import { Card } from "@leafygreen-ui/card";
-import { ExpandableCard } from "@leafygreen-ui/expandable-card";
-import { Avatar } from "@leafygreen-ui/avatar";
-import dynamic from "next/dynamic";
-import { Code } from "@leafygreen-ui/code";
+import React, { useRef } from "react";
+import {
+  Avatar,
+  Body,
+  Button,
+  CodeBlock,
+  CodeSnippet,
+  CopyButton,
+  Disclosure,
+  DisclosureHeader,
+  DisclosurePanel,
+  Logo,
+  ProgressCircle,
+  Select,
+  SelectItem,
+} from "@via-ds/components";
+import { Icon } from "@via-ds/icons";
 import { useAgentLogs } from "./hooks";
-import { Option, Select } from "@leafygreen-ui/select";
-import { Icon } from "@leafygreen-ui/icon";
-import { IconButton } from "@leafygreen-ui/icon-button";
 
-const Spinner = dynamic(
-  () => import("@leafygreen-ui/loading-indicator").then((mod) => mod.Spinner),
-  { ssr: false },
-);
-
-export default function AgentLogs({ logs, threadId, onNewThread }) {
+export default function AgentLogs({
+  logs,
+  threadId,
+  onNewThread,
+  allowNewThread = true,
+}) {
   const { threadLabel, handleNewThread, uiLogs, logsEndRef } = useAgentLogs({
     logs,
     threadId,
     onNewThread,
   });
+  const mockThreadId = useRef(`thread-${Date.now()}`);
+  const lockedThreadId = threadId || mockThreadId.current;
 
   return (
     <div className="flex flex-col h-full w-full max-w-full">
@@ -28,27 +37,37 @@ export default function AgentLogs({ logs, threadId, onNewThread }) {
       <div className="flex items-center gap-2 p-3 shrink-0">
         <Select
           label="Thread"
-          placeholder="New thread"
+          placeholder={allowNewThread ? "New thread" : lockedThreadId}
           name="thread-select"
-          value={threadId || "new"}
-          dropdownWidthBasis="option"
-          disabled
+          selectedKey={allowNewThread ? threadId || "new" : lockedThreadId}
+          isDisabled
           style={{ minWidth: 220, width: 260 }}
         >
-          <Option value="new">New thread</Option>
-          {threadId && <Option value={threadId}>{threadLabel}</Option>}
+          {allowNewThread ? (
+            <>
+              <SelectItem id="new">New thread</SelectItem>
+              {threadId && (
+                <SelectItem id={threadId}>{threadLabel}</SelectItem>
+              )}
+            </>
+          ) : (
+            <SelectItem id={lockedThreadId}>{lockedThreadId}</SelectItem>
+          )}
         </Select>
-        <IconButton
-          aria-label="Start new thread"
-          onClick={handleNewThread}
-          className="mt-5"
-        >
-          <Icon glyph="Plus" />
-        </IconButton>
+        {allowNewThread && (
+          <Button
+            aria-label="Start new thread"
+            onPress={handleNewThread}
+            className="mt-5"
+            variant="tertiary"
+          >
+            <Icon glyph="Plus" />
+          </Button>
+        )}
       </div>
       {/* Logs display */}
       <div
-        className="flex-1 min-h-0 overflow-y-auto p-4"
+        className="min-h-0 flex-1 overflow-y-auto px-2 py-4"
         style={{ maxHeight: "calc(100vh - 200px)" }}
       >
         {uiLogs && uiLogs.length > 0 ? (
@@ -56,25 +75,34 @@ export default function AgentLogs({ logs, threadId, onNewThread }) {
             {uiLogs.map((log, i) => {
               if (log.type === "user") {
                 return (
-                  <div key={i} className="flex justify-end mb-4">
-                    <Card className="bg-[#E3FCF7] max-w-lg w-fit mr-2 p-4 shadow-md">
-                      <Body>{log.content}</Body>
-                    </Card>
-                    <div className="flex flex-col justify-end">
-                      <Avatar name="User" size="large" glyph="Person" />
+                  <div key={i} className="mb-4 flex items-start justify-end gap-2">
+                    <div className="agent-log-bubble agent-log-bubble-user">
+                      <p className="text-base leading-6 text-[#112733]">
+                        {log.content}
+                      </p>
                     </div>
+                    <span className="agent-log-mark bg-[#E8EDEB]">
+                      <Avatar size={20} aria-label="User" />
+                    </span>
                   </div>
                 );
               }
               if (log.type === "ai") {
                 return (
-                  <div key={i} className="flex justify-start mb-4">
-                    <div className="flex flex-col justify-end mr-2">
-                      <Avatar name="AI" format="mongodb" size="large" />
+                  <div key={i} className="mb-4 flex items-start justify-start gap-2">
+                    <span className="agent-log-mark border border-[#D8E3DF] bg-white">
+                      <Logo
+                        logo="MongoDBLogoMark"
+                        size={20}
+                        hasColor
+                        aria-label="AI"
+                      />
+                    </span>
+                    <div className="agent-log-bubble agent-log-bubble-agent">
+                      <p className="text-base leading-6 text-[#112733]">
+                        {log.content}
+                      </p>
                     </div>
-                    <Card className="bg-white max-w-lg w-fit p-4 shadow-md">
-                      <Body>{log.content}</Body>
-                    </Card>
                   </div>
                 );
               }
@@ -86,30 +114,47 @@ export default function AgentLogs({ logs, threadId, onNewThread }) {
                       .replace(/^\w/, (c) => c.toUpperCase())
                   : "";
                 return (
-                  <div key={i} className="flex justify-start mb-4">
-                    <div className="flex flex-col justify-end mr-2">
-                      <Avatar name="Tool" glyph="Wrench" size="large" />
-                    </div>
-                    <ExpandableCard
-                      className="w-full"
-                      title={
+                  <div key={i} className="mb-4 flex items-start justify-start gap-2">
+                    <span className="agent-log-mark bg-[#E8EDEB] text-[#5C6C75]">
+                      <Icon glyph="Wrench" size={20} aria-label="Tool" />
+                    </span>
+                    <Disclosure defaultExpanded={false} className="agent-log-tool agent-log-bubble">
+                      <DisclosureHeader>
                         <span className="flex items-center gap-2">
                           {formattedToolName}
                           {log.loading && (
-                            <Spinner
-                              direction="horizontal"
-                              description="Running..."
-                              size="small"
-                            />
+                            <>
+                              <ProgressCircle
+                                size="small"
+                                aria-label="Running"
+                              />
+                              <span>Running...</span>
+                            </>
                           )}
                         </span>
-                      }
-                    >
-                      <>
+                      </DisclosureHeader>
+                      <DisclosurePanel>
                         {log.query && (
                           <div className="mb-2">
                             <Body className="font-semibold">Query:</Body>
-                            <Code language={"none"}>{log.query}</Code>
+                            <CodeBlock language="none">
+                              <CodeSnippet>
+                                {typeof log.query === "string"
+                                  ? log.query
+                                  : JSON.stringify(log.query, null, 2)}
+                              </CodeSnippet>
+                              <CopyButton
+                                copyText={
+                                  typeof log.query === "string"
+                                    ? log.query
+                                    : JSON.stringify(log.query, null, 2)
+                                }
+                              >
+                                <Button aria-label="Copy code">
+                                  <Icon glyph="Copy" />
+                                </Button>
+                              </CopyButton>
+                            </CodeBlock>
                           </div>
                         )}
                         {log.documents &&
@@ -126,29 +171,40 @@ export default function AgentLogs({ logs, threadId, onNewThread }) {
                               <Body className="font-semibold mb-1 block">
                                 Result:
                               </Body>
-                              {log.documents.map((doc, idx) => (
-                                <Code key={idx} language="json">
-                                  {typeof doc === "string"
+                              {log.documents.map((doc, idx) => {
+                                const documentText =
+                                  typeof doc === "string"
                                     ? doc
-                                    : JSON.stringify(doc, null, 2)}
-                                </Code>
-                              ))}
+                                    : JSON.stringify(doc, null, 2);
+                                return (
+                                  <CodeBlock key={idx} language="json">
+                                    <CodeSnippet>{documentText}</CodeSnippet>
+                                    <CopyButton copyText={documentText}>
+                                      <Button aria-label="Copy code">
+                                        <Icon glyph="Copy" />
+                                      </Button>
+                                    </CopyButton>
+                                  </CodeBlock>
+                                );
+                              })}
                             </div>
                           )}
-                      </>
-                    </ExpandableCard>
+                      </DisclosurePanel>
+                    </Disclosure>
                   </div>
                 );
               }
               if (log.type === "error") {
                 return (
-                  <div key={i} className="flex justify-start mb-4">
-                    <div className="flex flex-col justify-end mr-2">
-                      <Avatar name="Error" glyph="Error" size="large" />
+                  <div key={i} className="mb-4 flex items-start justify-start gap-2">
+                    <span className="agent-log-mark bg-[#FFEAE5] text-[#B1371F]">
+                      <Icon glyph="XWithCircle" size={20} aria-label="Error" />
+                    </span>
+                    <div className="agent-log-bubble agent-log-bubble-error">
+                      <p className="text-sm leading-5 text-[#112733]">
+                        {log.content}
+                      </p>
                     </div>
-                    <Card className="bg-[#FFEAE5] w-fit p-4 shadow-md">
-                      <Body>{log.content}</Body>
-                    </Card>
                   </div>
                 );
               }

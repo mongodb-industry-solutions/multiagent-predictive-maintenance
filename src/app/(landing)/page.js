@@ -40,7 +40,7 @@ export default function Page() {
         </h1>
 
         <p
-          className="leafy-rise mx-auto mt-[clamp(0.4rem,1.2vh,0.9rem)] max-w-2xl text-[clamp(0.85rem,1.9vh,1.15rem)] leading-snug text-white/55"
+          className="leafy-rise mx-auto mt-[clamp(0.4rem,1.2vh,0.9rem)] max-w-5xl text-[clamp(0.85rem,1.9vh,1.15rem)] leading-snug text-white/55"
           style={{ animationDelay: "0.2s" }}
         >
           A unified context layer to unlock AI enabled Digital Twins in the
@@ -66,10 +66,10 @@ export default function Page() {
                 className="pointer-events-none absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-[#00ED64]/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
               />
               <span className="min-w-0 flex-1">
-                <span className="block text-[11px] font-semibold leading-tight text-white sm:truncate sm:text-sm">
+                <span className="block text-sm font-semibold leading-tight text-white sm:truncate sm:text-base">
                   {stage.label}
                 </span>
-                <span className="mt-0.5 hidden truncate text-xs leading-4 text-white/45 lg:block">
+                <span className="mt-0.5 hidden truncate text-sm leading-5 text-white/45 lg:block">
                   {stageTaglines[stage.id]}
                 </span>
               </span>

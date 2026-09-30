@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-import Icon from "@leafygreen-ui/icon";
-import dynamic from "next/dynamic";
-import { H3, Description } from "@leafygreen-ui/typography";
-
-const Code = dynamic(
-  () => import("@leafygreen-ui/code").then((mod) => mod.Code),
-  { ssr: false }
-);
+import { Icon } from "@via-ds/icons";
+import {
+  Button,
+  CodeBlock,
+  CodeSnippet,
+  CopyButton,
+  Description,
+  H3,
+} from "@via-ds/components";
 
 export default function DocumentModal({ open, title, subtitle, value, onClose }) {
   const serialized = JSON.stringify(value, null, 2);
@@ -34,8 +35,8 @@ export default function DocumentModal({ open, title, subtitle, value, onClose })
       }}
       className="fixed inset-0 z-[100] flex items-center justify-center bg-[#061E2E]/80 p-4 sm:p-8"
     >
-      <div className="flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <header className="flex items-start justify-between gap-4 border-b border-[#D8E3DF] px-5 py-4 sm:px-6">
+      <div className="flex max-h-full min-h-0 w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-[#D8E3DF] px-5 py-4 sm:px-6">
           <div className="min-w-0">
             <H3 id="factory-document-title" className="truncate text-[#112733]">
               {title}
@@ -55,8 +56,15 @@ export default function DocumentModal({ open, title, subtitle, value, onClose })
             </button>
           </div>
         </header>
-        <div className="cardlist-scrollbar min-h-[320px] flex-1 overflow-auto p-5">
-          <Code language="json">{serialized}</Code>
+        <div className="min-h-0 overflow-hidden p-5">
+          <CodeBlock language="json" className="code-block-white document-json-code">
+            <CodeSnippet>{serialized}</CodeSnippet>
+            <CopyButton copyText={serialized}>
+              <Button aria-label="Copy code">
+                <Icon glyph="Copy" />
+              </Button>
+            </CopyButton>
+          </CodeBlock>
         </div>
       </div>
     </div>

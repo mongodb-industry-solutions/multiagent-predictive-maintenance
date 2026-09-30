@@ -1,82 +1,114 @@
-import React from "react";
-import TextInput from "@leafygreen-ui/text-input";
-import TextArea from "@leafygreen-ui/text-area";
+"use client";
+
+import { useEffect, useState } from "react";
+import EditableField, {
+  EditSlot,
+  FormEditButton,
+} from "@/components/forms/EditableField";
 import { useWorkOrderForm } from "./hooks";
 
-export default function WorkOrderForm({ form, handleFormChange }) {
-  useWorkOrderForm(); // For future extensibility
+function valuesFromForm(form) {
+  return {
+    title: form.title || "",
+    machine_id: form.machine_id || "",
+    estimated_duration_days:
+      form.estimated_duration_days !== undefined &&
+      form.estimated_duration_days !== null
+        ? String(form.estimated_duration_days)
+        : form.estimated_duration || "",
+    proposed_start_time:
+      form.proposed_start_time && form.proposed_start_time.$date
+        ? form.proposed_start_time.$date
+        : form.proposed_start_time || "",
+    required_skills: Array.isArray(form.required_skills)
+      ? form.required_skills.join(", ")
+      : form.required_skills || "",
+    required_materials: Array.isArray(form.required_materials)
+      ? form.required_materials.join(", ")
+      : form.required_materials || "",
+    observations: form.observations || "",
+  };
+}
+
+export default function WorkOrderForm({ form, handleFormChange, editSlotId }) {
+  useWorkOrderForm();
+  const [saved, setSaved] = useState(() => valuesFromForm(form));
+  const [draft, setDraft] = useState(saved);
+  const [editing, setEditing] = useState(false);
+  const sourceKey = JSON.stringify(valuesFromForm(form));
+
+  useEffect(() => {
+    const next = valuesFromForm(form);
+    setSaved(next);
+    setDraft(next);
+    setEditing(false);
+  }, [sourceKey, form]);
+
+  const values = editing ? draft : saved;
+  const update = (field) => (value) =>
+    setDraft((current) => ({ ...current, [field]: value }));
+
   return (
-    <div className="flex flex-col w-full h-full">
-      <TextInput
+    <div className="form-fields flex min-h-0 w-full flex-1 flex-col gap-3">
+      <EditSlot slotId={editSlotId}>
+        <FormEditButton
+          editing={editing}
+          onEdit={() => {
+            setDraft(saved);
+            setEditing(true);
+          }}
+          onSave={() => {
+            setSaved(draft);
+            setEditing(false);
+            Object.entries(draft).forEach(([field, value]) => {
+              handleFormChange?.(field, value);
+            });
+          }}
+        />
+      </EditSlot>
+      <EditableField
         label="Title"
-        value={form.title || ""}
-        onChange={(e) => handleFormChange("title", e.target.value)}
-        readOnly
-        className="mb-1"
+        value={values.title}
+        onChange={update("title")}
+        editing={editing}
       />
-      <TextInput
+      <EditableField
         label="Machine ID"
-        value={form.machine_id || ""}
-        onChange={(e) => handleFormChange("machine_id", e.target.value)}
-        readOnly
-        className="mb-1"
+        value={values.machine_id}
+        onChange={update("machine_id")}
+        editing={editing}
       />
-      <TextInput
+      <EditableField
         label="Estimated Duration (days)"
-        value={
-          form.estimated_duration_days !== undefined &&
-          form.estimated_duration_days !== null
-            ? String(form.estimated_duration_days)
-            : form.estimated_duration || ""
-        }
-        onChange={(e) =>
-          handleFormChange("estimated_duration_days", e.target.value)
-        }
-        readOnly
-        className="mb-1"
+        value={values.estimated_duration_days}
+        onChange={update("estimated_duration_days")}
+        editing={editing}
       />
-      <TextInput
+      <EditableField
         label="Proposed Start Time"
-        value={
-          form.proposed_start_time && form.proposed_start_time.$date
-            ? form.proposed_start_time.$date
-            : form.proposed_start_time || ""
-        }
-        onChange={(e) =>
-          handleFormChange("proposed_start_time", e.target.value)
-        }
-        readOnly
-        className="mb-1"
+        value={values.proposed_start_time}
+        onChange={update("proposed_start_time")}
+        editing={editing}
       />
-      <TextInput
+      <EditableField
         label="Required Skills"
-        value={
-          Array.isArray(form.required_skills)
-            ? form.required_skills.join(", ")
-            : form.required_skills || ""
-        }
-        onChange={(e) => handleFormChange("required_skills", e.target.value)}
-        readOnly
-        className="mb-1"
+        value={values.required_skills}
+        onChange={update("required_skills")}
+        editing={editing}
       />
-      <TextInput
+      <EditableField
         label="Required Materials"
-        value={
-          Array.isArray(form.required_materials)
-            ? form.required_materials.join(", ")
-            : form.required_materials || ""
-        }
-        onChange={(e) => handleFormChange("required_materials", e.target.value)}
-        readOnly
-        className="mb-1"
+        value={values.required_materials}
+        onChange={update("required_materials")}
+        editing={editing}
       />
-      <TextArea
+      <EditableField
         label="Observations"
-        value={form.observations || ""}
-        onChange={(e) => handleFormChange("observations", e.target.value)}
-        readOnly
-        className="mb-1"
-        rows={3}
+        value={values.observations}
+        onChange={update("observations")}
+        editing={editing}
+        multiline
+        fill
       />
     </div>
   );

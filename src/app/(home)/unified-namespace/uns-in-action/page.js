@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import Icon from "@leafygreen-ui/icon";
+import { Icon } from "@via-ds/icons";
 import FactorySourceBar from "@/components/factorySourceBar/FactorySourceBar";
 import OperationsWorkspace from "@/components/unsAction/OperationsWorkspace";
 import ConditionWorkspace from "@/components/unsAction/ConditionWorkspace";
@@ -12,12 +12,8 @@ import DocumentModal from "@/components/unsAction/DocumentModal";
 import { useFactoryData } from "@/components/factoryDataProvider/FactoryDataProvider";
 
 export default function UnsInActionPage() {
-  const {
-    snapshot,
-    selectedOrderId,
-    selectOrder,
-    orderDataLoading,
-  } = useFactoryData();
+  const { snapshot, selectedOrderId, selectOrder, orderDataLoading } =
+    useFactoryData();
   const router = useRouter();
   const searchParams = useSearchParams();
   const analyticsOrderId = searchParams.get("order");
@@ -99,7 +95,7 @@ export default function UnsInActionPage() {
             <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#D8E3DF] bg-white px-5 py-4 shadow-sm">
               <div className="flex min-w-0 items-center gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E3FCF7] text-[#00684A]">
-                  <Icon glyph="Charts" size={20} />
+                  <Icon glyph="Chart" size={20} />
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-[#112733]">

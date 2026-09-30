@@ -1,16 +1,10 @@
 "use client";
 import React from "react";
-import dynamic from "next/dynamic";
-import Button from "@leafygreen-ui/button";
+import { Button } from "@via-ds/components";
 import CardList from "@/components/cardList/CardList";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
 import WorkOrderForm from "@/components/forms/workOrderForm/WorkOrderForm";
 import { useWorkOrderGenerationPage } from "./hooks";
-
-const Code = dynamic(
-  () => import("@leafygreen-ui/code").then((mod) => mod.Code),
-  { ssr: false }
-);
 
 export default function Page() {
   const {
@@ -27,6 +21,7 @@ export default function Page() {
     incidentReports,
     emptyIncidentText,
     agentLogs,
+    agentThreadId,
   } = useWorkOrderGenerationPage();
 
   // Find the selected incident object
@@ -43,9 +38,9 @@ export default function Page() {
             <div className="flex justify-start mb-4">
               <Button
                 className="self-start w-auto min-w-0"
-                disabled={!canContinue}
+                isDisabled={!canContinue}
                 variant="primary"
-                onClick={handleContinueWorkflow}
+                onPress={handleContinueWorkflow}
               >
                 Continue Workflow
               </Button>
@@ -84,6 +79,7 @@ export default function Page() {
                 activeText="Active"
                 inactiveText="Inactive"
                 logs={agentLogs || []}
+                threadId={agentThreadId}
               />
             </div>
             {/* Workorders CardList fills available space */}

@@ -1,20 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { useCardList } from "./hooks";
-import ExpandableCard from "@leafygreen-ui/expandable-card";
-import dynamic from "next/dynamic";
-import Icon from "@leafygreen-ui/icon";
-import { Description, Subtitle } from "@leafygreen-ui/typography";
 import {
+  Button,
+  CodeBlock,
+  CodeSnippet,
+  CopyButton,
+  Description,
+  Disclosure,
+  DisclosureHeader,
+  DisclosurePanel,
   SegmentedControl,
-  SegmentedControlOption,
-} from "@leafygreen-ui/segmented-control";
+  SegmentedControlItem,
+  Text,
+} from "@via-ds/components";
+import { Icon } from "@via-ds/icons";
 import IncidentResponseForm from "@/components/forms/IncidentResponseForm/IncidentResponseForm";
 import WorkOrderForm from "@/components/forms/workOrderForm/WorkOrderForm";
-
-const Code = dynamic(
-  () => import("@leafygreen-ui/code").then((mod) => mod.Code),
-  { ssr: false }
-);
 
 export default function CardList({
   items = [],
@@ -43,6 +44,7 @@ export default function CardList({
     onSelect,
     listDescription
   );
+  const [expandedId, setExpandedId] = useState(null);
 
   return (
     <div
@@ -50,9 +52,12 @@ export default function CardList({
       style={{ minHeight: 0 }}
     >
       {listTitle && (
-        <Subtitle className="mb-1 text-gray-800 flex-shrink-0">
+        <Text
+          textStyle="subtitle"
+          className="mb-1 text-gray-800 flex-shrink-0"
+        >
           {listTitle}
-        </Subtitle>
+        </Text>
       )}
       {cardListDescription && (
         <Description className="pb-4 text-gray-600">
@@ -71,92 +76,111 @@ export default function CardList({
           const config = cardConfigs[index];
           const isSelected = selectable && selectedRadioId === id;
           const view = config.hasForm ? getView(id) : "json";
+          const expanded = expandedId === id;
+          const editSlotId = `form-edit-${id}`;
+          const code = JSON.stringify(item, null, 2);
           return (
-            <div key={id} className="flex items-center w-full">
+            <div
+              key={id}
+              className={`relative flex w-full items-start rounded-xl ${
+                isSelected ? "bg-[#f3f4f6]" : ""
+              }`}
+            >
               {selectable && (
-                <div className="flex items-center justify-center h-full pr-2">
+                <div className="absolute left-3 top-3.5 z-10">
                   <input
                     type="radio"
                     name="cardlist-radio-group"
                     checked={isSelected}
                     onChange={() => handleRadioSelect(id)}
-                    className="form-radio h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer"
+                    className="form-radio h-5 w-5 cursor-pointer border-gray-300 text-blue-600 focus:ring-blue-500"
                     style={{ accentColor: "#2563eb" }}
                   />
                 </div>
               )}
-              <div className="flex-1">
-                <ExpandableCard
-                  title={
-                    <span className="flex items-center gap-2">
-                      {config.icon && (
-                        <Icon
-                          glyph={config.icon}
-                          size={20}
-                          style={
-                            config.iconColor ? { color: config.iconColor } : {}
-                          }
-                        />
-                      )}
-                      <span
-                        style={
-                          config.titleColor ? { color: config.titleColor } : {}
-                        }
-                      >
-                        {config.title}
-                      </span>
-                    </span>
-                  }
-                  description={
-                    config.description ? (
-                      <span
-                        style={
-                          config.descColor ? { color: config.descColor } : {}
-                        }
-                      >
-                        {config.description}
-                      </span>
-                    ) : null
-                  }
-                  flagText={
-                    config.flagText ? (
-                      <span
-                        style={
-                          config.flagTextColor
-                            ? { color: config.flagTextColor }
-                            : {}
-                        }
-                      >
-                        {config.flagText}
-                      </span>
-                    ) : undefined
-                  }
-                  style={isSelected ? { backgroundColor: "#f3f4f6" } : {}}
+              <div className="min-w-0 flex-1">
+                <Disclosure
+                  isExpanded={expanded}
+                  onExpandedChange={(open) => setExpandedId(open ? id : null)}
+                  className={`pm-disclosure${
+                    selectable ? " pm-disclosure-with-radio" : ""
+                  }${isSelected ? " pm-disclosure-selected" : ""}`}
+                  style={{ backgroundColor: "transparent" }}
                 >
+                  <DisclosureHeader>
+                    <span className="flex w-full min-w-0 items-center justify-between gap-4 pr-4">
+                      <span className="flex min-w-0 items-start gap-3">
+                        {config.icon && (
+                          <Icon
+                            glyph={config.icon}
+                            size={28}
+                            style={
+                              config.iconColor
+                                ? { color: config.iconColor }
+                                : {}
+                            }
+                          />
+                        )}
+                        <span className="min-w-0">
+                          <span
+                            className="block"
+                            style={
+                              config.titleColor
+                                ? { color: config.titleColor }
+                                : {}
+                            }
+                          >
+                            {config.title}
+                          </span>
+                          {config.description ? (
+                            <span className="mt-0.5 block text-sm text-[#5C6C75]">
+                              {config.description}
+                            </span>
+                          ) : null}
+                        </span>
+                      </span>
+                      {config.flagText ? (
+                        <span
+                          className="shrink-0"
+                          style={
+                            config.flagTextColor
+                              ? { color: config.flagTextColor }
+                              : {}
+                          }
+                        >
+                          {config.flagText}
+                        </span>
+                      ) : null}
+                    </span>
+                  </DisclosureHeader>
+                  <DisclosurePanel>
+                  <div className="flex min-h-0 flex-1 flex-col">
                   {/* Segmented control for form/json view if form is available */}
                   {config.hasForm ? (
-                    <div className="mb-2">
+                    <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
                       <SegmentedControl
+                        className="view-toggle"
                         name={`view-${id}`}
                         label="View"
-                        followFocus={true}
                         defaultValue="form"
                         value={view}
                         onChange={(value) => setView(id, value)}
                       >
-                        <SegmentedControlOption value="form">
+                        <SegmentedControlItem value="form">
                           Form
-                        </SegmentedControlOption>
-                        <SegmentedControlOption value="json">
+                        </SegmentedControlItem>
+                        <SegmentedControlItem value="json">
                           JSON
-                        </SegmentedControlOption>
+                        </SegmentedControlItem>
                       </SegmentedControl>
+                      {view === "form" ? <div id={editSlotId} /> : null}
                     </div>
                   ) : null}
                   {/* Form or JSON view */}
                   {config.hasForm && view === "form" ? (
                     cardType === "incident-reports" ? (
                       <IncidentResponseForm
+                        editSlotId={editSlotId}
                         rootCause={item.root_cause || item.Root_cause || ""}
                         repairInstructions={
                           Array.isArray(item.repair_instructions)
@@ -168,23 +192,33 @@ export default function CardList({
                                 .join("\n")
                             : item.repair_instructions || ""
                         }
-                        className="flex-1"
                       />
                     ) : cardType === "workorders" ? (
-                      <WorkOrderForm form={item} handleFormChange={() => {}} />
+                      <WorkOrderForm
+                        editSlotId={editSlotId}
+                        form={item}
+                        handleFormChange={() => {}}
+                      />
                     ) : null
                   ) : (
                     <div className="w-full">
-                      <Code
+                      <CodeBlock
                         language="json"
-                        className="w-full"
+                        className="code-block-white w-full"
                         style={{ width: "100%" }}
                       >
-                        {JSON.stringify(item, null, 2)}
-                      </Code>
+                        <CodeSnippet>{code}</CodeSnippet>
+                        <CopyButton copyText={code}>
+                          <Button aria-label="Copy code">
+                            <Icon glyph="Copy" />
+                          </Button>
+                        </CopyButton>
+                      </CodeBlock>
                     </div>
                   )}
-                </ExpandableCard>
+                  </div>
+                  </DisclosurePanel>
+                </Disclosure>
               </div>
             </div>
           );

@@ -3,17 +3,11 @@
 import React from "react";
 import CardList from "@/components/cardList/CardList";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
-import dynamic from "next/dynamic";
-import Button from "@leafygreen-ui/button";
+import { Button } from "@via-ds/components";
 import FullCalendar from "@fullcalendar/react";
 import "@/app/globals.css";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import { useWorkorderSchedulerPage } from "./hooks";
-
-const Code = dynamic(
-  () => import("@leafygreen-ui/code").then((mod) => mod.Code),
-  { ssr: false }
-);
 
 function renderEventContent(eventInfo) {
   // Only show MAINT-XXX and priority for maintenance tasks
@@ -55,6 +49,7 @@ export default function WorkorderSchedulerPage() {
     handleContinueWorkflow,
     handleResetCalendar,
     agentLogs,
+    threadId,
   } = useWorkorderSchedulerPage();
 
   return (
@@ -66,9 +61,9 @@ export default function WorkorderSchedulerPage() {
             <div className="flex justify-start mb-4">
               <Button
                 className="self-start w-auto min-w-0"
-                disabled={!canContinue}
+                isDisabled={!canContinue}
                 variant="primary"
-                onClick={handleContinueWorkflow}
+                onPress={handleContinueWorkflow}
               >
                 Continue Workflow
               </Button>
@@ -102,6 +97,7 @@ export default function WorkorderSchedulerPage() {
                 setShowModal={setShowModal}
                 modalContent={modalContent}
                 logs={agentLogs || []}
+                threadId={threadId}
               />
             </div>
             {/* Calendar directly under AgentStatus with margin */}
@@ -125,7 +121,7 @@ export default function WorkorderSchedulerPage() {
             </div>
             {/* Reset Button below calendar, right aligned */}
             <div className="flex justify-end mt-2">
-              <Button variant="default" onClick={handleResetCalendar}>
+              <Button variant="default" onPress={handleResetCalendar}>
                 Reset Calendar
               </Button>
             </div>

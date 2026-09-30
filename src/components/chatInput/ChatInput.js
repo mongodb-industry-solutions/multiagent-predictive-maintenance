@@ -1,8 +1,6 @@
 import React from "react";
 import { useAgentGraph } from "./hooks";
-import { Option, Select } from "@leafygreen-ui/select";
-import TextArea from "@leafygreen-ui/text-area";
-import Button from "@leafygreen-ui/button";
+import { Button, Select, SelectItem, TextArea } from "@via-ds/components";
 
 export default function ChatInput({
   agentId,
@@ -25,15 +23,15 @@ export default function ChatInput({
           label="Agent"
           placeholder="Choose agent"
           name="agent-select"
-          value={agentId}
-          onChange={setAgentId}
-          disabled={loading || loadingAgents}
+          selectedKey={agentId || null}
+          onSelectionChange={(key) => setAgentId(String(key))}
+          isDisabled={loading || loadingAgents}
           style={{ width: "100%" }}
         >
           {agentOptions.map((opt) => (
-            <Option key={opt.id} value={opt.id}>
+            <SelectItem key={opt.id} id={opt.id} textValue={opt.name}>
               {opt.name}
-            </Option>
+            </SelectItem>
           ))}
         </Select>
       </div>
@@ -66,18 +64,17 @@ export default function ChatInput({
         <div className="flex-1 flex flex-col p-4">
           <TextArea
             className="mb-2"
-            aria-labelledby={"Chat input"}
+            aria-label="Chat input"
             placeholder="Type your message..."
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            disabled={loading}
-            resize="none"
+            onChange={setInput}
+            isDisabled={loading}
             style={{ minHeight: 100 }}
           />
           <Button
             className="w-full mb-2"
-            onClick={sendMessage}
-            disabled={loading || !input.trim()}
+            onPress={sendMessage}
+            isDisabled={loading || !input.trim()}
             variant="primary"
           >
             {loading ? "Sending..." : "Send"}

@@ -199,9 +199,18 @@ export function useFailureDetectionPage() {
         const nextVibration = updated.vibration.value;
 
         setMachineData(updated);
-        setFactoryAlerts(
-          remoteAlerts.map((alert) => toWorkflowAlert(alert, updated))
-        );
+        setFactoryAlerts((current) => {
+          const previousDetails = new Map(
+            current.map((alert) => [alert._id, alert.details])
+          );
+          return remoteAlerts.map((alert) => {
+            const workflowAlert = toWorkflowAlert(alert, updated);
+            const details = previousDetails.get(workflowAlert._id);
+            return details
+              ? { ...workflowAlert, details }
+              : workflowAlert;
+          });
+        });
         persistTelemetryCallback(updated);
 
         const generatedMetrics = Array.isArray(metrics.alerts_generated)
@@ -421,6 +430,7 @@ export function useFailureDetectionPage() {
   const processingRef = useRef(false);
   const lastAlertRef = useRef(alertTrigger);
   const [agentLogs, setAgentLogs] = useState([]);
+  const [agentThreadId, setAgentThreadId] = useState(null);
 
   function formatRepairInstructions(instructions) {
     if (!Array.isArray(instructions)) return "";
@@ -465,6 +475,7 @@ export function useFailureDetectionPage() {
             ]);
             await callFailureAgent(alertToSend, {
               onEvent: (evt) => {
+                if (evt.threadId) setAgentThreadId(evt.threadId);
                 if (
                   evt.type === "update" &&
                   (evt.name === "tool_start" || evt.name === "tool_end")
@@ -546,6 +557,7 @@ export function useFailureDetectionPage() {
     handleStop,
     handleSourceChange,
     agentLogs, // <-- pass logs to page
+    agentThreadId,
     showTelemetry,
     setShowTelemetry,
   };

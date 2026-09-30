@@ -1,6 +1,5 @@
-import Card from "@leafygreen-ui/card";
-import Icon from "@leafygreen-ui/icon";
-import { H3, Body, Description } from "@leafygreen-ui/typography";
+import { Body, Card, Description, H3 } from "@via-ds/components";
+import { Icon } from "@via-ds/icons";
 
 export default function PlaceholderPanel({
   eyebrow = "Concept preview",
@@ -14,7 +13,7 @@ export default function PlaceholderPanel({
 }) {
   return (
     <Card
-      className={`flex h-full flex-col rounded-2xl border border-[#D8E3DF] bg-white p-6 ${className}`}
+      className={`flex h-full flex-col rounded-2xl border border-[#D8E3DF] bg-white ${className}`}
     >
       <div className="mb-5 flex items-start gap-4">
         {glyph && (
@@ -24,9 +23,8 @@ export default function PlaceholderPanel({
         )}
         <div className="min-w-0">
           <Body
-            as="p"
-            weight="medium"
-            className="mb-1 uppercase tracking-[0.12em] text-[#00684A]"
+            elementType="p"
+            className="mb-1 uppercase tracking-[0.12em] text-[#00684A] font-medium"
           >
             {eyebrow}
           </Body>

@@ -13,6 +13,7 @@ export function useWorkOrderGenerationPage() {
   const [showModal, setShowModal] = useState(false);
   const [emptyIncidentText, setEmptyIncidentText] = useState("");
   const [agentLogs, setAgentLogs] = useState([]);
+  const [agentThreadId, setAgentThreadId] = useState(null);
   const processingRef = useRef(false);
 
   // Fetch incident reports from API
@@ -89,6 +90,7 @@ export function useWorkOrderGenerationPage() {
       // Stream logs from agent
       await callWorkOrderAgent(selectedIncident, {
         onEvent: (evt) => {
+          if (evt.threadId) setAgentThreadId(evt.threadId);
           setAgentLogs((prev) => [...prev, evt]);
         },
       });
@@ -120,5 +122,6 @@ export function useWorkOrderGenerationPage() {
     incidentReports,
     emptyIncidentText,
     agentLogs,
+    agentThreadId,
   };
 }

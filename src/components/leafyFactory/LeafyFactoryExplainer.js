@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Icon from "@leafygreen-ui/icon";
+import { Icon } from "@via-ds/icons";
 import DocumentModal from "@/components/unsAction/DocumentModal";
 import NextStepButton from "@/components/nextStepButton/NextStepButton";
 import {
@@ -12,13 +12,14 @@ import {
   ARCHITECTURE_MODULES,
   FACTORY_SOURCE_URL,
   PROCESS_PHASES,
+  resolveArchitectureLinks,
 } from "@/lib/const/leafyFactory";
 import ArchitectureExplorer from "./ArchitectureExplorer";
 import ProcessExplorer from "./ProcessExplorer";
 
-export default function LeafyFactoryExplainer() {
+export default function LeafyFactoryExplainer({ externalUrls = {} }) {
   const [selectedMachineId, setSelectedMachineId] = useState(
-    PROCESS_PHASES[0].machines[0].id
+    PROCESS_PHASES[0].machines[0].id,
   );
   const [showNextStep, setShowNextStep] = useState(false);
   const endOfPageRef = useRef(null);
@@ -35,6 +36,10 @@ export default function LeafyFactoryExplainer() {
   const closeDocument = useCallback(() => {
     setDocument((current) => ({ ...current, open: false }));
   }, []);
+  const architectureModules = resolveArchitectureLinks(
+    ARCHITECTURE_MODULES,
+    externalUrls,
+  );
 
   useEffect(() => {
     const endOfPage = endOfPageRef.current;
@@ -44,7 +49,7 @@ export default function LeafyFactoryExplainer() {
       ([entry]) => {
         setShowNextStep(entry.isIntersecting);
       },
-      { threshold: 1 }
+      { threshold: 1 },
     );
     observer.observe(endOfPage);
     return () => observer.disconnect();
@@ -56,9 +61,9 @@ export default function LeafyFactoryExplainer() {
         <div className="flex items-center">
           <Link
             href="/unified-namespace"
-            className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-[#00684A] hover:underline"
+            className="flex shrink-0 items-center gap-1.5 text-base font-medium text-[#00684A] hover:underline"
           >
-            <Icon glyph="ArrowLeft" size={16} />
+            <Icon glyph="ArrowLeft" size={18} />
             Back to overview
           </Link>
         </div>
@@ -70,7 +75,7 @@ export default function LeafyFactoryExplainer() {
           onOpenDocument={openDocument}
         />
         <ArchitectureExplorer
-          modules={ARCHITECTURE_MODULES}
+          modules={architectureModules}
           flows={ARCHITECTURE_FLOWS}
           detailGroups={ARCHITECTURE_DETAIL_GROUPS}
           detailFlows={ARCHITECTURE_DETAIL_FLOWS}
