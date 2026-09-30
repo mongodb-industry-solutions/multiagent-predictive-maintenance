@@ -6,6 +6,10 @@ export const metadata = {
     "Explore the EV battery production process and the systems behind the Leafy Factory simulator.",
 };
 
+// The image is built before Drone injects LEAFY_*_URL. Render on each request
+// so those deployment values are read from the running container.
+export const dynamic = "force-dynamic";
+
 function optionalUrl(name) {
   const value = process.env[name];
   return typeof value === "string" ? value.trim() : "";
