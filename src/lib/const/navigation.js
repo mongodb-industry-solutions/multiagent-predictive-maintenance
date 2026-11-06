@@ -58,6 +58,11 @@ export const STORY_STAGES = [
         description: "Detect anomalies and diagnose root cause.",
       },
       {
+        label: "Contestable AI",
+        href: "/agentic-ai/contestable-ai",
+        description: "Debate and contest AI root-cause arguments before action.",
+      },
+      {
         label: "Work Order Generation",
         href: "/agentic-ai/workorder-generation",
         description: "Turn incidents into maintenance plans.",

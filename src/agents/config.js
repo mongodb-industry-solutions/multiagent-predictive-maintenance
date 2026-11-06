@@ -5,6 +5,7 @@ import { createAgentGraph as createFailureAgentGraph } from "./failure/graph.js"
 import { createAgentGraph as createWorkorderAgentGraph } from "./workorder/graph.js";
 import { createAgentGraph as createPlanningAgentGraph } from "./planning/graph.js";
 import { createAgentGraph as createUnsChatAgentGraph } from "./uns-chat/graph.js";
+import { createAgentGraph as createContestableAgentGraph } from "./contestable/graph.js";
 
 export const AGENTS = [
   {
@@ -26,6 +27,13 @@ export const AGENTS = [
     createGraph: createFailureAgentGraph,
     description:
       "Handles alerts, retrieves context, and generates incident reports.",
+  },
+  {
+    id: "contestable",
+    name: "Contestable AI Agent",
+    createGraph: createContestableAgentGraph,
+    description:
+      "Coordinates Vibration Pattern and Maintenance History agents to debate candidate root causes with bipolar argumentation scoring.",
   },
   {
     id: "workorder",

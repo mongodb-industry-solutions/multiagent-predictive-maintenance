@@ -431,6 +431,7 @@ export function useFailureDetectionPage() {
   const lastAlertRef = useRef(alertTrigger);
   const [agentLogs, setAgentLogs] = useState([]);
   const [agentThreadId, setAgentThreadId] = useState(null);
+  const [contestableIncident, setContestableIncident] = useState(null);
 
   function formatRepairInstructions(instructions) {
     if (!Array.isArray(instructions)) return "";
@@ -443,6 +444,41 @@ export function useFailureDetectionPage() {
     const data = await fetchIncidentReports();
     setIncidentReports(data);
     // Do not set root cause or repair instructions on page load
+  }, []);
+
+  const handleOpenContestable = useCallback((incidentItem = null) => {
+    setContestableIncident(
+      incidentItem || incidentReports[0] || {
+        error_code: "E13",
+        error_name: "High vibration",
+        machine_id: "M1",
+        root_cause:
+          "Suspected bearing degradation on machine M1 based on elevated vibration.",
+        repair_instructions: [
+          {
+            step: 1,
+            description:
+              "Inspect and align shaft bearings on M1.",
+          },
+        ],
+      }
+    );
+  }, [incidentReports]);
+
+  const handleCloseContestable = useCallback(() => {
+    setContestableIncident(null);
+  }, []);
+
+  const handleContestableCommitted = useCallback(async () => {
+    const data = await fetchIncidentReports();
+    setIncidentReports(data);
+    if (data && data.length > 0) {
+      setRootCause(data[0].root_cause || "");
+      setRepairInstructions(
+        formatRepairInstructions(data[0].repair_instructions)
+      );
+      markAgenticProgress("root-cause");
+    }
   }, []);
 
   useEffect(() => {
@@ -560,5 +596,10 @@ export function useFailureDetectionPage() {
     agentThreadId,
     showTelemetry,
     setShowTelemetry,
+    contestableIncident,
+    handleOpenContestable,
+    handleCloseContestable,
+    handleContestableCommitted,
+    refreshIncidentReports: fetchIncidentReportsCallback,
   };
 }

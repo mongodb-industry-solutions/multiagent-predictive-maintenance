@@ -14,8 +14,6 @@ export default function Page() {
     agentActive,
     showModal,
     setShowModal,
-    rootCause,
-    repairInstructions,
     incidentReports,
     modalContent,
     handleStart,
@@ -25,6 +23,7 @@ export default function Page() {
     agentThreadId,
     showTelemetry,
     setShowTelemetry,
+    refreshIncidentReports,
   } = useFailureDetectionPage();
 
   const telemetryJson = sim.machineData
@@ -194,6 +193,7 @@ export default function Page() {
                 emptyText="No incident reports"
                 listTitle="Incident Reports"
                 listDescription="Automated incident reports with root cause analysis."
+                onIncidentSaved={refreshIncidentReports}
               />
             </div>
           </section>

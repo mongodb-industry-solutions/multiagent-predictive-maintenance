@@ -15,8 +15,8 @@ const useCases = [
     title: "Contestable AI",
     description:
       "Agent outputs become proposals: engineers can accept, reject, or modify each argument before a recommendation is finalised.",
+    href: "/agentic-ai/contestable-ai",
     glyph: "Person",
-    comingSoon: true,
   },
   {
     title: "Change Documentation Agent",
@@ -48,6 +48,22 @@ const resources = [
     type: "Blog",
     image: "/img/read.png",
     href: "https://www.mongodb.com/company/blog/innovation/unlock-multi-agent-ai-predictive-maintenance",
+  },
+  {
+    title: "Stop Rubber-Stamping AI: A Contestable AI Framework",
+    description:
+      "Learn how bipolar argumentation and MongoDB keep domain experts in control of high-stakes AI decisions.",
+    type: "Blog",
+    image: "/img/read.png",
+    href: "https://www.mongodb.com/company/blog/innovation/stop-rubber-stamping-ai-contestable-framework-regulated-industries",
+  },
+  {
+    title: "Contestable Agents for Data Governance",
+    description:
+      "Read the research paper on quantitative bipolar argumentation and human stewardship in MongoDB.",
+    type: "Paper",
+    image: "/img/read.png",
+    href: "https://arxiv.org/pdf/2610.31553",
   },
 ];
 
