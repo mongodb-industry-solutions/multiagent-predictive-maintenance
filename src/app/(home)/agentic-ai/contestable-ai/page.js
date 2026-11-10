@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
-import { Icon } from "@via-ds/icons";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import FactorySourceSelector from "@/components/factorySourceSelector/FactorySourceSelector";
 import ContestableWorkspace from "@/components/contestable/ContestableWorkspace";
 import { fetchIncidentReports } from "@/lib/api/incidentReports";
+import { fetchAlerts } from "@/lib/api/alerts";
 import { fetchFactoryStatus } from "@/lib/factory/factoryClient";
 import { STANDALONE_PRESET_SCENARIOS } from "@/lib/contestable/scenarios";
 
@@ -14,7 +13,8 @@ export default function ContestableAiPage() {
   const [leafyAvailable, setLeafyAvailable] = useState(null);
   const [isSourceChecking, setIsSourceChecking] = useState(true);
   const [incidentReports, setIncidentReports] = useState([]);
-  const [selectedIncidentKey, setSelectedIncidentKey] = useState("benchmark");
+  const [alerts, setAlerts] = useState([]);
+  const [selectedKey, setSelectedKey] = useState("benchmark");
 
   const checkLeafy = useCallback(async (signal) => {
     setIsSourceChecking(true);
@@ -32,9 +32,13 @@ export default function ContestableAiPage() {
     }
   }, []);
 
-  const loadIncidents = useCallback(async () => {
-    const reports = await fetchIncidentReports().catch(() => []);
+  const loadContextItems = useCallback(async () => {
+    const [reports, recentAlerts] = await Promise.all([
+      fetchIncidentReports().catch(() => []),
+      fetchAlerts().catch(() => []),
+    ]);
     setIncidentReports(Array.isArray(reports) ? reports : []);
+    setAlerts(Array.isArray(recentAlerts) ? recentAlerts : []);
   }, []);
 
   useEffect(() => {
@@ -44,9 +48,9 @@ export default function ContestableAiPage() {
         setDataSource(available ? "leafy" : "local");
       }
     });
-    loadIncidents();
+    loadContextItems();
     return () => controller.abort();
-  }, [checkLeafy, loadIncidents]);
+  }, [checkLeafy, loadContextItems]);
 
   const handleSourceChange = async (nextSource) => {
     if (nextSource === "leafy" && leafyAvailable !== true) {
@@ -56,71 +60,107 @@ export default function ContestableAiPage() {
     setDataSource(nextSource);
   };
 
-  const selectedIncident =
-    selectedIncidentKey === "benchmark"
-      ? null
-      : incidentReports.find(
-          (ir) => String(ir._id || ir.Id) === selectedIncidentKey
-        ) || null;
+  const selectionOptions = useMemo(() => {
+    const preset = STANDALONE_PRESET_SCENARIOS[0];
+    const items = [
+      {
+        key: "benchmark",
+        group: "Alerts",
+        kind: "alert",
+        label: `Alert · ${preset.title}`,
+        shortLabel: "Anomalous vibration spike on Laser Tab Welding machine",
+        machineId: preset.machine_id,
+        errorCode: preset.error_code,
+        errorName: preset.error_name,
+        summary: `${preset.subtitle} — Vibration ${preset.alert.details.vibration} mm/s, Temp ${preset.alert.details.temperature} °C`,
+        alert: preset.alert,
+        incident: null,
+      },
+    ];
+
+    for (const al of alerts) {
+      const id = String(al._id || al.Id || "");
+      if (!id) continue;
+      const errCode = al.err_code || "E13";
+      const errName = al.err_name || "Alert";
+      const machineId = al.machine_id || "M1";
+      items.push({
+        key: `alert:${id}`,
+        group: "Alerts",
+        kind: "alert",
+        label: `Alert · ${machineId} · ${errCode} ${errName} (${id.slice(-6)})`,
+        shortLabel: errName,
+        machineId,
+        errorCode: errCode,
+        errorName: errName,
+        summary: `Telemetry threshold alert on ${machineId}${
+          al.details?.vibration !== undefined
+            ? ` — Vibration ${al.details.vibration} mm/s`
+            : ""
+        }${
+          al.details?.temperature !== undefined
+            ? `, Temp ${al.details.temperature} °C`
+            : ""
+        }`,
+        alert: al,
+        incident: null,
+      });
+    }
+
+    for (const ir of incidentReports) {
+      const id = String(ir._id || ir.Id || "");
+      if (!id) continue;
+      const errCode = ir.error_code || "E13";
+      const errName = ir.error_name || "Incident";
+      const machineId = ir.machine_id || "M1";
+      items.push({
+        key: `incident:${id}`,
+        group: "Incident Reports",
+        kind: "incident",
+        label: `Incident · ${machineId} · ${errCode} ${errName} (${id.slice(-6)})`,
+        shortLabel: errName,
+        machineId,
+        errorCode: errCode,
+        errorName: errName,
+        summary:
+          ir.root_cause ||
+          `Incident report on ${machineId} (${errCode} · ${errName})`,
+        alert: preset.alert,
+        incident: ir,
+      });
+    }
+
+    return items;
+  }, [alerts, incidentReports]);
+
+  const activeSelection =
+    selectionOptions.find((opt) => opt.key === selectedKey) ||
+    selectionOptions[0];
 
   return (
-    <main className="flex h-full min-h-0 w-full flex-col gap-2 px-2 pb-4">
-      {/* Top Bar matching Predictive Maintenance / AI Workflows navigation */}
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 py-1">
-        <Link
-          href="/agentic-ai"
-          className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-[#00684A] hover:underline"
-        >
-          <Icon glyph="ArrowLeft" size={16} />
-          <span>Back to overview</span>
-        </Link>
-
-        <div className="flex flex-wrap items-center gap-3">
-          {incidentReports.length > 0 && (
-            <label className="flex items-center gap-2 text-sm font-medium text-[#3D4F58]">
-              <span>Alert context:</span>
-              <select
-                value={selectedIncidentKey}
-                onChange={(e) => setSelectedIncidentKey(e.target.value)}
-                className="rounded-lg border border-[#C1C7C6] bg-white px-3 py-1.5 text-sm font-medium text-[#112733]"
-              >
-                <option value="benchmark">
-                  {STANDALONE_PRESET_SCENARIOS[0].title}
-                </option>
-                {incidentReports.map((ir) => {
-                  const id = String(ir._id || ir.Id);
-                  return (
-                    <option key={id} value={id}>
-                      {ir.error_name || "Incident"} in {ir.machine_id || "M1"} (
-                      {id.slice(-6)})
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
-          )}
-
-          <FactorySourceSelector
-            source={dataSource}
-            onChange={handleSourceChange}
-            connected={dataSource === "local" || leafyAvailable === true}
-            isChecking={isSourceChecking}
-            menuAlign="right"
-          />
-        </div>
-      </div>
-
-      {/* Main Contestable AI Workspace */}
-      <div className="mx-2 flex min-h-0 flex-1 overflow-hidden rounded-xl border border-[#D8E3DF] bg-white shadow-sm">
-        <ContestableWorkspace
-          key={`${selectedIncidentKey}-${dataSource}`}
-          mode="standalone"
-          incident={selectedIncident}
-          alert={STANDALONE_PRESET_SCENARIOS[0].alert}
-          dataSource={dataSource}
-          onCommitted={loadIncidents}
-        />
-      </div>
+    <main className="flex h-full min-h-0 w-full flex-col pb-4">
+      <ContestableWorkspace
+        mode="standalone"
+        incident={activeSelection.incident}
+        alert={activeSelection.alert}
+        selectionOptions={selectionOptions}
+        selectedKey={activeSelection.key}
+        onSelectKey={setSelectedKey}
+        activeSelection={activeSelection}
+        dataSource={dataSource}
+        onCommitted={loadContextItems}
+        toolbarStart={
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <FactorySourceSelector
+              source={dataSource}
+              onChange={handleSourceChange}
+              connected={dataSource === "local" || leafyAvailable === true}
+              isChecking={isSourceChecking}
+              menuAlign="right"
+            />
+          </div>
+        }
+      />
     </main>
   );
 }

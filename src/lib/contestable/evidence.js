@@ -318,7 +318,7 @@ export async function gatherContestableEvidence({
         status: "completed",
       },
       ...similarWorkOrders.slice(0, 3).map((wo, i) => ({
-        date: `Historical Precedent #${i + 1}`,
+        date: `Precedent #${i + 1}`,
         work_order: wo.title || `WO-HIST-${i + 1}`,
         component: "Machine M1",
         action: `${wo.observations || ""} — Resolution: ${wo.instructions || ""}`,
@@ -330,7 +330,7 @@ export async function gatherContestableEvidence({
       {
         sensor_id: "ACCEL-M1-VIB-01",
         sensor_type: "Tri-axial Piezoelectric Accelerometer",
-        replaced_at: "1 day ago (18 hours prior to alert)",
+        replaced_at: "1 day ago",
         stabilization_window:
           "Requires 48-hour thermal/mechanical burn-in stabilization window; currently at 18 hours.",
         factory_calibration:

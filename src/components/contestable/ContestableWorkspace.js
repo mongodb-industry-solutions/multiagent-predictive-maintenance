@@ -1,14 +1,23 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
+import Link from "next/link";
 import {
   Button,
-  CodeBlock,
-  CodeSnippet,
-  CopyButton,
   ProgressCircle,
+  Select,
+  SelectItem,
+  Step,
+  Stepper,
   TextArea,
-  TextField,
+  Toolbar,
+  ToolbarAction,
 } from "@via-ds/components";
 import { Icon } from "@via-ds/icons";
 import {
@@ -17,17 +26,18 @@ import {
   isArgumentActive,
 } from "@/lib/contestable/scoring";
 import {
-  buildInitialClientSession,
   CONTESTABLE_AGENTS,
   DEFAULT_REFINEMENT_BY_CANDIDATE,
   ENGINEER_PRESET_SUGGESTIONS,
   STANDALONE_PRESET_SCENARIOS,
 } from "@/lib/contestable/scenarios";
 import {
-  startContestableSession,
+  prepareContestableSession,
+  runContestableSpecialist,
   submitContestableAction,
   generateContestableRefinement,
   commitContestableIncident,
+  fetchContestableLineage,
 } from "@/lib/api/contestable";
 import DocumentModal from "@/components/unsAction/DocumentModal";
 
@@ -70,107 +80,302 @@ function formatStepsToText(instructions) {
         (step, idx) =>
           `- Step ${step.step || idx + 1}: ${
             typeof step === "string" ? step : step.description || ""
-          }`
+          }`,
       )
       .join("\n");
   }
   return "";
 }
 
-function CandidateScoreBar({
-  candidateId,
-  scoreObj,
-  scoreBeforeObj,
-  isWinner,
-  isSelected,
-  onSelect,
-}) {
-  const color = CANDIDATE_COLORS[candidateId] || "#00684A";
-  const pct = Math.round((scoreObj?.score ?? 0.5) * 100);
-  const beforePct =
-    scoreBeforeObj?.score !== undefined
-      ? Math.round(scoreBeforeObj.score * 100)
-      : pct;
-  const delta = pct - beforePct;
-
+function ScoreTrack({ label, value, color, emphasize = false }) {
+  const score = value?.score ?? 0.5;
+  const pct = Math.round(score * 100);
   return (
-    <button
-      type="button"
-      onClick={() => onSelect && onSelect(candidateId)}
-      className={`flex flex-col rounded-xl border p-4 text-left transition-all ${
-        isSelected
-          ? "border-[#00684A] bg-[#F4FBF8] shadow-sm"
-          : "border-[#D8E3DF] bg-white hover:border-[#889397]"
-      }`}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-2">
-          <span
-            className="h-3 w-3 rounded-full shrink-0"
-            style={{ backgroundColor: color }}
-          />
-          <span className="font-semibold text-base text-[#112733]">
-            {scoreObj?.label || candidateId}
-          </span>
+    <div>
+      <div
+        className={`flex justify-between text-sm ${
+          emphasize ? "font-semibold text-[#112733]" : "text-[#5C6C75]"
+        }`}
+      >
+        <span>{label}</span>
+        <span className={`font-mono ${emphasize ? "text-[#00684A]" : ""}`}>
+          {score.toFixed(3)} ({pct}%)
         </span>
-        {isWinner && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-[#E3FCF7] px-2.5 py-0.5 text-sm font-semibold text-[#00684A]">
-            <Icon glyph="CheckmarkWithCircle" size={14} />
-            Leading
-          </span>
-        )}
       </div>
-
-      <div className="mt-2.5 flex items-baseline justify-between">
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-[#112733]">
-            {(scoreObj?.score ?? 0.5).toFixed(3)}
-          </span>
-          <span className="text-sm text-[#5C6C75]">({pct}%)</span>
-        </div>
-        {delta !== 0 && (
-          <span
-            className={`text-sm font-semibold ${
-              delta > 0 ? "text-[#00684A]" : "text-[#B1371F]"
-            }`}
-          >
-            {delta > 0 ? `+${delta}%` : `${delta}%`} vs initial
-          </span>
-        )}
-      </div>
-
-      <div className="mt-2.5 h-2.5 w-full overflow-hidden rounded-full bg-[#E8EDEB]">
+      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-[#E8EDEB]">
         <div
           className="h-full rounded-full transition-all duration-300"
           style={{
-            width: `${Math.max(6, Math.min(100, pct))}%`,
+            width: `${Math.max(4, Math.min(100, pct))}%`,
             backgroundColor: color,
           }}
         />
       </div>
+    </div>
+  );
+}
 
-      <div className="mt-2.5 flex items-center justify-between text-sm text-[#5C6C75]">
-        <span>
-          Support:{" "}
-          <strong className="text-[#00684A]">
-            +{(scoreObj?.total_support ?? 0).toFixed(2)}
-          </strong>
-        </span>
-        <span>
-          Challenge:{" "}
-          <strong className="text-[#B1371F]">
-            -{(scoreObj?.total_challenge ?? 0).toFixed(2)}
-          </strong>
-        </span>
-        <span>
-          Net:{" "}
-          <strong className="text-[#112733]">
-            {(scoreObj?.net_support ?? 0) >= 0 ? "+" : ""}
-            {(scoreObj?.net_support ?? 0).toFixed(2)}
-          </strong>
-        </span>
+function CandidateCard({
+  candidate,
+  scoreMode = "none",
+  scoreObj,
+  scoreBeforeObj,
+  hasArguments = false,
+  isWinner = false,
+  isSelected = false,
+  precedentsOpen = false,
+  selectable = true,
+  onSelect,
+}) {
+  const color = CANDIDATE_COLORS[candidate.id] || "#00684A";
+  const precedent = candidate.historical_case;
+  const Tag = selectable ? "button" : "div";
+
+  return (
+    <Tag
+      type={selectable ? "button" : undefined}
+      onClick={
+        selectable ? () => onSelect && onSelect(candidate.id) : undefined
+      }
+      className={`flex w-full flex-col rounded-xl border p-4 text-left transition-colors ${
+        isSelected
+          ? "border-[#00684A] bg-[#F4FBF8] shadow-sm"
+          : "border-[#D8E3DF] bg-white"
+      } ${
+        selectable
+          ? `cursor-pointer ${isSelected ? "" : "hover:border-[#889397]"}`
+          : "cursor-default"
+      }`}
+    >
+      <div className="flex w-full flex-col text-left">
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2">
+            <span
+              className="h-3 w-3 shrink-0 rounded-full"
+              style={{ backgroundColor: color }}
+            />
+            <span className="text-base font-semibold text-[#112733]">
+              {candidate.label}
+            </span>
+          </span>
+          {scoreMode !== "none" && hasArguments && isWinner && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#E3FCF7] px-2.5 py-0.5 text-sm font-semibold text-[#00684A]">
+              <Icon glyph="CheckmarkWithCircle" size={14} />
+              Leading
+            </span>
+          )}
+        </div>
+        <p className="mt-2 text-sm leading-6 text-[#5C6C75]">
+          {candidate.summary}
+        </p>
       </div>
-    </button>
+
+      {scoreMode === "live" &&
+        (hasArguments ? (
+          <div className="mt-3">
+            <ScoreTrack
+              label="Score"
+              value={scoreObj}
+              color={color}
+              emphasize
+            />
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-[#889397]">Waiting for arguments</p>
+        ))}
+
+      {scoreMode === "compare" && (
+        <div className="mt-3 space-y-2">
+          <ScoreTrack
+            label="Before Contestation"
+            value={scoreBeforeObj || scoreObj}
+            color="#889397"
+          />
+          <ScoreTrack
+            label="After Contestation"
+            value={scoreObj}
+            color={color}
+            emphasize
+          />
+        </div>
+      )}
+
+      {precedentsOpen && precedent && (
+        <div className="mt-3 w-full rounded-lg bg-white p-3 text-left text-sm text-[#3D4F58]">
+          <div className="font-semibold text-[#112733]">{precedent.title}</div>
+          {precedent.root_cause && (
+            <div className="mt-1 text-[#5C6C75]">
+              Root cause: {precedent.root_cause}
+            </div>
+          )}
+          {precedent.observations && (
+            <p className="mt-1.5 leading-6">{precedent.observations}</p>
+          )}
+          {precedent.instructions && (
+            <p className="mt-1.5 leading-6 text-[#5C6C75]">
+              {precedent.instructions}
+            </p>
+          )}
+        </div>
+      )}
+    </Tag>
+  );
+}
+
+function CandidateCardSkeleton() {
+  return (
+    <div className="rounded-xl border border-[#D8E3DF] bg-white p-4">
+      <div className="flex items-center gap-2">
+        <div className="h-3 w-3 animate-pulse rounded-full bg-[#E8EDEB]" />
+        <div className="h-4 w-2/5 animate-pulse rounded bg-[#E8EDEB]" />
+      </div>
+      <div className="mt-3 h-3 w-full animate-pulse rounded bg-[#E8EDEB]" />
+      <div className="mt-2 h-3 w-4/5 animate-pulse rounded bg-[#E8EDEB]" />
+    </div>
+  );
+}
+
+function repairLines(instructions) {
+  if (!instructions) return [];
+  if (Array.isArray(instructions)) {
+    return instructions
+      .map((step, idx) =>
+        typeof step === "string"
+          ? step
+          : step.description || `Step ${step.step || idx + 1}`,
+      )
+      .filter(Boolean);
+  }
+  return String(instructions)
+    .split("\n")
+    .map((line) => line.replace(/^-\s*Step\s+\d+:\s*/i, "").trim())
+    .filter(Boolean);
+}
+
+function ReportField({ label, value, onChange, minHeight = "7.5rem" }) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-semibold uppercase tracking-wider text-[#5C6C75]">
+        {label}
+      </span>
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full resize-y rounded-lg border border-[#E8EDEB] bg-[#F8FAF9] px-3 py-2.5 text-sm leading-6 text-[#112733] [field-sizing:content]"
+        style={{ minHeight }}
+      />
+    </label>
+  );
+}
+
+function IncidentReportSheet({
+  eyebrow,
+  machineId,
+  errorCode,
+  errorName,
+  rootCause,
+  repairInstructions,
+  rationale,
+  editable = false,
+  onRootCause,
+  onRepair,
+  onRationale,
+  headerExtra,
+}) {
+  const lines = repairLines(repairInstructions);
+
+  return (
+    <article className="flex min-h-[36rem] flex-col rounded-xl border border-[#D8E3DF] bg-white">
+      <header className="border-b border-[#E8EDEB] px-5 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-[#5C6C75]">
+              {eyebrow}
+            </div>
+            <h3 className="mt-1 text-lg font-semibold text-[#112733]">
+              {errorName || "Incident report"}
+            </h3>
+          </div>
+          {headerExtra}
+        </div>
+        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <div>
+            <dt className="text-[#889397]">Machine</dt>
+            <dd className="font-medium text-[#112733]">{machineId || "M1"}</dd>
+          </div>
+          <div>
+            <dt className="text-[#889397]">Error</dt>
+            <dd className="font-medium text-[#112733]">
+              {errorCode || "E13"}
+              {errorName ? ` · ${errorName}` : ""}
+            </dd>
+          </div>
+        </dl>
+      </header>
+      <div className="flex flex-1 flex-col gap-5 px-5 py-4">
+        <section>
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-[#5C6C75]">
+            Root cause
+          </h4>
+          {editable ? (
+            <textarea
+              value={rootCause}
+              onChange={(event) => onRootCause(event.target.value)}
+              className="mt-1.5 w-full resize-y rounded-lg border border-[#E8EDEB] bg-[#F8FAF9] px-3 py-2.5 text-sm leading-6 text-[#112733] [field-sizing:content]"
+              style={{ minHeight: "8rem" }}
+            />
+          ) : (
+            <p className="mt-1.5 text-sm leading-6 text-[#112733]">
+              {rootCause}
+            </p>
+          )}
+        </section>
+        <section className="flex-1">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-[#5C6C75]">
+            Repair instructions
+          </h4>
+          {editable ? (
+            <textarea
+              value={
+                typeof repairInstructions === "string"
+                  ? repairInstructions
+                  : formatStepsToText(repairInstructions)
+              }
+              onChange={(event) => onRepair(event.target.value)}
+              className="mt-1.5 w-full resize-y rounded-lg border border-[#E8EDEB] bg-[#F8FAF9] px-3 py-2.5 text-sm leading-6 text-[#112733] [field-sizing:content]"
+              style={{ minHeight: "14rem" }}
+            />
+          ) : (
+            <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm leading-6 text-[#112733]">
+              {lines.map((line, idx) => (
+                <li key={idx}>{line}</li>
+              ))}
+            </ol>
+          )}
+        </section>
+        {(editable || rationale) && (
+          <section>
+            {editable ? (
+              <ReportField
+                label="Contestation rationale"
+                value={rationale || ""}
+                onChange={onRationale}
+                minHeight="6.5rem"
+              />
+            ) : (
+              <>
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#5C6C75]">
+                  Notes
+                </h4>
+                <p className="mt-1.5 text-sm leading-6 text-[#3D4F58]">
+                  {rationale}
+                </p>
+              </>
+            )}
+          </section>
+        )}
+      </div>
+    </article>
   );
 }
 
@@ -422,35 +627,93 @@ function ArgumentCard({
               </button>
             )}
           </div>
-          <span className="font-mono text-sm text-[#5C6C75]">
-            {arg.agent}
-          </span>
         </div>
       )}
     </div>
   );
 }
 
+const STAGE_ORDER = ["evidence", "debate", "review", "report"];
+const WORKFLOW_STEPS = [
+  { id: "evidence", label: "Evidence" },
+  { id: "debate", label: "Specialist debate" },
+  { id: "review", label: "Engineer review" },
+  { id: "report", label: "Incident report" },
+];
+const SPECIALIST_IDS = ["vibration_pattern_agent", "maintenance_history_agent"];
+const REVEAL_MS = 280;
+
+const ACTORS = [
+  {
+    id: "root_cause",
+    label: "Root Cause Agent",
+    short: "Root cause",
+    kind: "agent",
+    icon: "Sparkle",
+    view: "evidence",
+  },
+  {
+    id: "vibration_pattern_agent",
+    label: "Vibration Pattern",
+    short: "Vibration",
+    kind: "agent",
+    icon: "Sparkle",
+    view: "debate",
+  },
+  {
+    id: "maintenance_history_agent",
+    label: "Maintenance History",
+    short: "Maintenance",
+    kind: "agent",
+    icon: "Sparkle",
+    view: "debate",
+  },
+  {
+    id: "reliability_engineer",
+    label: "Reliability Engineer",
+    short: "Engineer",
+    kind: "human",
+    icon: "Person",
+    view: "review",
+  },
+  {
+    id: "refiner",
+    label: "Refinement Agent",
+    short: "Refiner",
+    kind: "agent",
+    icon: "Sparkle",
+    view: "report",
+  },
+];
+
 export default function ContestableWorkspace({
   incident = null,
   alert = null,
+  selectionOptions = [],
+  selectedKey = "benchmark",
+  onSelectKey,
+  activeSelection = null,
   dataSource = "leafy",
   onCommitted,
+  toolbarStart = null,
 }) {
-  // Initialize synchronously on Step 1 so there is no loading spinner on open
-  // and the user always starts on Step 1 (Evidence & 3 Candidates).
-  const initialBundle = useMemo(
-    () => buildInitialClientSession({ incident, alert, dataSource }),
-    [alert, dataSource, incident]
-  );
-
-  const [activePhase, setActivePhase] = useState(1);
-  const [session, setSession] = useState(initialBundle.session);
-  const [argumentsList, setArgumentsList] = useState(initialBundle.arguments);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [lockedSelection, setLockedSelection] = useState(null);
+  const [workflowStage, setWorkflowStage] = useState("evidence");
+  const [view, setView] = useState("evidence");
+  const [evidenceStatus, setEvidenceStatus] = useState("idle");
+  const [session, setSession] = useState(null);
+  const [argumentsList, setArgumentsList] = useState([]);
+  const [agentStatus, setAgentStatus] = useState({
+    vibration_pattern_agent: "idle",
+    maintenance_history_agent: "idle",
+  });
+  const [baselineScores, setBaselineScores] = useState(null);
   const [selectedCandidate, setSelectedCandidate] = useState(
-    initialBundle.winningCandidate || "bearing_degradation"
+    "bearing_degradation",
   );
-  const [isLoadingSession, setIsLoadingSession] = useState(false);
+  const [precedentsOpen, setPrecedentsOpen] = useState(false);
+  const [argumentsOpen, setArgumentsOpen] = useState(false);
   const [isSavingAction, setIsSavingAction] = useState(false);
   const [isGeneratingRefinement, setIsGeneratingRefinement] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
@@ -459,135 +722,241 @@ export default function ContestableWorkspace({
   const [inspectedDoc, setInspectedDoc] = useState(null);
   const [lineageDoc, setLineageDoc] = useState(null);
   const [showFormulaInfo, setShowFormulaInfo] = useState(false);
-  const syncedRef = useRef(false);
-
-  // Engineer Add Argument state
-  const [newArgCandidate, setNewArgCandidate] = useState("misalignment");
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [newArgStance, setNewArgStance] = useState("support");
   const [newArgScore, setNewArgScore] = useState("0.85");
-  const [newArgReason, setNewArgReason] = useState(
-    ENGINEER_PRESET_SUGGESTIONS[0].reason
-  );
-
-  // Phase 4 Editable Incident Report state
+  const [newArgReason, setNewArgReason] = useState("");
   const [draftRootCause, setDraftRootCause] = useState("");
   const [draftRepairSteps, setDraftRepairSteps] = useState("");
   const [draftRationale, setDraftRationale] = useState("");
 
-  // Live client-side score calculation whenever argumentsList changes
+  const queueRef = useRef([]);
+  const timerRef = useRef(null);
+  const shownIdsRef = useRef(new Set());
+  const requestDoneRef = useRef({
+    vibration_pattern_agent: false,
+    maintenance_history_agent: false,
+  });
+  const debateStartedRef = useRef(false);
+  const runGenerationRef = useRef(0);
+  const enqueueRef = useRef(() => {});
+  const resetMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!resetConfirmOpen) return undefined;
+    const closeMenu = (event) => {
+      if (event.key === "Escape") {
+        setResetConfirmOpen(false);
+        return;
+      }
+      if (
+        event.type === "mousedown" &&
+        !resetMenuRef.current?.contains(event.target)
+      ) {
+        setResetConfirmOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", closeMenu);
+    window.addEventListener("keydown", closeMenu);
+    return () => {
+      document.removeEventListener("mousedown", closeMenu);
+      window.removeEventListener("keydown", closeMenu);
+    };
+  }, [resetConfirmOpen]);
+
   const liveScored = useMemo(() => {
     const candidates = session?.candidates || DEFAULT_CANDIDATES;
     return computeCandidateScores(argumentsList, candidates);
   }, [argumentsList, session?.candidates]);
 
   const candidates = session?.candidates || DEFAULT_CANDIDATES;
-  const scoresBefore = session?.scores_before || liveScored.candidateScores;
-  const scoresAfter = liveScored.candidateScores;
   const winningCandidate = liveScored.winningCandidate || "bearing_degradation";
+  const debateDone = SPECIALIST_IDS.every((id) => agentStatus[id] === "done");
 
-  // Silently sync the initial session to MongoDB in the background without a spinner or changing activePhase
-  useEffect(() => {
-    if (syncedRef.current) return;
-    syncedRef.current = true;
-    startContestableSession({
-      incident,
-      alert: alert || STANDALONE_PRESET_SCENARIOS[0].alert,
-      machineId: incident?.machine_id || alert?.machine_id || "M1",
-      dataSource,
-      mode: "benchmark",
-    })
-      .then((res) => {
-        if (res?.session) {
-          setSession(res.session);
-          setArgumentsList(res.arguments || []);
-        }
-      })
-      .catch(() => {
-        // Keep local initialBundle if background sync fails
-      });
-  }, [alert, dataSource, incident]);
-
-  // Explicit user-triggered session reset or live LLM run
-  const handleStartSession = useCallback(
-    async (runMode = "agent", targetPhase = null) => {
-      if (runMode === "benchmark") {
-        const fresh = buildInitialClientSession({ incident, alert, dataSource });
-        setSession(fresh.session);
-        setArgumentsList(fresh.arguments);
-        setSelectedCandidate(fresh.winningCandidate || "bearing_degradation");
-        setDraftRootCause("");
-        setDraftRepairSteps("");
-        setDraftRationale("");
-        setCommitSuccess(false);
-        if (targetPhase) setActivePhase(targetPhase);
-        startContestableSession({
-          incident,
-          alert: alert || STANDALONE_PRESET_SCENARIOS[0].alert,
-          machineId: incident?.machine_id || alert?.machine_id || "M1",
-          dataSource,
-          mode: "benchmark",
-        })
-          .then((res) => {
-            if (res?.session) {
-              setSession(res.session);
-              setArgumentsList(res.arguments || []);
-            }
-          })
-          .catch(() => {});
-        return;
-      }
-
-      setIsLoadingSession(true);
-      setErrorMsg("");
-      setCommitSuccess(false);
-      try {
-        const res = await startContestableSession({
-          incident,
-          alert: alert || STANDALONE_PRESET_SCENARIOS[0].alert,
-          machineId: incident?.machine_id || alert?.machine_id || "M1",
-          dataSource,
-          mode: runMode,
-        });
-        setSession(res.session);
-        setArgumentsList(res.arguments || []);
-        if (res.winningCandidate) {
-          setSelectedCandidate(res.winningCandidate);
-        }
-        if (targetPhase) {
-          setActivePhase(targetPhase);
-        }
-      } catch (err) {
-        setErrorMsg(
-          err.message || "Failed to run live LLM debate"
-        );
-      } finally {
-        setIsLoadingSession(false);
-      }
-    },
-    [alert, dataSource, incident]
+  const selectedMeta =
+    candidates.find((cand) => cand.id === selectedCandidate) || candidates[0];
+  const engineerPreset = ENGINEER_PRESET_SUGGESTIONS.find(
+    (preset) => preset.candidate === selectedCandidate,
   );
 
-  // Apply Accept / Reject / Modify / Restore / Add with optimistic UI update
+  useEffect(() => {
+    const match = ENGINEER_PRESET_SUGGESTIONS.find(
+      (preset) => preset.candidate === selectedCandidate,
+    );
+    if (!match) return;
+    setNewArgStance(match.stance);
+    setNewArgScore(String(match.score));
+    setNewArgReason(match.reason);
+  }, [selectedCandidate]);
+
+  useEffect(() => {
+    if (!debateDone || baselineScores) return;
+    setBaselineScores(liveScored.candidateScores);
+  }, [baselineScores, debateDone, liveScored]);
+
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      document.body.classList.remove("contestable-select-open");
+    },
+    [],
+  );
+
+  const settleAgents = useCallback(() => {
+    setAgentStatus((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const id of SPECIALIST_IDS) {
+        const drained =
+          requestDoneRef.current[id] &&
+          !queueRef.current.some((arg) => arg.agent === id);
+        if (drained && prev[id] === "running") {
+          next[id] = "done";
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, []);
+
+  const pump = useCallback(() => {
+    if (timerRef.current) return;
+    const step = () => {
+      const nextArg = queueRef.current.shift();
+      if (!nextArg) {
+        timerRef.current = null;
+        settleAgents();
+        return;
+      }
+      shownIdsRef.current.add(nextArg.argument_id);
+      setArgumentsList((prev) =>
+        prev.some((arg) => arg.argument_id === nextArg.argument_id)
+          ? prev
+          : [...prev, nextArg],
+      );
+      settleAgents();
+      timerRef.current = setTimeout(step, REVEAL_MS);
+    };
+    timerRef.current = setTimeout(step, REVEAL_MS);
+  }, [settleAgents]);
+
+  enqueueRef.current = (incoming) => {
+    const fresh = [];
+    for (const arg of incoming || []) {
+      if (!arg?.argument_id || shownIdsRef.current.has(arg.argument_id)) {
+        continue;
+      }
+      if (
+        queueRef.current.some((item) => item.argument_id === arg.argument_id)
+      ) {
+        continue;
+      }
+      fresh.push(arg);
+    }
+    if (fresh.length === 0) {
+      settleAgents();
+      return;
+    }
+    queueRef.current.push(...fresh);
+    pump();
+  };
+
+  const prepare = useCallback(
+    async (isCancelled = () => false, overrideContext = null) => {
+      const targetIncident =
+        overrideContext !== null ? overrideContext.incident : incident;
+      const targetAlert =
+        overrideContext !== null
+          ? overrideContext.alert
+          : alert || STANDALONE_PRESET_SCENARIOS[0].alert;
+      setEvidenceStatus("running");
+      setErrorMsg("");
+      try {
+        const res = await prepareContestableSession({
+          incident: targetIncident,
+          alert: targetAlert,
+          machineId:
+            targetIncident?.machine_id || targetAlert?.machine_id || "M1",
+          dataSource,
+        });
+        if (isCancelled()) return;
+        setSession(res.session || null);
+        setArgumentsList([]);
+        setEvidenceStatus("ready");
+        const firstId = res.session?.candidates?.[0]?.id;
+        if (firstId) setSelectedCandidate(firstId);
+      } catch (err) {
+        if (isCancelled()) return;
+        setEvidenceStatus("error");
+        setErrorMsg(err.message || "Failed to gather candidate root causes");
+      }
+    },
+    [alert, dataSource, incident],
+  );
+
+  const handleAnalyzeRootCause = useCallback(() => {
+    const selectionSnapshot = activeSelection || {
+      key: selectedKey,
+      kind: incident ? "incident" : "alert",
+      label: incident
+        ? `Incident · ${incident.machine_id || "M1"} · ${incident.error_code || "E13"} ${incident.error_name || "Incident"}`
+        : `Alert · ${STANDALONE_PRESET_SCENARIOS[0].title}`,
+      shortLabel: incident
+        ? `Incident · ${incident.machine_id || "M1"} · ${incident.error_code || "E13"} ${incident.error_name || "Incident"}`
+        : `${STANDALONE_PRESET_SCENARIOS[0].machine_id} · ${STANDALONE_PRESET_SCENARIOS[0].error_code} ${STANDALONE_PRESET_SCENARIOS[0].error_name}`,
+      incident,
+      alert: alert || STANDALONE_PRESET_SCENARIOS[0].alert,
+    };
+    setLockedSelection(selectionSnapshot);
+    setHasStarted(true);
+    setWorkflowStage("evidence");
+    setView("evidence");
+    runGenerationRef.current += 1;
+    const generation = runGenerationRef.current;
+    prepare(() => runGenerationRef.current !== generation, {
+      incident: selectionSnapshot.incident,
+      alert: selectionSnapshot.alert,
+    });
+  }, [activeSelection, alert, incident, prepare, selectedKey]);
+
+  const runSpecialist = useCallback(
+    async (agentId) => {
+      if (!session?.session_id) return;
+      const generation = runGenerationRef.current;
+      requestDoneRef.current[agentId] = false;
+      setAgentStatus((prev) => ({ ...prev, [agentId]: "running" }));
+      setErrorMsg("");
+      try {
+        const res = await runContestableSpecialist({
+          sessionId: session.session_id,
+          agent: agentId,
+        });
+        if (runGenerationRef.current !== generation) return;
+        if (res?.session) setSession(res.session);
+        requestDoneRef.current[agentId] = true;
+        enqueueRef.current(res?.arguments || []);
+      } catch (err) {
+        if (runGenerationRef.current !== generation) return;
+        requestDoneRef.current[agentId] = true;
+        setAgentStatus((prev) => ({ ...prev, [agentId]: "error" }));
+        setErrorMsg(err.message || "Specialist agent failed");
+      }
+    },
+    [session?.session_id],
+  );
+
   const handleArgumentAction = useCallback(
-    async ({
-      actionType,
-      argumentId,
-      reason,
-      score,
-      candidate,
-      stance,
-    }) => {
+    async ({ actionType, argumentId, reason, score, candidate, stance }) => {
       if (!session?.session_id) return;
       setIsSavingAction(true);
       setErrorMsg("");
 
-      // Optimistic client update for immediate score recalculation
       setArgumentsList((prev) => {
         if (actionType === "add") {
           const added = {
             argument_id: `${session.session_id}_eng_${Date.now().toString().slice(-4)}`,
             session_id: session.session_id,
-            candidate: candidate || newArgCandidate,
+            candidate: candidate || selectedCandidate,
             agent: "reliability_engineer",
             stance: stance || newArgStance,
             score: Number(score ?? 0.85),
@@ -643,28 +1012,33 @@ export default function ContestableWorkspace({
           reviewerRole: "Reliability Engineer",
         });
         setSession(res.session);
-        setArgumentsList(res.arguments || []);
+        if (Array.isArray(res.arguments) && res.arguments.length > 0) {
+          setArgumentsList(res.arguments);
+          shownIdsRef.current = new Set(
+            res.arguments.map((arg) => arg.argument_id),
+          );
+        }
       } catch {
-        // Keep optimistic client state if offline
+        // Keep the optimistic score update if the request fails.
       } finally {
         setIsSavingAction(false);
       }
     },
-    [newArgCandidate, newArgReason, newArgStance, session?.session_id]
+    [newArgReason, newArgStance, selectedCandidate, session?.session_id],
   );
 
-  // Move to Phase 4 and populate refined incident report
-  const handleProceedToResolution = useCallback(async () => {
-    setActivePhase(4);
+  const handleGenerateReport = useCallback(async () => {
+    const generation = runGenerationRef.current;
+    const winner = liveScored.winningCandidate || selectedCandidate;
     const fallback =
-      DEFAULT_REFINEMENT_BY_CANDIDATE[winningCandidate] ||
+      DEFAULT_REFINEMENT_BY_CANDIDATE[winner] ||
       DEFAULT_REFINEMENT_BY_CANDIDATE.misalignment;
+    const winnerLabel = liveScored.candidateScores[winner]?.label || winner;
 
-    // Immediately prefill from winning candidate so user doesn't wait
     setDraftRootCause(fallback.root_cause);
     setDraftRepairSteps(formatStepsToText(fallback.repair_instructions));
     setDraftRationale(
-      `Selected ${scoresAfter[winningCandidate]?.label || winningCandidate} (score ${(scoresAfter[winningCandidate]?.score ?? 0.5).toFixed(3)}) after combining specialist agent arguments and reliability engineer review.`
+      `Selected ${winnerLabel} (score ${(liveScored.candidateScores[winner]?.score ?? 0.5).toFixed(3)}) after specialist arguments and reliability engineer review.`,
     );
 
     if (!session?.session_id) return;
@@ -673,34 +1047,35 @@ export default function ContestableWorkspace({
       const res = await generateContestableRefinement({
         sessionId: session.session_id,
       });
+      if (runGenerationRef.current !== generation) return;
       if (res.refinement) {
         setDraftRootCause(res.refinement.root_cause || fallback.root_cause);
         setDraftRepairSteps(
           formatStepsToText(
-            res.refinement.repair_instructions || fallback.repair_instructions
-          )
+            res.refinement.repair_instructions || fallback.repair_instructions,
+          ),
         );
         setDraftRationale(res.refinement.rationale || "");
       }
-      if (res.lineage) {
-        setLineageDoc(res.lineage);
-      }
+      if (res.lineage) setLineageDoc(res.lineage);
     } catch {
-      // Keep immediate fallback values
+      // Keep the immediate fallback draft.
     } finally {
-      setIsGeneratingRefinement(false);
+      if (runGenerationRef.current === generation) {
+        setIsGeneratingRefinement(false);
+      }
     }
-  }, [scoresAfter, session?.session_id, winningCandidate]);
+  }, [liveScored, selectedCandidate, session?.session_id]);
 
-  // Commit refined incident report to MongoDB incident_reports
   const handleCommitToIncidentReport = useCallback(async () => {
     if (!session?.session_id) return;
     setIsCommitting(true);
     setErrorMsg("");
     try {
+      const targetIncident = lockedSelection?.incident ?? incident;
       const res = await commitContestableIncident({
         sessionId: session.session_id,
-        incidentId: incident?._id || session?.incident_id,
+        incidentId: targetIncident?._id || session?.incident_id,
         rootCause: draftRootCause,
         repairInstructions: draftRepairSteps,
         rationale: draftRationale,
@@ -708,12 +1083,8 @@ export default function ContestableWorkspace({
         createIfMissing: true,
       });
       setCommitSuccess(true);
-      if (res.lineage) {
-        setLineageDoc(res.lineage);
-      }
-      if (onCommitted) {
-        onCommitted(res.incident);
-      }
+      if (res.lineage) setLineageDoc(res.lineage);
+      if (onCommitted) onCommitted(res.incident);
     } catch (err) {
       setErrorMsg(err.message || "Failed to commit incident report");
     } finally {
@@ -723,909 +1094,1048 @@ export default function ContestableWorkspace({
     draftRationale,
     draftRepairSteps,
     draftRootCause,
-    incident?._id,
+    incident,
+    lockedSelection,
     onCommitted,
     session?.incident_id,
     session?.session_id,
   ]);
 
-  const interventionCounts = useMemo(() => {
-    return {
+  const handleContinue = () => {
+    if (workflowStage === "evidence") {
+      if (evidenceStatus !== "ready" || !session?.session_id) return;
+      if (!debateStartedRef.current) {
+        debateStartedRef.current = true;
+        setAgentStatus({
+          vibration_pattern_agent: "running",
+          maintenance_history_agent: "running",
+        });
+        for (const id of SPECIALIST_IDS) runSpecialist(id);
+      }
+      setWorkflowStage("debate");
+      setView("debate");
+      return;
+    }
+    if (workflowStage === "debate") {
+      if (!debateDone) return;
+      setWorkflowStage("review");
+      setView("review");
+      return;
+    }
+    if (workflowStage === "review") {
+      setArgumentsOpen(false);
+      setWorkflowStage("report");
+      setView("report");
+      handleGenerateReport();
+    }
+  };
+
+  const handleReset = () => {
+    setResetConfirmOpen(false);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    queueRef.current = [];
+    shownIdsRef.current = new Set();
+    requestDoneRef.current = {
+      vibration_pattern_agent: false,
+      maintenance_history_agent: false,
+    };
+    debateStartedRef.current = false;
+    runGenerationRef.current += 1;
+    setHasStarted(false);
+    setLockedSelection(null);
+    setEvidenceStatus("idle");
+    setWorkflowStage("evidence");
+    setView("evidence");
+    setSession(null);
+    setArgumentsList([]);
+    setAgentStatus({
+      vibration_pattern_agent: "idle",
+      maintenance_history_agent: "idle",
+    });
+    setBaselineScores(null);
+    setPrecedentsOpen(false);
+    setArgumentsOpen(false);
+    setCommitSuccess(false);
+    setErrorMsg("");
+    setLineageDoc(null);
+    setInspectedDoc(null);
+    setDraftRootCause("");
+    setDraftRepairSteps("");
+    setDraftRationale("");
+    setSelectedCandidate("bearing_degradation");
+    setIsGeneratingRefinement(false);
+  };
+
+  const openGovernance = async () => {
+    let lineage = lineageDoc;
+    if (!lineage && session?.session_id) {
+      try {
+        const res = await fetchContestableLineage(session.session_id);
+        lineage = res?.lineage || null;
+        if (lineage) setLineageDoc(lineage);
+      } catch {
+        lineage = null;
+      }
+    }
+    setInspectedDoc({
+      title: `MongoDB Governance & Argument Records${
+        session?.session_id ? ` (${session.session_id})` : ""
+      }`,
+      subtitle: "contestable_sessions $lookup with argument_records",
+      value: lineage || {
+        session_id: session?.session_id,
+        argument_records: argumentsList,
+      },
+    });
+  };
+
+  const inspectArgument = (arg) => (record) => {
+    setInspectedDoc({
+      title: `MongoDB Record: ${arg.argument_id}`,
+      subtitle: "Stored in argument_records collection",
+      value: record,
+    });
+  };
+
+  const interventionCounts = useMemo(
+    () => ({
       accepted: argumentsList.filter((a) => a.human_action === "accept").length,
       rejected: argumentsList.filter((a) => a.human_action === "reject").length,
       modified: argumentsList.filter((a) => a.human_action === "modify").length,
       added: argumentsList.filter((a) => a.human_action === "add").length,
-    };
-  }, [argumentsList]);
-
-  const phases = [
-    { id: 1, label: "1. Evidence & Candidates" },
-    { id: 2, label: "2. Specialist Agent Debate" },
-    { id: 3, label: "3. Engineer Contestation" },
-    { id: 4, label: "4. Refine Incident & Lineage" },
-  ];
-
-  const filteredCandidateArgs = useMemo(() => {
-    return argumentsList.filter((a) => a.candidate === selectedCandidate);
-  }, [argumentsList, selectedCandidate]);
-
-  const supportArgsForSelected = filteredCandidateArgs.filter(
-    (a) => (a.stance || a.type) === "support"
+    }),
+    [argumentsList],
   );
-  const challengeArgsForSelected = filteredCandidateArgs.filter(
-    (a) => (a.stance || a.type) === "challenge"
+
+  const stageIndex = STAGE_ORDER.indexOf(workflowStage);
+  const reviewReached = stageIndex >= STAGE_ORDER.indexOf("review");
+  const hasCalculatedScores =
+    argumentsList.length > 0 ||
+    Boolean(baselineScores) ||
+    Boolean(session?.scores_before);
+  const scoreMode =
+    reviewReached && (baselineScores || session?.scores_before)
+      ? "compare"
+      : hasCalculatedScores && stageIndex >= STAGE_ORDER.indexOf("debate")
+        ? "live"
+        : "none";
+  const continueDisabled =
+    evidenceStatus !== "ready" ||
+    (workflowStage === "evidence" && !session?.session_id) ||
+    (workflowStage === "debate" && !debateDone) ||
+    (workflowStage === "review" && isGeneratingRefinement) ||
+    workflowStage === "report";
+  const showContinue = workflowStage !== "report" && !continueDisabled;
+
+  const handleStepSelect = (key) => {
+    if (!hasStarted) return;
+    const stepIndex = Number(key);
+    if (
+      !Number.isInteger(stepIndex) ||
+      stepIndex < 0 ||
+      stepIndex > stageIndex
+    ) {
+      return;
+    }
+    const nextView = WORKFLOW_STEPS[stepIndex]?.id;
+    if (!nextView || nextView === view) return;
+    setView(nextView);
+  };
+
+  const presetScenario = STANDALONE_PRESET_SCENARIOS[0];
+  const currentSelection = lockedSelection ||
+    activeSelection || {
+      key: selectedKey,
+      kind: incident ? "incident" : "alert",
+      label: incident
+        ? `Incident · ${incident.machine_id || "M1"} · ${incident.error_code || "E13"} ${incident.error_name || "Incident"}`
+        : `Alert · ${presetScenario.title}`,
+      shortLabel: incident
+        ? `Incident · ${incident.machine_id || "M1"} · ${incident.error_code || "E13"} ${incident.error_name || "Incident"}`
+        : `${presetScenario.machine_id} · ${presetScenario.error_code} ${presetScenario.error_name}`,
+      machineId:
+        incident?.machine_id || alert?.machine_id || presetScenario.machine_id,
+      errorCode:
+        incident?.error_code || alert?.err_code || presetScenario.error_code,
+      errorName:
+        incident?.error_name || alert?.err_name || presetScenario.error_name,
+      summary:
+        incident?.root_cause ||
+        `${presetScenario.subtitle} — Vibration ${presetScenario.alert.details.vibration} mm/s, Temp ${presetScenario.alert.details.temperature} °C`,
+    };
+
+  const effectiveIncident = lockedSelection?.incident ?? incident;
+  const originalRootCause =
+    session?.original_incident?.root_cause ||
+    effectiveIncident?.root_cause ||
+    presetScenario.initial_root_cause;
+  const originalRepair =
+    session?.original_incident?.repair_instructions ||
+    effectiveIncident?.repair_instructions ||
+    presetScenario.initial_repair_instructions;
+  const reportMachine =
+    effectiveIncident?.machine_id ||
+    session?.machine_id ||
+    currentSelection.machineId ||
+    presetScenario.machine_id;
+  const reportErrorCode =
+    effectiveIncident?.error_code ||
+    session?.error_code ||
+    currentSelection.errorCode ||
+    presetScenario.error_code;
+  const reportErrorName =
+    effectiveIncident?.error_name ||
+    session?.error_name ||
+    currentSelection.errorName ||
+    presetScenario.error_name;
+
+  const actorWorking = (actor) => {
+    if (!hasStarted) return false;
+    if (actor.id === "root_cause") return evidenceStatus === "running";
+    if (SPECIALIST_IDS.includes(actor.id)) {
+      return agentStatus[actor.id] === "running";
+    }
+    if (actor.id === "refiner") return isGeneratingRefinement;
+    return false;
+  };
+
+  const engineerArgs = argumentsList.filter(
+    (arg) =>
+      arg.agent === "reliability_engineer" &&
+      arg.candidate === selectedCandidate,
+  );
+
+  const renderAgentColumns = (interactive) => (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {CONTESTABLE_AGENTS.map((agentCfg) => {
+        const columnArgs = argumentsList.filter(
+          (arg) =>
+            arg.agent === agentCfg.id && arg.candidate === selectedCandidate,
+        );
+        const status = agentStatus[agentCfg.id];
+        return (
+          <div
+            key={agentCfg.id}
+            className="flex flex-col rounded-xl border border-[#D8E3DF] bg-white p-4"
+          >
+            <div className="border-b border-[#E8EDEB] pb-3">
+              <h4 className="text-lg font-semibold text-[#112733]">
+                {agentCfg.name}
+              </h4>
+              <p className="mt-1 text-sm text-[#5C6C75]">
+                {agentCfg.description}
+              </p>
+            </div>
+            <div className="mt-3 space-y-2.5">
+              <div className="text-sm font-semibold text-[#112733]">
+                {selectedMeta?.label || selectedCandidate}
+              </div>
+              {columnArgs.map((arg) => (
+                <ArgumentCard
+                  key={arg.argument_id}
+                  arg={arg}
+                  interactive={interactive}
+                  isSaving={isSavingAction}
+                  onAction={handleArgumentAction}
+                  onInspectJson={inspectArgument(arg)}
+                />
+              ))}
+              {status === "running" && columnArgs.length === 0 && (
+                <p className="text-sm text-[#5C6C75]">Writing arguments…</p>
+              )}
+              {status === "error" && (
+                <div className="flex flex-col items-start gap-2">
+                  <p className="text-sm text-[#B1371F]">
+                    This agent did not finish.
+                  </p>
+                  <Button
+                    variant="secondary"
+                    onPress={() => runSpecialist(agentCfg.id)}
+                  >
+                    Retry agent
+                  </Button>
+                </div>
+              )}
+              {status === "done" && columnArgs.length === 0 && (
+                <p className="text-sm text-[#5C6C75]">
+                  No arguments for this candidate yet.
+                </p>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white">
-      {/* Top Workspace Header */}
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#D8E3DF] bg-[#F8FAF9] px-5 py-3.5">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#E3FCF7] px-3 py-1 text-sm font-semibold text-[#00684A]">
-            <Icon glyph="Person" size={16} />
+    <div className="relative flex h-full min-h-0 w-full flex-col">
+      <div className="grid shrink-0 grid-cols-[minmax(0,1fr)_minmax(32rem,56rem)_minmax(0,1fr)] items-center gap-6 px-4 py-3">
+        <div className="min-w-0 justify-self-start">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#112733]">
             Contestable AI
-          </span>
-          <span className="text-base font-semibold text-[#112733]">
-            {incident?.error_name ||
-              session?.error_name ||
-              "High Vibration & Thermal Alert"}{" "}
-            ({incident?.machine_id || session?.machine_id || "M1"})
-          </span>
-          {session?.session_id && (
-            <span className="rounded-md bg-white px-2.5 py-1 font-mono text-sm text-[#5C6C75] border border-[#D8E3DF]">
-              session: {session.session_id}
-            </span>
+          </h1>
+          <Link
+            href="/agentic-ai"
+            className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-[#00684A] hover:underline"
+          >
+            <Icon glyph="ArrowLeft" size={16} />
+            <span>Back to overview</span>
+          </Link>
+        </div>
+        <div
+          className={`agentic-demo-stepper contestable-stepper min-w-0 overflow-x-auto${
+            commitSuccess ? " contestable-report-saved" : ""
+          }`}
+        >
+          <Stepper
+            currentStep={stageIndex}
+            maxDisplaySteps={WORKFLOW_STEPS.length}
+            aria-label="Contestable workflow"
+            onSelectionChange={handleStepSelect}
+            className="min-w-[500px] [&>li]:cursor-pointer"
+          >
+            {WORKFLOW_STEPS.map((step, index) => (
+              <Step key={String(index)} textValue={step.label}>
+                {step.label}
+              </Step>
+            ))}
+          </Stepper>
+        </div>
+        <div className="flex w-full items-center justify-end">
+          {toolbarStart}
+        </div>
+      </div>
+
+      <div className="relative flex min-h-0 flex-1 gap-3 px-2">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-[#D8E3DF] bg-white shadow-sm">
+          {errorMsg && (
+            <div className="mx-5 mt-3 rounded-lg border border-[#B1371F]/30 bg-[#FFEAE5] px-4 py-2.5 text-sm font-medium text-[#B1371F]">
+              {errorMsg}
+            </div>
           )}
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            variant="secondary"
-            onPress={() => handleStartSession("benchmark")}
-            isDisabled={isLoadingSession}
-          >
-            Reset Benchmark
-          </Button>
-          <Button
-            variant="primary"
-            onPress={() => handleStartSession("agent", 2)}
-            isDisabled={isLoadingSession}
-          >
-            {isLoadingSession ? "Running Debate..." : "Run Live LLM Debate"}
-          </Button>
-        </div>
-      </div>
+          <div className="shrink-0 border-b border-[#D8E3DF] bg-[#F8FAF9] px-5 py-4">
+            {hasStarted && (
+            <div className="mb-2.5 flex items-center justify-between gap-3">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold uppercase tracking-wider text-[#5C6C75]">
+                  Candidate Root Causes
+                </span>
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#D8E3DF] bg-white px-2.5 py-0.5 text-xs font-medium text-[#3D4F58]"
+                  title={currentSelection.label}
+                >
+                  <Icon
+                    glyph={
+                      currentSelection.kind === "incident" ? "Guide" : "Warning"
+                    }
+                    size={12}
+                    className={
+                      currentSelection.kind === "incident"
+                        ? "text-[#016BF8]"
+                        : "text-[#B1371F]"
+                    }
+                  />
+                  <span>
+                    {currentSelection.shortLabel || currentSelection.label}
+                  </span>
+                </span>
+              </div>
+              <div className="flex shrink-0 items-center gap-3">
+                {workflowStage !== "evidence" && (
+                  <span className="text-sm text-[#3D4F58]">
+                    Engineer edits:{" "}
+                    <strong className="text-[#00684A]">
+                      {interventionCounts.accepted} accepted
+                    </strong>
+                    {" · "}
+                    <strong className="text-[#B1371F]">
+                      {interventionCounts.rejected} rejected
+                    </strong>
+                    {" · "}
+                    <strong className="text-[#944F01]">
+                      {interventionCounts.modified} modified
+                    </strong>
+                    {" · "}
+                    <strong className="text-[#00684A]">
+                      {interventionCounts.added} added
+                    </strong>
+                  </span>
+                )}
+                <Toolbar aria-label="Candidate actions">
+                  <div ref={resetMenuRef} className="relative">
+                    <ToolbarAction label="Reset">
+                      <Button
+                        variant="tertiary"
+                        size="small"
+                        onPress={() => setResetConfirmOpen((open) => !open)}
+                        aria-expanded={resetConfirmOpen}
+                        aria-haspopup="dialog"
+                        className="!border-transparent !bg-transparent !text-[#B1371F] !shadow-none hover:!border-transparent hover:!bg-transparent hover:!shadow-none focus-visible:!bg-transparent"
+                      >
+                        <Icon glyph="Refresh" />
+                      </Button>
+                    </ToolbarAction>
+                    {resetConfirmOpen && (
+                      <div
+                        role="dialog"
+                        aria-label="Confirm restart"
+                        className="absolute right-0 top-full z-30 mt-1.5 w-72 rounded-xl border border-[#D8E3DF] bg-white p-3 text-left shadow-lg"
+                      >
+                        <p className="text-sm font-semibold text-[#112733]">
+                          Restart this demo?
+                        </p>
+                        <p className="mt-1 text-sm leading-5 text-[#5C6C75]">
+                          This will clear the current workflow, arguments, and
+                          scores and start again from the first step. Are you
+                          sure?
+                        </p>
+                        <div className="mt-3 flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setResetConfirmOpen(false)}
+                            className="rounded-md px-2.5 py-1 text-sm font-medium text-[#3D4F58] hover:bg-[#F1F5F3]"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleReset}
+                            className="rounded-md bg-[#B1371F] px-2.5 py-1 text-sm font-semibold text-white hover:bg-[#8E2C19]"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <ToolbarAction label="Show more">
+                    <Button
+                      variant="tertiary"
+                      size="small"
+                      isDisabled={evidenceStatus !== "ready"}
+                      aria-expanded={precedentsOpen}
+                      onPress={() => setPrecedentsOpen((open) => !open)}
+                      className="!border-transparent !bg-transparent !shadow-none hover:!border-transparent hover:!bg-transparent hover:!shadow-none focus-visible:!bg-transparent"
+                    >
+                      <Icon glyph="ExpandVertical" />
+                    </Button>
+                  </ToolbarAction>
+                  <div className="relative">
+                    <ToolbarAction label="Explain score">
+                      <Button
+                        variant="tertiary"
+                        size="small"
+                        onPress={() => setShowFormulaInfo((prev) => !prev)}
+                        aria-expanded={showFormulaInfo}
+                        className="!border-transparent !bg-transparent !shadow-none hover:!border-transparent hover:!bg-transparent hover:!shadow-none focus-visible:!bg-transparent"
+                      >
+                        <Icon glyph="InfoWithCircle" />
+                      </Button>
+                    </ToolbarAction>
+                    {showFormulaInfo && (
+                      <div className="absolute right-0 top-full z-30 mt-1.5 w-[22rem] max-w-[90vw] rounded-xl border border-[#D8E3DF] bg-white p-4 text-sm text-[#112733] shadow-lg">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-semibold">
+                            How a score is calculated
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowFormulaInfo(false)}
+                            aria-label="Close scoring info"
+                            className="text-[#5C6C75] hover:text-[#112733]"
+                          >
+                            <Icon glyph="X" size={14} />
+                          </button>
+                        </div>
+                        <div className="mt-3 rounded-lg bg-[#F8FAF9] px-3 py-3 text-center">
+                          <p className="text-base text-[#112733]">
+                            score = σ(τ + αS − αC)
+                          </p>
+                        </div>
+                        <dl className="mt-3 space-y-1.5 text-[#3D4F58]">
+                          <div className="flex gap-2">
+                            <dt className="w-4 shrink-0 font-medium text-[#112733]">
+                              τ
+                            </dt>
+                            <dd>Starting belief. Begins at 0.</dd>
+                          </div>
+                          <div className="flex gap-2">
+                            <dt className="w-4 shrink-0 font-medium text-[#112733]">
+                              α
+                            </dt>
+                            <dd>Weight of each side. Set to 0.3.</dd>
+                          </div>
+                          <div className="flex gap-2">
+                            <dt className="w-4 shrink-0 font-medium text-[#00684A]">
+                              S
+                            </dt>
+                            <dd>Sum of the scores that support this candidate.</dd>
+                          </div>
+                          <div className="flex gap-2">
+                            <dt className="w-4 shrink-0 font-medium text-[#DB6C00]">
+                              C
+                            </dt>
+                            <dd>Sum of the scores that challenge it.</dd>
+                          </div>
+                        </dl>
+                        <p className="mt-3 text-[#5C6C75]">
+                          Rejected arguments are left out. The bar updates as
+                          arguments are accepted, rejected, modified, or added.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </Toolbar>
+              </div>
+            </div>
+            )}
 
-      {/* Phase Navigation Tabs */}
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#D8E3DF] bg-white px-5 py-2.5">
-        <div className="flex flex-wrap items-center gap-2">
-          {phases.map((p) => {
-            const active = activePhase === p.id;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => {
-                  if (p.id === 4 && !draftRootCause) {
-                    handleProceedToResolution();
-                  } else {
-                    setActivePhase(p.id);
+            {!hasStarted ? (
+              <div className="flex min-h-[10.25rem] items-center justify-center">
+                <div className="flex items-end gap-3">
+                <div
+                  className="w-[32rem] max-w-full"
+                  onPointerDown={() => {
+                    document.body.classList.add("contestable-select-open");
+                  }}
+                >
+                    <p className="mb-2 text-sm font-semibold text-[#112733]">
+                      Select an incident
+                    </p>
+                    <Select
+                      aria-label="Select an incident"
+                      className="contestable-context-select"
+                      placeholder="Select an incident"
+                      selectedKey={selectedKey}
+                      onOpenChange={(isOpen) => {
+                        document.body.classList.toggle(
+                          "contestable-select-open",
+                          isOpen
+                        );
+                      }}
+                      onSelectionChange={(key) => {
+                        if (key != null && onSelectKey) onSelectKey(String(key));
+                      }}
+                    >
+                      {selectionOptions.length > 0 ? (
+                        selectionOptions.map((opt) => (
+                          <SelectItem
+                            key={opt.key}
+                            id={opt.key}
+                            textValue={opt.shortLabel || opt.label}
+                          >
+                            {opt.shortLabel || opt.label}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem
+                          id="benchmark"
+                          textValue="Anomalous vibration spike on Laser Tab Welding machine"
+                        >
+                          Anomalous vibration spike on Laser Tab Welding machine
+                        </SelectItem>
+                      )}
+                    </Select>
+                </div>
+                <Button variant="primary" onPress={handleAnalyzeRootCause}>
+                  Analyze Root Cause
+                </Button>
+                </div>
+              </div>
+            ) : evidenceStatus === "running" ? (
+              <div className="grid min-h-[7.25rem] grid-cols-1 gap-3 md:grid-cols-3">
+                <CandidateCardSkeleton />
+                <CandidateCardSkeleton />
+                <CandidateCardSkeleton />
+              </div>
+            ) : evidenceStatus === "error" ? (
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="secondary"
+                  onPress={() =>
+                    prepare(
+                      () => false,
+                      lockedSelection
+                        ? {
+                            incident: lockedSelection.incident,
+                            alert: lockedSelection.alert,
+                          }
+                        : null,
+                    )
                   }
-                }}
-                className={`rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors ${
-                  active
-                    ? "bg-[#00684A] text-white"
-                    : "bg-[#F1F5F3] text-[#3D4F58] hover:bg-[#E3FCF7] hover:text-[#00684A]"
-                }`}
-              >
-                {p.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {errorMsg && (
-        <div className="mx-5 mt-3 rounded-lg border border-[#B1371F]/30 bg-[#FFEAE5] px-4 py-2.5 text-sm font-medium text-[#B1371F]">
-          {errorMsg}
-        </div>
-      )}
-
-      {/* Persistent Candidate Scoreboard across all phases */}
-      <div className="shrink-0 border-b border-[#D8E3DF] bg-[#F8FAF9] px-5 py-3.5">
-        <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
-          <div className="relative flex items-center gap-2">
-            <span className="text-sm font-semibold uppercase tracking-wider text-[#5C6C75]">
-              Candidate Root Causes
-            </span>
-            <button
-              type="button"
-              onClick={() => setShowFormulaInfo((prev) => !prev)}
-              aria-label="How candidate scores are calculated"
-              title="How candidate scores are calculated"
-              className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[#5C6C75] transition-colors hover:bg-[#E3FCF7] hover:text-[#00684A]"
-            >
-              <Icon glyph="InfoWithCircle" size={16} />
-            </button>
-            {showFormulaInfo && (
-              <div className="absolute left-0 top-full z-30 mt-1.5 w-[440px] max-w-[90vw] rounded-xl border border-[#D8E3DF] bg-white p-4 text-sm text-[#112733] shadow-lg">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-[#112733]">
-                    Bipolar Argumentation Scoring
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowFormulaInfo(false)}
-                    aria-label="Close scoring info"
-                    className="text-[#5C6C75] hover:text-[#112733]"
-                  >
-                    <Icon glyph="X" size={14} />
-                  </button>
-                </div>
-                <p className="mt-1.5 text-sm text-[#5C6C75]">
-                  Each candidate&apos;s score combines active supporting and
-                  challenging arguments:
-                </p>
-                <div className="mt-2.5 flex items-center justify-center rounded-lg border border-[#E8EDEB] bg-[#F8FAF9] px-4 py-3 text-base text-[#112733]">
-                  <span className="whitespace-nowrap font-serif tracking-wide">
-                    <span className="italic font-semibold text-[#00684A]">
-                      S
-                    </span>
-                    <sub className="italic">c</sub>
-                    {" = "}
-                    <span className="italic">σ</span>
-                    <span className="mx-0.5 text-lg font-normal">(</span>
-                    <span className="italic">τ</span>
-                    {" + 0.3 "}
-                    <span className="text-lg">∑</span>
-                    {" "}
-                    <span className="italic text-[#00684A]">w</span>
-                    <sub>sup</sub>
-                    {" − 0.3 "}
-                    <span className="text-lg">∑</span>
-                    {" "}
-                    <span className="italic text-[#B1371F]">w</span>
-                    <sub>chal</sub>
-                    <span className="mx-0.5 text-lg font-normal">)</span>
-                  </span>
-                </div>
-                <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-[#5C6C75]">
-                  <span>
-                    <strong className="font-serif italic text-[#112733]">
-                      σ(x)
-                    </strong>
-                    : logistic sigmoid{" "}
-                    <span className="font-serif">
-                      1 / (1 + e<sup>−x</sup>)
-                    </span>
-                  </span>
-                  <span>
-                    <strong className="font-serif italic text-[#112733]">
-                      τ = 0
-                    </strong>
-                    : base prior
-                  </span>
-                  <span>
-                    <strong className="font-serif italic text-[#00684A]">
-                      ∑ w<sub>sup</sub>
-                    </strong>
-                    : total support score
-                  </span>
-                  <span>
-                    <strong className="font-serif italic text-[#B1371F]">
-                      ∑ w<sub>chal</sub>
-                    </strong>
-                    : total challenge score
-                  </span>
-                </div>
+                >
+                  Retry Root Cause Agent
+                </Button>
+              </div>
+            ) : (
+              <div className="grid min-h-[7.25rem] grid-cols-1 gap-3 md:grid-cols-3">
+                {candidates.map((cand) => (
+                  <CandidateCard
+                    key={cand.id}
+                    candidate={cand}
+                    scoreMode={scoreMode}
+                    scoreObj={liveScored.candidateScores[cand.id]}
+                    scoreBeforeObj={
+                      baselineScores?.[cand.id] ||
+                      session?.scores_before?.[cand.id]
+                    }
+                    hasArguments={argumentsList.some(
+                      (arg) => arg.candidate === cand.id,
+                    )}
+                    isWinner={
+                      argumentsList.length > 0 &&
+                      winningCandidate === cand.id
+                    }
+                    isSelected={
+                      view === "report"
+                        ? argumentsList.length > 0 &&
+                          winningCandidate === cand.id
+                        : view !== "evidence" &&
+                          selectedCandidate === cand.id
+                    }
+                    precedentsOpen={precedentsOpen}
+                    selectable={view === "debate" || view === "review"}
+                    onSelect={setSelectedCandidate}
+                  />
+                ))}
               </div>
             )}
           </div>
-          <span className="text-sm text-[#3D4F58]">
-            Engineer Edits:{" "}
-            <strong className="text-[#00684A]">
-              {interventionCounts.accepted} accepted
-            </strong>{" "}
-            ·{" "}
-            <strong className="text-[#B1371F]">
-              {interventionCounts.rejected} rejected
-            </strong>{" "}
-            ·{" "}
-            <strong className="text-[#944F01]">
-              {interventionCounts.modified} modified
-            </strong>{" "}
-            ·{" "}
-            <strong className="text-[#00684A]">
-              {interventionCounts.added} added
-            </strong>
-          </span>
-        </div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          {candidates.map((cand) => (
-            <CandidateScoreBar
-              key={cand.id}
-              candidateId={cand.id}
-              scoreObj={scoresAfter[cand.id]}
-              scoreBeforeObj={scoresBefore[cand.id]}
-              isWinner={winningCandidate === cand.id}
-              isSelected={selectedCandidate === cand.id}
-              onSelect={setSelectedCandidate}
-            />
-          ))}
-        </div>
-      </div>
 
-      {/* Main Scrollable Content Area */}
-      <div className="min-h-0 flex-1 overflow-y-auto p-5">
-        {isLoadingSession ? (
-          <div className="flex h-64 flex-col items-center justify-center gap-3">
-            <ProgressCircle size="large" aria-label="Loading Contestable AI" />
-            <p className="text-base font-medium text-[#3D4F58]">
-              Running independent Vibration Pattern and Maintenance History
-              agents...
-            </p>
-          </div>
-        ) : activePhase === 1 ? (
-          /* ================= PHASE 1: EVIDENCE & 3 CANDIDATES ================= */
-          <div className="flex flex-col gap-5">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              {candidates.map((cand, idx) => (
-                <div
-                  key={cand.id}
-                  className="flex flex-col justify-between rounded-xl border border-[#D8E3DF] bg-white p-4"
-                >
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="rounded-md bg-[#E3FCF7] px-2.5 py-1 text-sm font-semibold text-[#00684A]">
-                        Candidate #{idx + 1}
-                      </span>
-                      <span className="font-mono text-sm text-[#5C6C75]">
-                        Vector Match:{" "}
-                        {Math.round((cand.similarity_score || 0.86) * 100)}%
-                      </span>
-                    </div>
-                    <h4 className="mt-2.5 text-lg font-semibold text-[#112733]">
-                      {cand.label}
-                    </h4>
-                    <p className="mt-1.5 text-sm leading-6 text-[#5C6C75]">
-                      {cand.summary}
-                    </p>
-                  </div>
-                  {cand.historical_case && (
-                    <div className="mt-3.5 rounded-lg bg-[#F8FAF9] p-3 text-sm text-[#3D4F58]">
-                      <div className="font-semibold text-[#112733]">
-                        Precedent: {cand.historical_case.title}
-                      </div>
-                      <div className="mt-1">
-                        {cand.historical_case.observations}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {/* Vibration Spectrum Evidence Card */}
-              <div className="rounded-xl border border-[#D8E3DF] bg-white p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <span className="text-sm font-semibold uppercase tracking-wider text-[#016BF8]">
-                      Evidence for vibration_pattern_agent
-                    </span>
-                    <h4 className="text-lg font-semibold text-[#112733]">
-                      Vibration Frequency Spectrum & Defect Bands
-                    </h4>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setInspectedDoc({
-                        title: "Vibration Frequency Spectrum Packet",
-                        subtitle: "Input payload for vibration_pattern_agent",
-                        value: session?.evidence_summary?.vibration_spectrum,
-                      })
-                    }
-                    className="rounded-md border border-[#D8E3DF] px-3 py-1.5 text-sm font-semibold text-[#00684A] hover:bg-[#E3FCF7]"
-                  >
-                    {"{}"} View JSON
-                  </button>
-                </div>
-                <div className="space-y-2.5">
-                  {(
-                    session?.evidence_summary?.vibration_spectrum
-                      ?.frequency_bands || []
-                  ).map((band, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-lg border border-[#E8EDEB] bg-[#F8FAF9] p-3 text-sm"
-                    >
-                      <div className="flex items-center justify-between font-semibold text-[#112733]">
-                        <span>{band.band_hz}</span>
-                        <span className="font-mono text-[#016BF8]">
-                          {band.amplitude_mm_s} mm/s (baseline{" "}
-                          {band.baseline_mm_s} mm/s)
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[#5C6C75]">{band.notes}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Maintenance History Evidence Card */}
-              <div className="rounded-xl border border-[#D8E3DF] bg-white p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <span className="text-sm font-semibold uppercase tracking-wider text-[#944F01]">
-                      Evidence for maintenance_history_agent
-                    </span>
-                    <h4 className="text-lg font-semibold text-[#112733]">
-                      Repair Logs, Sensor Calibration & Tooling History
-                    </h4>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setInspectedDoc({
-                        title: "Maintenance & Calibration History Packet",
-                        subtitle:
-                          "Input payload for maintenance_history_agent",
-                        value: session?.evidence_summary?.maintenance_history,
-                      })
-                    }
-                    className="rounded-md border border-[#D8E3DF] px-3 py-1.5 text-sm font-semibold text-[#00684A] hover:bg-[#E3FCF7]"
-                  >
-                    {"{}"} View JSON
-                  </button>
-                </div>
-                <div className="space-y-2.5">
-                  {(
-                    session?.evidence_summary?.maintenance_history
-                      ?.repair_logs || []
-                  )
-                    .slice(0, 3)
-                    .map((log, idx) => (
-                      <div
-                        key={idx}
-                        className="rounded-lg border border-[#E8EDEB] bg-[#F8FAF9] p-3 text-sm"
-                      >
-                        <div className="flex items-center justify-between font-semibold text-[#112733]">
-                          <span>
-                            {log.work_order} · {log.component}
-                          </span>
-                          <span className="text-[#944F01]">{log.date}</span>
-                        </div>
-                        <p className="mt-1 text-[#5C6C75]">{log.action}</p>
-                      </div>
-                    ))}
-                  {(
-                    session?.evidence_summary?.maintenance_history
-                      ?.calibration_records || []
-                  ).map((cal, idx) => (
-                    <div
-                      key={`cal-${idx}`}
-                      className="rounded-lg border border-[#E8EDEB] bg-[#FEF7DB]/50 p-3 text-sm"
-                    >
-                      <div className="flex items-center justify-between font-semibold text-[#112733]">
-                        <span>
-                          Sensor {cal.sensor_id} ({cal.sensor_type})
-                        </span>
-                        <span className="text-[#944F01]">
-                          Replaced: {cal.replaced_at}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[#5C6C75]">
-                        {cal.stabilization_window} · {cal.factory_calibration}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <Button variant="primary" onPress={() => setActivePhase(2)}>
-                Next: Inspect Specialist Agent Debate
-              </Button>
-            </div>
-          </div>
-        ) : activePhase === 2 ? (
-          /* ================= PHASE 2: SPECIALIST AGENT DEBATE ================= */
-          <div className="flex flex-col gap-5">
-            <div className="rounded-xl border border-[#D8E3DF] bg-[#F8FAF9] p-4 text-sm leading-6 text-[#3D4F58]">
-              <strong className="text-[#112733]">
-                Independent Specialist Argumentation:
-              </strong>{" "}
-              Neither agent proposes its own separate hypothesis or sees the
-              other agent&apos;s output while forming its arguments. Both argue{" "}
-              <strong>support</strong> and <strong>challenge</strong> on every
-              candidate, and each argument is persisted as an individual record
-              in{" "}
-              <code className="font-mono text-[#00684A]">argument_records</code>
-              .
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {CONTESTABLE_AGENTS.map((agentCfg) => {
-                const agentArgs = argumentsList.filter(
-                  (a) => a.agent === agentCfg.id
-                );
-                return (
+          <div
+            className={`min-h-0 flex-1 p-5 ${
+              !hasStarted ||
+              (view === "evidence" && evidenceStatus === "ready")
+                ? "flex flex-col overflow-hidden"
+                : "overflow-y-auto"
+            }`}
+          >
+            {!hasStarted && (
+              <div className="grid h-full min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-2">
+                {[
+                  {
+                    kicker: "Vibration evidence",
+                    kickerClass: "text-[#016BF8]",
+                    title: "Frequency spectrum",
+                    body: "Defect bands and harmonics for the selected incident appear here.",
+                  },
+                  {
+                    kicker: "Maintenance evidence",
+                    kickerClass: "text-[#944F01]",
+                    title: "History and calibration",
+                    body: "Repair logs, tooling changes, and sensor records appear here.",
+                  },
+                ].map((panel) => (
                   <div
-                    key={agentCfg.id}
-                    className="flex flex-col rounded-xl border border-[#D8E3DF] bg-white p-4"
+                    key={panel.title}
+                    className="flex h-full min-h-[14rem] flex-col rounded-xl border border-dashed border-[#D8E3DF] bg-[#F8FAF9] p-5"
                   >
-                    <div className="border-b border-[#E8EDEB] pb-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-lg font-semibold text-[#112733]">
-                          {agentCfg.name}
-                        </h4>
-                        <span className="rounded-md bg-[#F1F5F3] px-2.5 py-1 font-mono text-sm text-[#3D4F58]">
-                          {agentCfg.id}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm text-[#5C6C75]">
-                        {agentCfg.description}
-                      </p>
-                    </div>
-
-                    <div className="mt-3 space-y-3">
-                      {candidates.map((cand) => {
-                        const candAgentArgs = agentArgs.filter(
-                          (a) => a.candidate === cand.id
-                        );
-                        return (
-                          <div
-                            key={cand.id}
-                            className="rounded-lg border border-[#E8EDEB] bg-[#F8FAF9] p-3.5"
-                          >
-                            <div className="mb-2.5 text-sm font-bold uppercase tracking-wide text-[#112733]">
-                              {cand.label}
-                            </div>
-                            <div className="space-y-2.5">
-                              {candAgentArgs.map((arg) => (
-                                <ArgumentCard
-                                  key={arg.argument_id}
-                                  arg={arg}
-                                  interactive={false}
-                                  onInspectJson={(record) =>
-                                    setInspectedDoc({
-                                      title: `MongoDB Record: ${arg.argument_id}`,
-                                      subtitle:
-                                        "Stored in argument_records collection",
-                                      value: record,
-                                    })
-                                  }
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Button variant="secondary" onPress={() => setActivePhase(1)}>
-                Back: Evidence
-              </Button>
-              <Button variant="primary" onPress={() => setActivePhase(3)}>
-                Next: Reliability Engineer Contestation
-              </Button>
-            </div>
-          </div>
-        ) : activePhase === 3 ? (
-          /* ================= PHASE 3: ENGINEER CONTESTATION ================= */
-          <div className="flex flex-col gap-5">
-            {/* Candidate Filter Pills */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#D8E3DF] bg-[#F8FAF9] p-3.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-semibold text-[#3D4F58]">
-                  Reviewing Candidate:
-                </span>
-                {candidates.map((cand) => (
-                  <button
-                    key={cand.id}
-                    type="button"
-                    onClick={() => setSelectedCandidate(cand.id)}
-                    className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors ${
-                      selectedCandidate === cand.id
-                        ? "bg-[#112733] text-white"
-                        : "bg-white text-[#3D4F58] border border-[#D8E3DF] hover:bg-[#E8EDEB]"
-                    }`}
-                  >
-                    {cand.label} (
-                    {(scoresAfter[cand.id]?.score ?? 0.5).toFixed(3)})
-                  </button>
-                ))}
-              </div>
-              <span className="text-sm text-[#5C6C75]">
-                Accept, reject, or modify any single argument — rejecting
-                recalculates the candidate&apos;s score immediately.
-              </span>
-            </div>
-
-            {/* Two-column Support vs Challenge for the selected candidate */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="flex flex-col gap-3 rounded-xl border border-[#D8E3DF] bg-[#F8FAF9]/60 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-2 text-base font-semibold text-[#00684A]">
-                    <Icon glyph="CheckmarkWithCircle" size={18} />
-                    Supporting Arguments ({supportArgsForSelected.length})
-                  </span>
-                  <span className="font-mono text-sm font-semibold text-[#00684A]">
-                    total_support = +
-                    {(
-                      scoresAfter[selectedCandidate]?.total_support ?? 0
-                    ).toFixed(2)}
-                  </span>
-                </div>
-                {supportArgsForSelected.map((arg) => (
-                  <ArgumentCard
-                    key={arg.argument_id}
-                    arg={arg}
-                    isSaving={isSavingAction}
-                    onAction={handleArgumentAction}
-                    onInspectJson={(record) =>
-                      setInspectedDoc({
-                        title: `MongoDB Record: ${arg.argument_id}`,
-                        subtitle: "Stored in argument_records collection",
-                        value: record,
-                      })
-                    }
-                  />
-                ))}
-              </div>
-
-              <div className="flex flex-col gap-3 rounded-xl border border-[#D8E3DF] bg-[#F8FAF9]/60 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-2 text-base font-semibold text-[#B1371F]">
-                    <Icon glyph="Warning" size={18} />
-                    Challenging Arguments ({challengeArgsForSelected.length})
-                  </span>
-                  <span className="font-mono text-sm font-semibold text-[#B1371F]">
-                    total_challenge = -
-                    {(
-                      scoresAfter[selectedCandidate]?.total_challenge ?? 0
-                    ).toFixed(2)}
-                  </span>
-                </div>
-                {challengeArgsForSelected.map((arg) => (
-                  <ArgumentCard
-                    key={arg.argument_id}
-                    arg={arg}
-                    isSaving={isSavingAction}
-                    onAction={handleArgumentAction}
-                    onInspectJson={(record) =>
-                      setInspectedDoc({
-                        title: `MongoDB Record: ${arg.argument_id}`,
-                        subtitle: "Stored in argument_records collection",
-                        value: record,
-                      })
-                    }
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Add Reliability Engineer Argument Box */}
-            <div className="rounded-xl border border-[#D8E3DF] bg-white p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <div>
-                  <h4 className="text-base font-semibold text-[#112733]">
-                    Add Reliability Engineer Context / Override Argument
-                  </h4>
-                  <p className="text-sm text-[#5C6C75]">
-                    Contribute shop-floor observations not captured in automated
-                    telemetry or logs.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {ENGINEER_PRESET_SUGGESTIONS.map((preset) => (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() => {
-                        setNewArgCandidate(preset.candidate);
-                        setNewArgStance(preset.stance);
-                        setNewArgScore(String(preset.score));
-                        setNewArgReason(preset.reason);
-                        setSelectedCandidate(preset.candidate);
-                      }}
-                      className="rounded-md border border-[#D8E3DF] bg-[#F8FAF9] px-3 py-1.5 text-sm font-medium text-[#00684A] hover:bg-[#E3FCF7]"
+                    <span
+                      className={`text-sm font-semibold uppercase tracking-wider ${panel.kickerClass}`}
                     >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3 mb-3">
-                <label className="flex flex-col gap-1 text-sm font-medium text-[#3D4F58]">
-                  <span>Target Candidate</span>
-                  <select
-                    value={newArgCandidate}
-                    onChange={(e) => setNewArgCandidate(e.target.value)}
-                    className="rounded-lg border border-[#C1C7C6] bg-white px-3 py-2 text-sm text-[#112733]"
-                  >
-                    {candidates.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="flex flex-col gap-1 text-sm font-medium text-[#3D4F58]">
-                  <span>Stance</span>
-                  <select
-                    value={newArgStance}
-                    onChange={(e) => setNewArgStance(e.target.value)}
-                    className="rounded-lg border border-[#C1C7C6] bg-white px-3 py-2 text-sm text-[#112733]"
-                  >
-                    <option value="support">Support (+)</option>
-                    <option value="challenge">Challenge (-)</option>
-                  </select>
-                </label>
-
-                <label className="flex flex-col gap-1 text-sm font-medium text-[#3D4F58]">
-                  <span>Confidence Score (0.0 – 1.0)</span>
-                  <input
-                    type="number"
-                    step="0.05"
-                    min="0"
-                    max="1"
-                    value={newArgScore}
-                    onChange={(e) => setNewArgScore(e.target.value)}
-                    className="rounded-lg border border-[#C1C7C6] bg-white px-3 py-2 text-sm text-[#112733]"
-                  />
-                </label>
-              </div>
-
-              <TextArea
-                label="Engineer Argument Reason"
-                value={newArgReason}
-                onChange={setNewArgReason}
-              />
-
-              <div className="mt-3 flex justify-end">
-                <Button
-                  variant="secondary"
-                  isDisabled={!newArgReason.trim() || isSavingAction}
-                  onPress={() => {
-                    handleArgumentAction({
-                      actionType: "add",
-                      candidate: newArgCandidate,
-                      stance: newArgStance,
-                      score: Number(newArgScore),
-                      reason: newArgReason,
-                    });
-                    setSelectedCandidate(newArgCandidate);
-                  }}
-                >
-                  + Add Engineer Argument & Rescore
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Button variant="secondary" onPress={() => setActivePhase(2)}>
-                Back: Specialist Debate
-              </Button>
-              <Button variant="primary" onPress={handleProceedToResolution}>
-                Next: Refine Incident Report & View Audit Lineage
-              </Button>
-            </div>
-          </div>
-        ) : (
-          /* ================= PHASE 4: REFINE INCIDENT & LINEAGE ================= */
-          <div className="flex flex-col gap-5">
-            {/* Before vs After Score Comparison */}
-            <div className="rounded-xl border border-[#D8E3DF] bg-white p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <div>
-                  <span className="text-sm font-semibold uppercase tracking-wider text-[#00684A]">
-                    Verified Outcome
-                  </span>
-                  <h4 className="text-lg font-semibold text-[#112733]">
-                    Winning Root Cause:{" "}
-                    {scoresAfter[winningCandidate]?.label || winningCandidate}{" "}
-                    (Score:{" "}
-                    {(scoresAfter[winningCandidate]?.score ?? 0.5).toFixed(3)})
-                  </h4>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isGeneratingRefinement && (
-                    <span className="text-sm text-[#5C6C75]">
-                      Refining with AI...
+                      {panel.kicker}
                     </span>
-                  )}
-                  {lineageDoc && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setInspectedDoc({
-                          title: `Single-Query MongoDB Lineage (${session?.session_id})`,
-                          subtitle:
-                            "contestable_sessions $lookup with argument_records",
-                          value: lineageDoc,
-                        })
-                      }
-                      className="rounded-lg border border-[#00684A] bg-[#E3FCF7] px-3.5 py-1.5 text-sm font-semibold text-[#00684A] hover:bg-[#C5F6EC]"
-                    >
-                      {"{}"} Inspect Full MongoDB $lookup Lineage
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                {candidates.map((cand) => {
-                  const bScore = scoresBefore[cand.id]?.score ?? 0.5;
-                  const aScore = scoresAfter[cand.id]?.score ?? 0.5;
-                  const bPct = Math.round(bScore * 100);
-                  const aPct = Math.round(aScore * 100);
-                  return (
-                    <div
-                      key={cand.id}
-                      className="rounded-lg border border-[#E8EDEB] bg-[#F8FAF9] p-3.5"
-                    >
-                      <div className="text-base font-semibold text-[#112733]">
-                        {cand.label}
-                      </div>
-                      <div className="mt-2.5 space-y-2 text-sm">
-                        <div>
-                          <div className="flex justify-between text-[#5C6C75]">
-                            <span>Before Contestation</span>
-                            <span className="font-mono">
-                              {bScore.toFixed(3)} ({bPct}%)
-                            </span>
-                          </div>
-                          <div className="mt-1 h-2 w-full rounded-full bg-[#E8EDEB]">
-                            <div
-                              className="h-full rounded-full bg-[#889397]"
-                              style={{ width: `${bPct}%` }}
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex justify-between font-semibold text-[#112733]">
-                            <span>After Contestation</span>
-                            <span className="font-mono text-[#00684A]">
-                              {aScore.toFixed(3)} ({aPct}%)
-                            </span>
-                          </div>
-                          <div className="mt-1 h-2 w-full rounded-full bg-[#E8EDEB]">
-                            <div
-                              className="h-full rounded-full"
-                              style={{
-                                width: `${aPct}%`,
-                                backgroundColor:
-                                  CANDIDATE_COLORS[cand.id] || "#00684A",
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Editable Incident Report Refinement Form */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="flex flex-col gap-3.5 rounded-xl border border-[#D8E3DF] bg-white p-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-lg font-semibold text-[#112733]">
-                    Refined Incident Report
-                  </h4>
-                  {commitSuccess && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E3FCF7] px-3 py-1 text-sm font-semibold text-[#00684A]">
-                      <Icon glyph="CheckmarkWithCircle" size={16} />
-                      Saved to incident_reports
-                    </span>
-                  )}
-                </div>
-
-                <TextArea
-                  label="Refined Root Cause"
-                  value={draftRootCause}
-                  onChange={setDraftRootCause}
-                />
-
-                <TextArea
-                  label="Refined Repair Instructions (1 step per line)"
-                  value={draftRepairSteps}
-                  onChange={setDraftRepairSteps}
-                />
-
-                <TextField
-                  label="Contestation Rationale / Audit Summary"
-                  value={draftRationale}
-                  onChange={setDraftRationale}
-                />
-
-                <div className="mt-2 flex items-center justify-end gap-2">
-                  <Button
-                    variant="primary"
-                    onPress={handleCommitToIncidentReport}
-                    isDisabled={isCommitting || !draftRootCause.trim()}
-                  >
-                    {isCommitting
-                      ? "Saving to MongoDB..."
-                      : "Save Verified Incident Report to MongoDB"}
-                  </Button>
-                </div>
-              </div>
-
-              {/* MongoDB Single-Query Audit Lineage & Argument Records Preview */}
-              <div className="flex flex-col gap-3 rounded-xl border border-[#D8E3DF] bg-white p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-lg font-semibold text-[#112733]">
-                      MongoDB Governance & Argument Records
+                    <h4 className="mt-1 text-lg font-semibold text-[#112733]">
+                      {panel.title}
                     </h4>
-                    <p className="text-sm text-[#5C6C75]">
-                      Each argument is stored as its own document in{" "}
-                      <code className="font-mono text-[#00684A]">
-                        argument_records
-                      </code>{" "}
-                      and joined via{" "}
-                      <code className="font-mono text-[#00684A]">$lookup</code>.
+                    <p className="mt-3 max-w-md text-sm leading-6 text-[#5C6C75]">
+                      {panel.body}
+                    </p>
+                    <p className="mt-auto pt-6 text-sm font-medium text-[#889397]">
+                      Waiting for the root cause analysis
                     </p>
                   </div>
-                </div>
-
-                <div className="max-h-[320px] overflow-hidden">
-                  <CodeBlock
-                    language="json"
-                    className="code-block-white h-full"
-                  >
-                    <CodeSnippet>
-                      {JSON.stringify(
-                        argumentsList.slice(0, 4).map((a) => ({
-                          session_id: a.session_id,
-                          candidate: a.candidate,
-                          agent: a.agent,
-                          stance: a.stance,
-                          score: a.score,
-                          reason: a.reason,
-                          created_at: a.created_at,
-                          ...(a.human_action
-                            ? {
-                                status: a.status,
-                                human_action: a.human_action,
-                              }
-                            : {}),
-                        })),
-                        null,
-                        2
-                      )}
-                    </CodeSnippet>
-                    <CopyButton
-                      copyText={JSON.stringify(argumentsList, null, 2)}
-                    >
-                      <Button aria-label="Copy argument records JSON">
-                        <Icon glyph="Copy" />
-                      </Button>
-                    </CopyButton>
-                  </CodeBlock>
-                </div>
+                ))}
               </div>
-            </div>
+            )}
+            {hasStarted && view === "evidence" && evidenceStatus === "ready" && (
+                  <div className="grid h-full min-h-0 grid-cols-1 grid-rows-2 gap-4 lg:grid-cols-2 lg:grid-rows-1">
+                    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[#D8E3DF] bg-white p-4">
+                      <div className="mb-3 flex shrink-0 items-center justify-between">
+                        <div>
+                          <span className="text-sm font-semibold uppercase tracking-wider text-[#016BF8]">
+                            Evidence for vibration_pattern_agent
+                          </span>
+                          <h4 className="text-lg font-semibold text-[#112733]">
+                            Vibration Frequency Spectrum & Defect Bands
+                          </h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setInspectedDoc({
+                              title: "Vibration Frequency Spectrum Packet",
+                              subtitle:
+                                "Input payload for vibration_pattern_agent",
+                              value:
+                                session?.evidence_summary?.vibration_spectrum,
+                            })
+                          }
+                          className="rounded-md border border-[#D8E3DF] px-3 py-1.5 font-mono text-sm font-semibold text-[#00684A] hover:bg-[#E3FCF7]"
+                        >
+                          {"{}"}
+                        </button>
+                      </div>
+                      <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-1">
+                        {(
+                          session?.evidence_summary?.vibration_spectrum
+                            ?.frequency_bands || []
+                        ).map((band, idx) => (
+                          <div
+                            key={idx}
+                            className="rounded-lg border border-[#E8EDEB] bg-[#F8FAF9] p-3 text-sm"
+                          >
+                            <div className="flex items-center justify-between font-semibold text-[#112733]">
+                              <span>{band.band_hz}</span>
+                              <span className="font-mono text-[#016BF8]">
+                                {band.amplitude_mm_s} mm/s (baseline{" "}
+                                {band.baseline_mm_s} mm/s)
+                              </span>
+                            </div>
+                            <p className="mt-1 text-[#5C6C75]">{band.notes}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
-            <div className="flex items-center justify-between">
-              <Button variant="secondary" onPress={() => setActivePhase(3)}>
-                Back: Engineer Contestation
-              </Button>
-            </div>
-          </div>
-        )}
+                    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[#D8E3DF] bg-white p-4">
+                      <div className="mb-3 flex shrink-0 items-center justify-between">
+                        <div>
+                          <span className="text-sm font-semibold uppercase tracking-wider text-[#944F01]">
+                            Evidence for maintenance_history_agent
+                          </span>
+                          <h4 className="text-lg font-semibold text-[#112733]">
+                            Repair Logs, Sensor Calibration & Tooling History
+                          </h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setInspectedDoc({
+                              title: "Maintenance & Calibration History Packet",
+                              subtitle:
+                                "Input payload for maintenance_history_agent",
+                              value:
+                                session?.evidence_summary?.maintenance_history,
+                            })
+                          }
+                          className="rounded-md border border-[#D8E3DF] px-3 py-1.5 font-mono text-sm font-semibold text-[#00684A] hover:bg-[#E3FCF7]"
+                        >
+                          {"{}"}
+                        </button>
+                      </div>
+                      <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-1">
+                        {(
+                          session?.evidence_summary?.maintenance_history
+                            ?.repair_logs || []
+                        )
+                          .slice(0, 3)
+                          .map((log, idx) => (
+                            <div
+                              key={idx}
+                              className="rounded-lg border border-[#E8EDEB] bg-[#F8FAF9] p-3 text-sm"
+                            >
+                              <div className="flex items-start justify-between gap-3 font-semibold text-[#112733]">
+                                <span className="min-w-0">
+                                  {log.work_order} · {log.component}
+                                </span>
+                                <span className="shrink-0 whitespace-nowrap text-[#944F01]">
+                                  {log.date}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-[#5C6C75]">
+                                {log.action}
+                              </p>
+                            </div>
+                          ))}
+                        {(
+                          session?.evidence_summary?.maintenance_history
+                            ?.calibration_records || []
+                        ).map((cal, idx) => (
+                          <div
+                            key={`cal-${idx}`}
+                            className="rounded-lg border border-[#E8EDEB] bg-[#FEF7DB]/50 p-3 text-sm"
+                          >
+                            <div className="flex items-start justify-between gap-3 font-semibold text-[#112733]">
+                              <span className="min-w-0">
+                                Sensor {cal.sensor_id} ({cal.sensor_type})
+                              </span>
+                              <span className="shrink-0 whitespace-nowrap text-[#944F01]">
+                                Replaced: {cal.replaced_at}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-[#5C6C75]">
+                              {cal.stabilization_window} ·{" "}
+                              {cal.factory_calibration}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {view === "evidence" && evidenceStatus === "running" && (
+                  <div className="flex h-64 flex-col items-center justify-center gap-3">
+                    <ProgressCircle
+                      size="large"
+                      aria-label="Root Cause Agent running"
+                    />
+                    <p className="text-base font-medium text-[#3D4F58]">
+                      Root Cause Agent is preparing candidate root causes and
+                      the evidence the specialist agents will read.
+                    </p>
+                  </div>
+                )}
+
+                {(view === "debate" || view === "review") && (
+                  <div className="flex flex-col gap-5">
+                    {renderAgentColumns(view === "review")}
+                  </div>
+                )}
+
+                {view === "review" && (
+                  <div className="mt-5 rounded-xl border border-[#D8E3DF] bg-white p-4">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h4 className="text-base font-semibold text-[#112733]">
+                          Add Reliability Engineer Context
+                        </h4>
+                        <p className="text-sm text-[#5C6C75]">
+                          Shop-floor context is added to{" "}
+                          <strong>
+                            {selectedMeta?.label || "the selected candidate"}
+                          </strong>
+                          .
+                        </p>
+                      </div>
+                      {engineerPreset && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewArgStance(engineerPreset.stance);
+                            setNewArgScore(String(engineerPreset.score));
+                            setNewArgReason(engineerPreset.reason);
+                          }}
+                          className="rounded-md border border-[#D8E3DF] bg-[#F8FAF9] px-3 py-1.5 text-sm font-medium text-[#00684A] hover:bg-[#E3FCF7]"
+                        >
+                          {engineerPreset.label}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <label className="flex flex-col gap-1 text-sm font-medium text-[#3D4F58]">
+                        <span>Stance</span>
+                        <select
+                          value={newArgStance}
+                          onChange={(e) => setNewArgStance(e.target.value)}
+                          className="rounded-lg border border-[#C1C7C6] bg-white px-3 py-2 text-sm text-[#112733]"
+                        >
+                          <option value="support">Support (+)</option>
+                          <option value="challenge">Challenge (-)</option>
+                        </select>
+                      </label>
+                      <label className="flex flex-col gap-1 text-sm font-medium text-[#3D4F58]">
+                        <span>Confidence Score (0.0 – 1.0)</span>
+                        <input
+                          type="number"
+                          step="0.05"
+                          min="0"
+                          max="1"
+                          value={newArgScore}
+                          onChange={(e) => setNewArgScore(e.target.value)}
+                          className="rounded-lg border border-[#C1C7C6] bg-white px-3 py-2 text-sm text-[#112733]"
+                        />
+                      </label>
+                    </div>
+
+                    <label className="flex flex-col gap-1 text-sm font-medium text-[#3D4F58]">
+                      <span>Engineer Argument Reason</span>
+                      <textarea
+                        value={newArgReason}
+                        onChange={(event) =>
+                          setNewArgReason(event.target.value)
+                        }
+                        rows={4}
+                        className="w-full resize-y rounded-lg border border-[#C1C7C6] bg-white px-3 py-2 text-sm leading-6 text-[#112733] outline-none focus:border-[#00684A]"
+                      />
+                    </label>
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        variant="secondary"
+                        isDisabled={!newArgReason.trim() || isSavingAction}
+                        onPress={() =>
+                          handleArgumentAction({
+                            actionType: "add",
+                            candidate: selectedCandidate,
+                            stance: newArgStance,
+                            score: Number(newArgScore),
+                            reason: newArgReason,
+                          })
+                        }
+                      >
+                        + Add Engineer Argument & Rescore
+                      </Button>
+                    </div>
+
+                    {engineerArgs.length > 0 && (
+                      <div className="mt-4 space-y-2.5">
+                        <div className="text-sm font-semibold text-[#112733]">
+                          Your arguments for {selectedMeta?.label}
+                        </div>
+                        {engineerArgs.map((arg) => (
+                          <ArgumentCard
+                            key={arg.argument_id}
+                            arg={arg}
+                            isSaving={isSavingAction}
+                            onAction={handleArgumentAction}
+                            onInspectJson={inspectArgument(arg)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {view === "report" && (
+                  <div className="flex min-h-full flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setArgumentsOpen((open) => !open)}
+                        className="text-sm font-semibold text-[#00684A] hover:underline"
+                      >
+                        {argumentsOpen
+                          ? "Hide specialist arguments"
+                          : "Show specialist arguments"}
+                      </button>
+                      {isGeneratingRefinement && (
+                        <span className="inline-flex items-center gap-2 text-sm text-[#5C6C75]">
+                          <ProgressCircle
+                            size="small"
+                            aria-label="Refinement Agent running"
+                          />
+                          Refinement Agent is writing the incident report…
+                        </span>
+                      )}
+                    </div>
+                    {argumentsOpen && renderAgentColumns(false)}
+
+                    <div className="grid flex-1 grid-cols-1 items-stretch gap-4 xl:grid-cols-2">
+                      <IncidentReportSheet
+                        eyebrow="Original incident report"
+                        machineId={reportMachine}
+                        errorCode={reportErrorCode}
+                        errorName={reportErrorName}
+                        rootCause={originalRootCause}
+                        repairInstructions={originalRepair}
+                        rationale="Initial automated diagnosis, before contestation."
+                      />
+                      <div className="flex flex-col gap-3">
+                        <IncidentReportSheet
+                          eyebrow="Refined incident report"
+                          machineId={reportMachine}
+                          errorCode={reportErrorCode}
+                          errorName={reportErrorName}
+                          rootCause={draftRootCause}
+                          repairInstructions={draftRepairSteps}
+                          rationale={draftRationale}
+                          editable
+                          onRootCause={setDraftRootCause}
+                          onRepair={setDraftRepairSteps}
+                          onRationale={setDraftRationale}
+                          headerExtra={
+                            <div className="flex items-center gap-2">
+                              {commitSuccess && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E3FCF7] px-3 py-1 text-sm font-semibold text-[#00684A]">
+                                  <Icon glyph="CheckmarkWithCircle" size={16} />
+                                  Saved
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={openGovernance}
+                                title="MongoDB Governance & Argument Records"
+                                aria-label="Open MongoDB governance and argument records"
+                                className="rounded-md border border-[#D8E3DF] px-3 py-1.5 font-mono text-sm font-semibold text-[#00684A] hover:bg-[#E3FCF7]"
+                              >
+                                {"{}"}
+                              </button>
+                            </div>
+                          }
+                        />
+                        <div className="flex justify-end">
+                          <Button
+                            variant="primary"
+                            onPress={handleCommitToIncidentReport}
+                            isDisabled={
+                              isGeneratingRefinement ||
+                              isCommitting ||
+                              !draftRootCause.trim()
+                            }
+                          >
+                            Save Report
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+        </div>
+        <aside className="flex w-[8.5rem] shrink-0 flex-col items-center gap-3 overflow-x-hidden overflow-y-auto px-1 py-1">
+          <h2 className="w-full text-center text-xs font-semibold uppercase tracking-wider text-[#5C6C75]">
+            Agents overview
+          </h2>
+          {ACTORS.map((actor) => {
+            const working = actorWorking(actor);
+            const inSection = hasStarted && actor.view === view;
+            const isHuman = actor.kind === "human";
+            const quiet = !working && !inSection;
+            let bubble =
+              "flex h-11 w-11 items-center justify-center rounded-full border ";
+            let label =
+              "max-w-[4.5rem] text-center text-[11px] font-medium leading-tight ";
+            if (quiet) {
+              bubble += "border-[#E8EDEB] bg-[#F4F6F5] text-[#889397]";
+              label += "text-[#889397]";
+            } else if (isHuman) {
+              bubble += "border-[#944F01] bg-[#FEF7DB] text-[#944F01]";
+              label += "text-[#944F01]";
+            } else {
+              bubble += "border-[#00684A] bg-white text-[#00684A]";
+              label += "text-[#00684A]";
+              if (working) bubble += " animate-contestable-agent";
+            }
+            return (
+              <div
+                key={actor.id}
+                className="flex flex-col items-center gap-1.5"
+              >
+                <div className={bubble} title={actor.label}>
+                  <Icon glyph={actor.icon} size={16} />
+                </div>
+                <span className={label}>{actor.short}</span>
+              </div>
+            );
+          })}
+          {showContinue && (
+            <button
+              type="button"
+              onClick={handleContinue}
+              className="mt-auto flex w-full items-center justify-center gap-1.5 rounded-full border border-[#00573E] bg-[#00684A] px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#00573E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00A35C]"
+            >
+              Continue
+              <Icon glyph="ArrowRight" size={14} />
+            </button>
+          )}
+        </aside>
       </div>
 
       <DocumentModal

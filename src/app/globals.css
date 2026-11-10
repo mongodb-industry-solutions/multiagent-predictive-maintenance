@@ -27,6 +27,15 @@ html {
   animation: agent-glow-fade 1s infinite alternate;
 }
 
+@keyframes contestable-agent-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 163, 92, 0.35); }
+  70% { box-shadow: 0 0 0 7px rgba(0, 163, 92, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 163, 92, 0); }
+}
+.animate-contestable-agent {
+  animation: contestable-agent-pulse 1.8s ease-out infinite;
+}
+
 /* ---------- Landing page (dark) motion primitives ---------- */
 
 @keyframes leafy-rise {
@@ -264,6 +273,79 @@ button {
 }
 .agentic-demo-stepper [class*="Stepper-module"][class*="_icon"][class*="_completed"]:not([class*="_iconNumber"]) svg {
   color: #fff;
+}
+/* Keep this picker compact. The open menu is sized to the same width in JS. */
+.contestable-context-select {
+  --select-max-width: 32rem;
+  width: 32rem;
+  max-inline-size: min(32rem, 100%);
+}
+.contestable-context-select [class*="selectButton"] {
+  width: 100%;
+}
+body.contestable-select-open [class*="selectDropdown"] {
+  width: 32rem;
+  min-inline-size: 32rem;
+  max-inline-size: min(32rem, calc(100vw - 2rem));
+}
+
+.contestable-stepper [class*="Stepper-module"][class*="_title"] {
+  font-size: 0.875rem;
+  line-height: 1.25;
+}
+.contestable-report-saved.agentic-demo-stepper li:last-child [class*="Stepper-module"][class*="_icon"]:not([class*="_iconNumber"]) {
+  position: relative;
+  background-color: var(--leafy-green);
+  border-color: var(--leafy-green);
+  color: #fff;
+}
+.contestable-report-saved.agentic-demo-stepper li:last-child [class*="_iconNumber"] {
+  visibility: hidden;
+}
+.contestable-report-saved.agentic-demo-stepper li:last-child [class*="Stepper-module"][class*="_icon"]:not([class*="_iconNumber"])::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 0.28rem;
+  height: 0.5rem;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -55%) rotate(45deg);
+}
+.contestable-report-saved.agentic-demo-stepper li:last-child [class*="_title"] {
+  color: var(--leafy-green);
+}
+
+/* Contestable AI Via Select sizing and white button surface. */
+.contestable-select {
+  --select-min-width: 18rem;
+  --select-max-width: 24rem;
+  width: auto !important;
+}
+.contestable-select [class*="Select-module"][class*="_selectButton"] {
+  width: 100%;
+  background-color: #fff;
+  border-color: #d8e3df;
+}
+.contestable-select [class*="Select-module"][class*="_selectValue"] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.contestable-stance-select {
+  --select-min-width: 100%;
+  --select-max-width: 100%;
+  width: 100%;
+}
+.contestable-stance-select [class*="Select-module"][class*="_selectButton"] {
+  width: 100%;
+  background-color: #fff;
+  border-color: #c1c7c6;
+}
+[class*="Select-module"][class*="_selectDropdown"] {
+  --dropdown-max-width: 26rem;
 }
 
 /* Form / JSON toggle: selected label stays readable on the light indicator. */

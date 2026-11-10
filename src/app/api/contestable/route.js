@@ -32,6 +32,82 @@ function buildIncidentFilter(incidentId) {
   return { _id: strId };
 }
 
+const SPECIALIST_AGENTS = [
+  "vibration_pattern_agent",
+  "maintenance_history_agent",
+];
+
+function toArgumentDoc(arg, nowIso) {
+  return {
+    session_id: arg.session_id,
+    argument_id: arg.argument_id,
+    candidate: arg.candidate,
+    agent: arg.agent,
+    stance: arg.stance,
+    score: Number(arg.score),
+    reason: arg.reason,
+    created_at: arg.created_at || nowIso,
+    final_score: arg.final_score,
+    evidence_refs: arg.evidence_refs || [],
+    status: arg.status || "active",
+    human_action: arg.human_action || null,
+    original_reason: null,
+    original_score: Number(arg.score),
+    reviewed_by: null,
+    updated_at: null,
+  };
+}
+
+function buildEvidenceSessionDoc({
+  sessionId,
+  evidence,
+  incident,
+  dataSource,
+  nowIso,
+  scores = null,
+  status = "evidence_ready",
+}) {
+  return {
+    session_id: sessionId,
+    machine_id: evidence.machine_id,
+    data_source: dataSource,
+    incident_id: incident?._id ? String(incident._id) : null,
+    error_code: evidence.error_code,
+    error_name: evidence.error_name,
+    original_incident: incident
+      ? {
+          _id: String(incident._id || ""),
+          error_code: incident.error_code,
+          error_name: incident.error_name,
+          root_cause: incident.root_cause,
+          repair_instructions: incident.repair_instructions,
+          machine_id: incident.machine_id,
+        }
+      : null,
+    candidates: evidence.candidates,
+    evidence_summary: {
+      vibration_spectrum: evidence.vibration_spectrum,
+      maintenance_history: evidence.maintenance_history,
+      similar_work_orders: evidence.similar_work_orders,
+      manual_sections: evidence.manual_sections,
+      technician_interviews: evidence.technician_interviews,
+    },
+    scoring_formula:
+      "score = sigmoid(tau + 0.3 * total_support - 0.3 * total_challenge)",
+    tau: 0,
+    alpha: 0.3,
+    scores_before: scores ? scores.candidateScores : null,
+    scores_after: scores ? scores.candidateScores : null,
+    winning_candidate_before: scores ? scores.winningCandidate : null,
+    winning_candidate: scores ? scores.winningCandidate : null,
+    review_events: [],
+    resolution: null,
+    status,
+    created_at: nowIso,
+    updated_at: nowIso,
+  };
+}
+
 async function fetchLineageDocument(db, sessionId) {
   const pipeline = [
     { $match: { session_id: sessionId } },
@@ -126,51 +202,195 @@ export async function POST(req) {
         );
       }
 
-      const sessionDoc = {
-        session_id: sessionId,
-        machine_id: evidence.machine_id,
-        data_source: dataSource,
-        incident_id: incident?._id ? String(incident._id) : null,
-        error_code: evidence.error_code,
-        error_name: evidence.error_name,
-        original_incident: incident
-          ? {
-              _id: String(incident._id || ""),
-              error_code: incident.error_code,
-              error_name: incident.error_name,
-              root_cause: incident.root_cause,
-              repair_instructions: incident.repair_instructions,
-              machine_id: incident.machine_id,
-            }
-          : null,
-        candidates: evidence.candidates,
-        evidence_summary: {
-          vibration_spectrum: evidence.vibration_spectrum,
-          maintenance_history: evidence.maintenance_history,
-          similar_work_orders: evidence.similar_work_orders,
-          manual_sections: evidence.manual_sections,
-          technician_interviews: evidence.technician_interviews,
-        },
-        scoring_formula:
-          "score = sigmoid(tau + 0.3 * total_support - 0.3 * total_challenge)",
-        tau: 0,
-        alpha: 0.3,
-        scores_before: scored.candidateScores,
-        scores_after: scored.candidateScores,
-        winning_candidate_before: scored.winningCandidate,
-        winning_candidate: scored.winningCandidate,
-        review_events: [],
-        resolution: null,
+      const sessionDoc = buildEvidenceSessionDoc({
+        sessionId,
+        evidence,
+        incident,
+        dataSource,
+        nowIso,
+        scores: scored,
         status: "in_review",
-        created_at: nowIso,
-        updated_at: nowIso,
-      };
+      });
 
       await db.collection("contestable_sessions").insertOne({ ...sessionDoc });
 
       return NextResponse.json({
         session: sessionDoc,
         arguments: scored.arguments,
+        candidateScores: scored.candidateScores,
+        rankedCandidates: scored.rankedCandidates,
+        winningCandidate: scored.winningCandidate,
+      });
+    }
+
+    if (action === "prepare_session") {
+      const {
+        incident = null,
+        alert = null,
+        machineId = "M1",
+        dataSource = "leafy",
+      } = body;
+
+      const shortSuffix = Math.floor(1000 + Math.random() * 9000);
+      const sessionId = `incident-${shortSuffix}`;
+      const nowIso = new Date().toISOString();
+
+      const evidence = await gatherContestableEvidence({
+        incident,
+        alert,
+        machineId: incident?.machine_id || alert?.machine_id || machineId,
+        dataSource,
+      });
+
+      const sessionDoc = buildEvidenceSessionDoc({
+        sessionId,
+        evidence,
+        incident,
+        dataSource,
+        nowIso,
+        scores: null,
+        status: "evidence_ready",
+      });
+
+      await db.collection("contestable_sessions").insertOne({ ...sessionDoc });
+
+      return NextResponse.json({
+        session: sessionDoc,
+        arguments: [],
+        candidateScores: null,
+        winningCandidate: null,
+      });
+    }
+
+    if (action === "run_specialist") {
+      const { session_id, agent } = body;
+      if (!session_id || !SPECIALIST_AGENTS.includes(agent)) {
+        return NextResponse.json(
+          {
+            message:
+              "session_id and a specialist agent (vibration_pattern_agent or maintenance_history_agent) are required",
+          },
+          { status: 400 }
+        );
+      }
+
+      const sessionCol = db.collection("contestable_sessions");
+      const argCol = db.collection("argument_records");
+      const sessionDoc = await sessionCol.findOne(
+        { session_id },
+        { projection: { _id: 0 } }
+      );
+      if (!sessionDoc) {
+        return NextResponse.json(
+          { message: "Session not found" },
+          { status: 404 }
+        );
+      }
+
+      const nowIso = new Date().toISOString();
+      const existing = await argCol
+        .find({ session_id, agent }, { projection: { _id: 0 } })
+        .toArray();
+
+      if (existing.length === 0) {
+        const evidence = sessionDoc.evidence_summary || {};
+        const rawArguments =
+          agent === "vibration_pattern_agent"
+            ? await runVibrationPatternAgent({
+                sessionId: session_id,
+                candidates: sessionDoc.candidates || DEFAULT_CANDIDATES,
+                vibrationSpectrum: evidence.vibration_spectrum,
+                machineId: sessionDoc.machine_id || "M1",
+              })
+            : await runMaintenanceHistoryAgent({
+                sessionId: session_id,
+                candidates: sessionDoc.candidates || DEFAULT_CANDIDATES,
+                maintenanceHistory: evidence.maintenance_history,
+                machineId: sessionDoc.machine_id || "M1",
+              });
+
+        const drafted = computeCandidateScores(
+          rawArguments,
+          sessionDoc.candidates || DEFAULT_CANDIDATES
+        );
+        if (drafted.arguments.length > 0) {
+          await argCol.insertMany(
+            drafted.arguments.map((arg) => toArgumentDoc(arg, nowIso))
+          );
+        }
+      }
+
+      const sessionArgs = await argCol
+        .find({ session_id }, { projection: { _id: 0 } })
+        .toArray();
+      const scored = computeCandidateScores(
+        sessionArgs,
+        sessionDoc.candidates || DEFAULT_CANDIDATES
+      );
+
+      await Promise.all(
+        scored.arguments
+          .filter((arg) => arg.agent === agent)
+          .map((arg) =>
+            argCol.updateOne(
+              { session_id, argument_id: arg.argument_id },
+              { $set: { final_score: arg.final_score } }
+            )
+          )
+      );
+
+      const agentsPresent = new Set(sessionArgs.map((arg) => arg.agent));
+      const bothPresent = SPECIALIST_AGENTS.every((id) => agentsPresent.has(id));
+      const hasHumanEdits = sessionArgs.some((arg) => arg.human_action);
+
+      const argumentCount = sessionArgs.length;
+      const $set = {
+        scores_after: scored.candidateScores,
+        winning_candidate: scored.winningCandidate,
+        argument_count: argumentCount,
+        updated_at: nowIso,
+      };
+      if (bothPresent) {
+        $set.status = "debate_ready";
+      }
+
+      await sessionCol.updateOne(
+        {
+          session_id,
+          $or: [
+            { argument_count: { $exists: false } },
+            { argument_count: { $lte: argumentCount } },
+          ],
+        },
+        { $set }
+      );
+      if (!bothPresent) {
+        await sessionCol.updateOne(
+          { session_id, status: { $ne: "debate_ready" } },
+          { $set: { status: "debating" } }
+        );
+      }
+
+      if (bothPresent && !hasHumanEdits) {
+        await sessionCol.updateOne(
+          { session_id, scores_before: null },
+          {
+            $set: {
+              scores_before: scored.candidateScores,
+              winning_candidate_before: scored.winningCandidate,
+            },
+          }
+        );
+      }
+
+      const updatedSession = await sessionCol.findOne(
+        { session_id },
+        { projection: { _id: 0 } }
+      );
+
+      return NextResponse.json({
+        session: updatedSession,
+        arguments: scored.arguments.filter((arg) => arg.agent === agent),
         candidateScores: scored.candidateScores,
         rankedCandidates: scored.rankedCandidates,
         winningCandidate: scored.winningCandidate,

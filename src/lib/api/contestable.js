@@ -1,5 +1,46 @@
 // Client API wrapper for Contestable AI endpoints
 
+export async function prepareContestableSession({
+  incident = null,
+  alert = null,
+  machineId = "M1",
+  dataSource = "leafy",
+} = {}) {
+  const res = await fetch("/api/contestable", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "prepare_session",
+      incident,
+      alert,
+      machineId,
+      dataSource,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to prepare contestable session");
+  }
+  return res.json();
+}
+
+export async function runContestableSpecialist({ sessionId, agent }) {
+  const res = await fetch("/api/contestable", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "run_specialist",
+      session_id: sessionId,
+      agent,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to run specialist agent");
+  }
+  return res.json();
+}
+
 export async function startContestableSession({
   incident = null,
   alert = null,

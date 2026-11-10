@@ -463,7 +463,7 @@ export function buildInitialClientSession({
           {
             sensor_id: "ACCEL-M1-VIB-01",
             sensor_type: "Tri-axial Piezoelectric Accelerometer",
-            replaced_at: "1 day ago (18 hours prior to alert)",
+            replaced_at: "1 day ago",
             stabilization_window:
               "Requires 48-hour thermal/mechanical burn-in stabilization window; currently at 18 hours.",
             factory_calibration:
