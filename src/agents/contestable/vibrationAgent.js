@@ -1,4 +1,5 @@
 import { invokeChat } from "@/integrations/chat_factory.js";
+import { createActivityLog } from "@/lib/contestable/activityLog.js";
 import { buildBenchmarkArguments } from "@/lib/contestable/scenarios.js";
 
 function extractJson(text = "") {
@@ -32,7 +33,9 @@ export async function runVibrationPatternAgent({
   candidates,
   vibrationSpectrum,
   machineId = "M1",
+  log,
 }) {
+  const activity = log || createActivityLog();
   const fallbackArgs = buildBenchmarkArguments(sessionId).filter(
     (a) => a.agent === "vibration_pattern_agent"
   );
@@ -81,6 +84,27 @@ Return ONLY a valid JSON object in this exact shape:
   ]
 }`;
 
+  const spectrumRunId = await activity.toolStart("read_vibration_spectrum", {
+    machine_id: machineId,
+    equipment_model: vibrationSpectrum?.equipment_model,
+  });
+  await activity.toolEnd(spectrumRunId, "read_vibration_spectrum", {
+    overall_rms_mm_s: vibrationSpectrum?.overall_rms_mm_s,
+    temperature_c: vibrationSpectrum?.temperature_c,
+    bands: (vibrationSpectrum?.frequency_bands || []).map((band) => ({
+      band_hz: band.band_hz,
+      amplitude_mm_s: band.amplitude_mm_s,
+      baseline_mm_s: band.baseline_mm_s,
+      notes: band.notes,
+    })),
+  });
+  await activity.addMessage("system", systemPrompt);
+  await activity.addMessage("user", userPrompt);
+
+  const draftRunId = await activity.toolStart("draft_arguments", {
+    candidates: (candidates || []).map((candidate) => candidate.id),
+  });
+
   try {
     const response = await invokeChat([
       { role: "system", content: systemPrompt },
@@ -94,6 +118,7 @@ Return ONLY a valid JSON object in this exact shape:
           ? response.content.map((part) => part.text || "").join("")
           : "";
 
+    await activity.addMessage("assistant", rawText);
     const parsed = extractJson(rawText);
     const rawArgs = Array.isArray(parsed?.arguments) ? parsed.arguments : [];
 
@@ -132,11 +157,28 @@ Return ONLY a valid JSON object in this exact shape:
       }
     }
 
+    await activity.toolEnd(draftRunId, "draft_arguments", {
+      argument_count: normalized.length,
+      arguments: normalized.map((argument) => ({
+        candidate: argument.candidate,
+        stance: argument.stance,
+        score: argument.score,
+      })),
+    });
     return normalized;
   } catch (error) {
     console.warn(
       "Vibration Pattern Agent using benchmark fallback:",
       error?.message
+    );
+    await activity.toolError(
+      draftRunId,
+      "draft_arguments",
+      error?.message || "Model call failed"
+    );
+    await activity.addStatus(
+      "fallback",
+      "Benchmark arguments were used because the model call failed."
     );
     return fallbackArgs;
   }

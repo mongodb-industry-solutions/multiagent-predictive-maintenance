@@ -40,6 +40,7 @@ import {
   fetchContestableLineage,
 } from "@/lib/api/contestable";
 import DocumentModal from "@/components/unsAction/DocumentModal";
+import AgentActivityPanel from "@/components/contestable/AgentActivityPanel";
 
 const CANDIDATE_COLORS = {
   bearing_degradation: "#016BF8",
@@ -643,6 +644,34 @@ const WORKFLOW_STEPS = [
 const SPECIALIST_IDS = ["vibration_pattern_agent", "maintenance_history_agent"];
 const REVEAL_MS = 280;
 
+const EMPTY_ACTIVITY = {
+  root_cause: [],
+  vibration_pattern_agent: [],
+  maintenance_history_agent: [],
+  reliability_engineer: [],
+  refiner: [],
+};
+
+function sameActivityEvent(left, right) {
+  if (!left || !right || left.type !== right.type) return false;
+  if (left.type === "update") {
+    return left.name === right.name && left.runId === right.runId;
+  }
+  if (left.type === "message") {
+    return (
+      left.role === right.role &&
+      left.at === right.at &&
+      left.content === right.content
+    );
+  }
+  return (
+    left.status === right.status &&
+    left.at === right.at &&
+    left.runId === right.runId &&
+    left.content === right.content
+  );
+}
+
 const ACTORS = [
   {
     id: "root_cause",
@@ -726,6 +755,9 @@ export default function ContestableWorkspace({
   const [newArgStance, setNewArgStance] = useState("support");
   const [newArgScore, setNewArgScore] = useState("0.85");
   const [newArgReason, setNewArgReason] = useState("");
+  const [activityOpen, setActivityOpen] = useState(false);
+  const [selectedActorId, setSelectedActorId] = useState("root_cause");
+  const [activityByActor, setActivityByActor] = useState(EMPTY_ACTIVITY);
   const [draftRootCause, setDraftRootCause] = useState("");
   const [draftRepairSteps, setDraftRepairSteps] = useState("");
   const [draftRationale, setDraftRationale] = useState("");
@@ -741,6 +773,17 @@ export default function ContestableWorkspace({
   const runGenerationRef = useRef(0);
   const enqueueRef = useRef(() => {});
   const resetMenuRef = useRef(null);
+  const appendActivity = useCallback((actorId, event) => {
+    if (!actorId || !event) return;
+    setActivityByActor((prev) => {
+      const list = prev[actorId] || [];
+      if (list.some((item) => sameActivityEvent(item, event))) return prev;
+      return { ...prev, [actorId]: [...list, event] };
+    });
+  }, []);
+  const clearActorActivity = useCallback((actorId) => {
+    setActivityByActor((prev) => ({ ...prev, [actorId]: [] }));
+  }, []);
 
   useEffect(() => {
     if (!resetConfirmOpen) return undefined;
@@ -871,6 +914,7 @@ export default function ContestableWorkspace({
           : alert || STANDALONE_PRESET_SCENARIOS[0].alert;
       setEvidenceStatus("running");
       setErrorMsg("");
+      clearActorActivity("root_cause");
       try {
         const res = await prepareContestableSession({
           incident: targetIncident,
@@ -878,8 +922,15 @@ export default function ContestableWorkspace({
           machineId:
             targetIncident?.machine_id || targetAlert?.machine_id || "M1",
           dataSource,
+          onEvent: (event) => {
+            if (isCancelled()) return;
+            appendActivity("root_cause", event);
+          },
         });
         if (isCancelled()) return;
+        for (const message of res?.messages || []) {
+          appendActivity("root_cause", message);
+        }
         setSession(res.session || null);
         setArgumentsList([]);
         setEvidenceStatus("ready");
@@ -891,7 +942,7 @@ export default function ContestableWorkspace({
         setErrorMsg(err.message || "Failed to gather candidate root causes");
       }
     },
-    [alert, dataSource, incident],
+    [alert, appendActivity, clearActorActivity, dataSource, incident],
   );
 
   const handleAnalyzeRootCause = useCallback(() => {
@@ -926,12 +977,20 @@ export default function ContestableWorkspace({
       requestDoneRef.current[agentId] = false;
       setAgentStatus((prev) => ({ ...prev, [agentId]: "running" }));
       setErrorMsg("");
+      clearActorActivity(agentId);
       try {
         const res = await runContestableSpecialist({
           sessionId: session.session_id,
           agent: agentId,
+          onEvent: (event) => {
+            if (runGenerationRef.current !== generation) return;
+            appendActivity(agentId, event);
+          },
         });
         if (runGenerationRef.current !== generation) return;
+        for (const message of res?.messages || []) {
+          appendActivity(agentId, message);
+        }
         if (res?.session) setSession(res.session);
         requestDoneRef.current[agentId] = true;
         enqueueRef.current(res?.arguments || []);
@@ -942,7 +1001,7 @@ export default function ContestableWorkspace({
         setErrorMsg(err.message || "Specialist agent failed");
       }
     },
-    [session?.session_id],
+    [appendActivity, clearActorActivity, session?.session_id],
   );
 
   const handleArgumentAction = useCallback(
@@ -950,6 +1009,34 @@ export default function ContestableWorkspace({
       if (!session?.session_id) return;
       setIsSavingAction(true);
       setErrorMsg("");
+      const actionLabels = {
+        accept: "Accepted",
+        reject: "Rejected",
+        modify: "Modified",
+        restore: "Restored",
+        add: "Added",
+      };
+      const candidateId = candidate || selectedCandidate;
+      const candidateLabel =
+        (session?.candidates || DEFAULT_CANDIDATES).find(
+          (item) => item.id === candidateId
+        )?.label || candidateId;
+      const detail = [
+        `${actionLabels[actionType] || actionType} an argument for ${candidateLabel}.`,
+        stance ? `Stance: ${stance}.` : "",
+        score !== undefined && score !== null && score !== ""
+          ? `Score: ${score}.`
+          : "",
+        reason || "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+      appendActivity("reliability_engineer", {
+        type: "message",
+        role: "user",
+        at: new Date().toISOString(),
+        content: detail,
+      });
 
       setArgumentsList((prev) => {
         if (actionType === "add") {
@@ -1024,7 +1111,14 @@ export default function ContestableWorkspace({
         setIsSavingAction(false);
       }
     },
-    [newArgReason, newArgStance, selectedCandidate, session?.session_id],
+    [
+      appendActivity,
+      newArgReason,
+      newArgStance,
+      selectedCandidate,
+      session?.candidates,
+      session?.session_id,
+    ],
   );
 
   const handleGenerateReport = useCallback(async () => {
@@ -1043,11 +1137,19 @@ export default function ContestableWorkspace({
 
     if (!session?.session_id) return;
     setIsGeneratingRefinement(true);
+    clearActorActivity("refiner");
     try {
       const res = await generateContestableRefinement({
         sessionId: session.session_id,
+        onEvent: (event) => {
+          if (runGenerationRef.current !== generation) return;
+          appendActivity("refiner", event);
+        },
       });
       if (runGenerationRef.current !== generation) return;
+      for (const message of res?.messages || []) {
+        appendActivity("refiner", message);
+      }
       if (res.refinement) {
         setDraftRootCause(res.refinement.root_cause || fallback.root_cause);
         setDraftRepairSteps(
@@ -1065,7 +1167,13 @@ export default function ContestableWorkspace({
         setIsGeneratingRefinement(false);
       }
     }
-  }, [liveScored, selectedCandidate, session?.session_id]);
+  }, [
+    appendActivity,
+    clearActorActivity,
+    liveScored,
+    selectedCandidate,
+    session?.session_id,
+  ]);
 
   const handleCommitToIncidentReport = useCallback(async () => {
     if (!session?.session_id) return;
@@ -1167,6 +1275,9 @@ export default function ContestableWorkspace({
     setDraftRationale("");
     setSelectedCandidate("bearing_degradation");
     setIsGeneratingRefinement(false);
+    setActivityOpen(false);
+    setSelectedActorId("root_cause");
+    setActivityByActor(EMPTY_ACTIVITY);
   };
 
   const openGovernance = async () => {
@@ -2089,53 +2200,37 @@ export default function ContestableWorkspace({
                 )}
               </div>
         </div>
-        <aside className="flex w-[8.5rem] shrink-0 flex-col items-center gap-3 overflow-x-hidden overflow-y-auto px-1 py-1">
-          <h2 className="w-full text-center text-xs font-semibold uppercase tracking-wider text-[#5C6C75]">
-            Agents overview
-          </h2>
-          {ACTORS.map((actor) => {
-            const working = actorWorking(actor);
-            const inSection = hasStarted && actor.view === view;
-            const isHuman = actor.kind === "human";
-            const quiet = !working && !inSection;
-            let bubble =
-              "flex h-11 w-11 items-center justify-center rounded-full border ";
-            let label =
-              "max-w-[4.5rem] text-center text-[11px] font-medium leading-tight ";
-            if (quiet) {
-              bubble += "border-[#E8EDEB] bg-[#F4F6F5] text-[#889397]";
-              label += "text-[#889397]";
-            } else if (isHuman) {
-              bubble += "border-[#944F01] bg-[#FEF7DB] text-[#944F01]";
-              label += "text-[#944F01]";
-            } else {
-              bubble += "border-[#00684A] bg-white text-[#00684A]";
-              label += "text-[#00684A]";
-              if (working) bubble += " animate-contestable-agent";
+        <AgentActivityPanel
+          open={activityOpen}
+          onToggle={() => {
+            if (activityOpen) {
+              setActivityOpen(false);
+              return;
             }
-            return (
-              <div
-                key={actor.id}
-                className="flex flex-col items-center gap-1.5"
-              >
-                <div className={bubble} title={actor.label}>
-                  <Icon glyph={actor.icon} size={16} />
-                </div>
-                <span className={label}>{actor.short}</span>
-              </div>
+            const runningSpecialist = SPECIALIST_IDS.find(
+              (id) => agentStatus[id] === "running"
             );
-          })}
-          {showContinue && (
-            <button
-              type="button"
-              onClick={handleContinue}
-              className="mt-auto flex w-full items-center justify-center gap-1.5 rounded-full border border-[#00573E] bg-[#00684A] px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#00573E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00A35C]"
-            >
-              Continue
-              <Icon glyph="ArrowRight" size={14} />
-            </button>
-          )}
-        </aside>
+            const nextId =
+              evidenceStatus === "running"
+                ? "root_cause"
+                : runningSpecialist ||
+                  (isGeneratingRefinement
+                    ? "refiner"
+                    : ACTORS.find((actor) => actor.view === view)?.id ||
+                      "root_cause");
+            setSelectedActorId(nextId);
+            setActivityOpen(true);
+          }}
+          actors={ACTORS}
+          selectedActorId={selectedActorId}
+          onSelectActor={setSelectedActorId}
+          activityByActor={activityByActor}
+          step={view}
+          isActorWorking={actorWorking}
+          isActorCurrent={(actor) => hasStarted && actor.view === view}
+          showContinue={showContinue}
+          onContinue={handleContinue}
+        />
       </div>
 
       <DocumentModal

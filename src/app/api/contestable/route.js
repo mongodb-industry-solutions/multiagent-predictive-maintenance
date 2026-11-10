@@ -10,6 +10,47 @@ import { buildBenchmarkArguments } from "@/lib/contestable/scenarios.js";
 import { runVibrationPatternAgent } from "@/agents/contestable/vibrationAgent.js";
 import { runMaintenanceHistoryAgent } from "@/agents/contestable/maintenanceAgent.js";
 import { runContestableRefinerAgent } from "@/agents/contestable/refinerAgent.js";
+import { createActivityLog } from "@/lib/contestable/activityLog.js";
+
+function streamNdjson(work) {
+  const encoder = new TextEncoder();
+  let chain = Promise.resolve();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const emit = (event) => {
+        chain = chain.then(() => {
+          controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+        });
+        return chain;
+      };
+      try {
+        const result = await work(emit);
+        await emit({ type: "result", ...(result || {}) });
+      } catch (error) {
+        console.error("Contestable stream failed:", error);
+        await emit({
+          type: "error",
+          message: error?.message || "Contestable request failed",
+        });
+      } finally {
+        try {
+          await chain;
+        } catch {
+          // The client may already have disconnected.
+        }
+        controller.close();
+      }
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
 
 async function getDb() {
   const dbName = process.env.DATABASE_NAME;
@@ -231,34 +272,39 @@ export async function POST(req) {
         dataSource = "leafy",
       } = body;
 
-      const shortSuffix = Math.floor(1000 + Math.random() * 9000);
-      const sessionId = `incident-${shortSuffix}`;
-      const nowIso = new Date().toISOString();
+      return streamNdjson(async (emit) => {
+        const log = createActivityLog(emit, "root_cause");
+        const shortSuffix = Math.floor(1000 + Math.random() * 9000);
+        const sessionId = `incident-${shortSuffix}`;
+        const nowIso = new Date().toISOString();
 
-      const evidence = await gatherContestableEvidence({
-        incident,
-        alert,
-        machineId: incident?.machine_id || alert?.machine_id || machineId,
-        dataSource,
-      });
+        const evidence = await gatherContestableEvidence({
+          incident,
+          alert,
+          machineId: incident?.machine_id || alert?.machine_id || machineId,
+          dataSource,
+          log,
+        });
 
-      const sessionDoc = buildEvidenceSessionDoc({
-        sessionId,
-        evidence,
-        incident,
-        dataSource,
-        nowIso,
-        scores: null,
-        status: "evidence_ready",
-      });
+        const sessionDoc = buildEvidenceSessionDoc({
+          sessionId,
+          evidence,
+          incident,
+          dataSource,
+          nowIso,
+          scores: null,
+          status: "evidence_ready",
+        });
 
-      await db.collection("contestable_sessions").insertOne({ ...sessionDoc });
+        await db.collection("contestable_sessions").insertOne({ ...sessionDoc });
 
-      return NextResponse.json({
-        session: sessionDoc,
-        arguments: [],
-        candidateScores: null,
-        winningCandidate: null,
+        return {
+          session: sessionDoc,
+          arguments: [],
+          candidateScores: null,
+          winningCandidate: null,
+          messages: log.messages,
+        };
       });
     }
 
@@ -287,6 +333,8 @@ export async function POST(req) {
         );
       }
 
+      return streamNdjson(async (emit) => {
+      const log = createActivityLog(emit, agent);
       const nowIso = new Date().toISOString();
       const existing = await argCol
         .find({ session_id, agent }, { projection: { _id: 0 } })
@@ -301,12 +349,14 @@ export async function POST(req) {
                 candidates: sessionDoc.candidates || DEFAULT_CANDIDATES,
                 vibrationSpectrum: evidence.vibration_spectrum,
                 machineId: sessionDoc.machine_id || "M1",
+                log,
               })
             : await runMaintenanceHistoryAgent({
                 sessionId: session_id,
                 candidates: sessionDoc.candidates || DEFAULT_CANDIDATES,
                 maintenanceHistory: evidence.maintenance_history,
                 machineId: sessionDoc.machine_id || "M1",
+                log,
               });
 
         const drafted = computeCandidateScores(
@@ -388,12 +438,14 @@ export async function POST(req) {
         { projection: { _id: 0 } }
       );
 
-      return NextResponse.json({
+      return {
         session: updatedSession,
         arguments: scored.arguments.filter((arg) => arg.agent === agent),
         candidateScores: scored.candidateScores,
         rankedCandidates: scored.rankedCandidates,
         winningCandidate: scored.winningCandidate,
+        messages: log.messages,
+      };
       });
     }
 
@@ -583,44 +635,49 @@ export async function POST(req) {
         );
       }
 
-      const sessionArgs = await argCol
-        .find({ session_id }, { projection: { _id: 0 } })
-        .toArray();
-      const scored = computeCandidateScores(
-        sessionArgs,
-        sessionDoc.candidates || DEFAULT_CANDIDATES
-      );
+      return streamNdjson(async (emit) => {
+        const log = createActivityLog(emit, "refiner");
+        const sessionArgs = await argCol
+          .find({ session_id }, { projection: { _id: 0 } })
+          .toArray();
+        const scored = computeCandidateScores(
+          sessionArgs,
+          sessionDoc.candidates || DEFAULT_CANDIDATES
+        );
 
-      const refinement = await runContestableRefinerAgent({
-        machineId: sessionDoc.machine_id || "M1",
-        candidates: sessionDoc.candidates || DEFAULT_CANDIDATES,
-        winningCandidateId: scored.winningCandidate,
-        scoresBefore: sessionDoc.scores_before,
-        scoresAfter: scored.candidateScores,
-        argumentsList: scored.arguments,
-        reviewEvents: sessionDoc.review_events || [],
-        originalIncident: sessionDoc.original_incident,
-      });
+        const refinement = await runContestableRefinerAgent({
+          machineId: sessionDoc.machine_id || "M1",
+          candidates: sessionDoc.candidates || DEFAULT_CANDIDATES,
+          winningCandidateId: scored.winningCandidate,
+          scoresBefore: sessionDoc.scores_before,
+          scoresAfter: scored.candidateScores,
+          argumentsList: scored.arguments,
+          reviewEvents: sessionDoc.review_events || [],
+          originalIncident: sessionDoc.original_incident,
+          log,
+        });
 
-      await sessionCol.updateOne(
-        { session_id },
-        {
-          $set: {
-            resolution: refinement,
-            scores_after: scored.candidateScores,
-            winning_candidate: scored.winningCandidate,
-            updated_at: new Date().toISOString(),
-          },
-        }
-      );
+        await sessionCol.updateOne(
+          { session_id },
+          {
+            $set: {
+              resolution: refinement,
+              scores_after: scored.candidateScores,
+              winning_candidate: scored.winningCandidate,
+              updated_at: new Date().toISOString(),
+            },
+          }
+        );
 
-      const lineage = await fetchLineageDocument(db, session_id);
+        const lineage = await fetchLineageDocument(db, session_id);
 
-      return NextResponse.json({
-        refinement,
-        candidateScores: scored.candidateScores,
-        winningCandidate: scored.winningCandidate,
-        lineage,
+        return {
+          refinement,
+          candidateScores: scored.candidateScores,
+          winningCandidate: scored.winningCandidate,
+          lineage,
+          messages: log.messages,
+        };
       });
     }
 

@@ -1,44 +1,91 @@
 // Client API wrapper for Contestable AI endpoints
 
+async function readNdjson(res, onEvent) {
+  if (!res.body) {
+    throw new Error("Contestable request returned an empty response");
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let result = null;
+  let streamError = null;
+
+  const take = (line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    const event = JSON.parse(trimmed);
+    if (event.type === "result") result = event;
+    else if (event.type === "error") {
+      streamError = new Error(event.message || "Contestable request failed");
+    } else if (onEvent) onEvent(event);
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+    lines.forEach(take);
+  }
+  if (buffer.trim()) take(buffer);
+  if (streamError) throw streamError;
+  if (!result) throw new Error("Contestable request ended without a result");
+  return result;
+}
+
+async function postContestable(body, { onEvent, stream = false, fallbackMessage } = {}) {
+  const res = await fetch("/api/contestable", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const contentType = res.headers.get("content-type") || "";
+  if (!stream || contentType.includes("application/json")) {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || fallbackMessage);
+    return data;
+  }
+  if (!res.ok) throw new Error(fallbackMessage);
+  return readNdjson(res, onEvent);
+}
+
 export async function prepareContestableSession({
   incident = null,
   alert = null,
   machineId = "M1",
   dataSource = "leafy",
+  onEvent,
 } = {}) {
-  const res = await fetch("/api/contestable", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+  return postContestable(
+    {
       action: "prepare_session",
       incident,
       alert,
       machineId,
       dataSource,
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Failed to prepare contestable session");
-  }
-  return res.json();
+    },
+    {
+      onEvent,
+      stream: true,
+      fallbackMessage: "Failed to prepare contestable session",
+    }
+  );
 }
 
-export async function runContestableSpecialist({ sessionId, agent }) {
-  const res = await fetch("/api/contestable", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+export async function runContestableSpecialist({ sessionId, agent, onEvent }) {
+  return postContestable(
+    {
       action: "run_specialist",
       session_id: sessionId,
       agent,
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Failed to run specialist agent");
-  }
-  return res.json();
+    },
+    {
+      onEvent,
+      stream: true,
+      fallbackMessage: "Failed to run specialist agent",
+    }
+  );
 }
 
 export async function startContestableSession({
@@ -101,20 +148,18 @@ export async function submitContestableAction({
   return res.json();
 }
 
-export async function generateContestableRefinement({ sessionId }) {
-  const res = await fetch("/api/contestable", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+export async function generateContestableRefinement({ sessionId, onEvent }) {
+  return postContestable(
+    {
       action: "generate_refinement",
       session_id: sessionId,
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Failed to generate refined incident report");
-  }
-  return res.json();
+    },
+    {
+      onEvent,
+      stream: true,
+      fallbackMessage: "Failed to generate refined incident report",
+    }
+  );
 }
 
 export async function commitContestableIncident({

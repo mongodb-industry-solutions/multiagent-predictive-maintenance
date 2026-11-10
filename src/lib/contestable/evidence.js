@@ -1,7 +1,64 @@
 import getMongoClientPromise from "@/integrations/mongodb/client.js";
 import { vectorSearch } from "@/integrations/mongodb/vectorSearch.js";
+import { createActivityLog } from "./activityLog.js";
 import { DEFAULT_CANDIDATES } from "./scoring.js";
 import { STANDALONE_PRESET_SCENARIOS } from "./scenarios.js";
+
+function summarizeEvidenceHit(doc) {
+  if (!doc || typeof doc !== "object") return doc;
+  const text = typeof doc.text === "string" ? doc.text.slice(0, 280) : undefined;
+  const observations =
+    typeof doc.observations === "string" ? doc.observations.slice(0, 280) : undefined;
+  return {
+    title: doc.title || doc.section || doc.role || undefined,
+    score: doc.score,
+    root_cause: doc["root cause"] || doc.root_cause,
+    section: doc.section,
+    role: doc.role,
+    observations,
+    text,
+  };
+}
+
+function summarizeTelemetry(doc) {
+  if (!doc || typeof doc !== "object") return doc;
+  return {
+    ts: doc.ts,
+    temperature: doc.temperature,
+    vibration: doc.vibration,
+    machine_id: doc.metadata?.machine_id,
+  };
+}
+
+async function tracedSearch(activity, { name, input, run }) {
+  const runId = await activity.toolStart(name, input);
+  try {
+    const rows = (await run()) || [];
+    await activity.toolEnd(runId, name, {
+      hit_count: rows.length,
+      hits: rows.slice(0, 4).map(summarizeEvidenceHit),
+    });
+    return rows;
+  } catch (error) {
+    await activity.toolError(runId, name, error?.message || "Search failed");
+    return [];
+  }
+}
+
+async function tracedRead(activity, { name, input, run, summarize = summarizeEvidenceHit }) {
+  const runId = await activity.toolStart(name, input);
+  try {
+    const rows = (await run()) || [];
+    await activity.toolEnd(runId, name, {
+      hit_count: rows.length,
+      hits: rows.slice(0, 4).map(summarize),
+    });
+    return rows;
+  } catch (error) {
+    await activity.toolError(runId, name, error?.message || "Read failed");
+    return [];
+  }
+}
 
 /**
  * Map a historical work order document to one of the 3 canonical root cause candidates
@@ -66,7 +123,9 @@ export async function gatherContestableEvidence({
   alert = null,
   machineId = "M1",
   dataSource = "leafy",
+  log,
 } = {}) {
+  const activity = log || createActivityLog();
   const defaultScenario = STANDALONE_PRESET_SCENARIOS[0];
   const resolvedMachineId =
     incident?.machine_id || alert?.machine_id || machineId || "M1";
@@ -86,113 +145,164 @@ export async function gatherContestableEvidence({
     incident?.root_cause || "vibration and temperature spike bearing misalignment sensor calibration",
   ].join(" ");
 
+  await activity.addMessage(
+    "system",
+    "Root Cause Agent gathers candidate root causes and the evidence the specialist agents will read. It searches similar work orders, manuals, and technician interviews, then reads recent telemetry."
+  );
+  await activity.addMessage(
+    "user",
+    `Machine ${resolvedMachineId} · ${errorCode} ${errorName}\nQuery: ${queryText}`
+  );
+
+  const searchInput = {
+    query: queryText,
+    machine_id: resolvedMachineId,
+    error_code: errorCode,
+  };
+
   let similarWorkOrders = [];
   let manualSections = [];
   let technicianInterviews = [];
   let recentTelemetry = [];
 
-  try {
-    const [woResults, manualResults, interviewResults] = await Promise.all([
-      vectorSearch(
-        queryText,
-        {
-          collection: "workorders",
-          indexName: "default",
-          textKey: ["title", "observations", "instructions", "root cause"],
-          embeddingKey: "embedding",
-          includeScore: true,
-        },
-        6,
-        {
-          project: {
-            machine_id: 1,
-            created_at: 1,
-            required_skills: 1,
-            "root cause": 1,
-            root_cause: 1,
+  const [woResults, manualResults, interviewResults] = await Promise.all([
+    tracedSearch(activity, {
+      name: "search_workorders",
+      input: { ...searchInput, limit: 6 },
+      run: () =>
+        vectorSearch(
+          queryText,
+          {
+            collection: "workorders",
+            indexName: "default",
+            textKey: ["title", "observations", "instructions", "root cause"],
+            embeddingKey: "embedding",
+            includeScore: true,
           },
-        }
-      ).catch(() => []),
-      vectorSearch(
-        queryText,
-        {
-          collection: "manuals",
-          indexName: "default",
-          textKey: ["section", "text"],
-          embeddingKey: "embedding",
-          includeScore: true,
-        },
-        3,
-        { project: { pages: 1 } }
-      ).catch(() => []),
-      vectorSearch(
-        queryText,
-        {
-          collection: "interviews",
-          indexName: "default",
-          textKey: ["role", "text"],
-          embeddingKey: "embedding",
-          includeScore: true,
-        },
-        3,
-        { project: { employee_id: 1, creation_date: 1 } }
-      ).catch(() => []),
-    ]);
+          6,
+          {
+            project: {
+              machine_id: 1,
+              created_at: 1,
+              required_skills: 1,
+              "root cause": 1,
+              root_cause: 1,
+            },
+          }
+        ),
+    }),
+    tracedSearch(activity, {
+      name: "search_manuals",
+      input: { ...searchInput, limit: 3 },
+      run: () =>
+        vectorSearch(
+          queryText,
+          {
+            collection: "manuals",
+            indexName: "default",
+            textKey: ["section", "text"],
+            embeddingKey: "embedding",
+            includeScore: true,
+          },
+          3,
+          { project: { pages: 1 } }
+        ),
+    }),
+    tracedSearch(activity, {
+      name: "search_interviews",
+      input: { ...searchInput, limit: 3 },
+      run: () =>
+        vectorSearch(
+          queryText,
+          {
+            collection: "interviews",
+            indexName: "default",
+            textKey: ["role", "text"],
+            embeddingKey: "embedding",
+            includeScore: true,
+          },
+          3,
+          { project: { employee_id: 1, creation_date: 1 } }
+        ),
+    }),
+  ]);
 
-    similarWorkOrders = woResults || [];
-    manualSections = manualResults || [];
-    technicianInterviews = interviewResults || [];
-  } catch (err) {
-    console.warn("Vector search fallback in gatherContestableEvidence:", err?.message);
-  }
+  similarWorkOrders = woResults;
+  manualSections = manualResults;
+  technicianInterviews = interviewResults;
 
-  // Fallback to direct MongoDB read if vector search returned empty
   try {
     const client = await getMongoClientPromise();
     const dbName = process.env.DATABASE_NAME;
     if (dbName) {
       const db = client.db(dbName);
       if (similarWorkOrders.length === 0) {
-        similarWorkOrders = await db
-          .collection("workorders")
-          .find(
-            {},
-            {
-              projection: {
-                _id: 0,
-                embedding: 0,
-              },
-            }
-          )
-          .limit(6)
-          .toArray();
+        similarWorkOrders = await tracedRead(activity, {
+          name: "read_workorders",
+          input: {
+            reason: "Vector search returned no work orders",
+            limit: 6,
+          },
+          run: () =>
+            db
+              .collection("workorders")
+              .find({}, { projection: { _id: 0, embedding: 0 } })
+              .limit(6)
+              .toArray(),
+        });
       }
       if (manualSections.length === 0) {
-        manualSections = await db
-          .collection("manuals")
-          .find({}, { projection: { _id: 0, embedding: 0 } })
-          .limit(4)
-          .toArray();
+        manualSections = await tracedRead(activity, {
+          name: "read_manuals",
+          input: {
+            reason: "Vector search returned no manual sections",
+            limit: 4,
+          },
+          run: () =>
+            db
+              .collection("manuals")
+              .find({}, { projection: { _id: 0, embedding: 0 } })
+              .limit(4)
+              .toArray(),
+        });
       }
       if (technicianInterviews.length === 0) {
-        technicianInterviews = await db
-          .collection("interviews")
-          .find({}, { projection: { _id: 0, embedding: 0 } })
-          .limit(4)
-          .toArray();
+        technicianInterviews = await tracedRead(activity, {
+          name: "read_interviews",
+          input: {
+            reason: "Vector search returned no interviews",
+            limit: 4,
+          },
+          run: () =>
+            db
+              .collection("interviews")
+              .find({}, { projection: { _id: 0, embedding: 0 } })
+              .limit(4)
+              .toArray(),
+        });
       }
-      recentTelemetry = await db
-        .collection("telemetry")
-        .find(
-          { "metadata.machine_id": resolvedMachineId },
-          { projection: { _id: 0 } }
-        )
-        .sort({ ts: -1 })
-        .limit(6)
-        .toArray();
+      recentTelemetry = await tracedRead(activity, {
+        name: "read_recent_telemetry",
+        input: { machine_id: resolvedMachineId, limit: 6 },
+        summarize: summarizeTelemetry,
+        run: () =>
+          db
+            .collection("telemetry")
+            .find(
+              { "metadata.machine_id": resolvedMachineId },
+              { projection: { _id: 0 } }
+            )
+            .sort({ ts: -1 })
+            .limit(6)
+            .toArray(),
+      });
     }
   } catch (err) {
     console.warn("Direct DB fallback in gatherContestableEvidence:", err?.message);
+    await activity.addStatus(
+      "error",
+      err?.message || "Direct database read failed"
+    );
   }
 
   // Map top historical cases onto our 3 fixed candidates
@@ -377,6 +487,13 @@ export async function gatherContestableEvidence({
           }))
         : [],
   };
+
+  await activity.addMessage(
+    "assistant",
+    `Assembled evidence for ${resolvedMachineId}: ${candidates
+      .map((candidate) => candidate.label)
+      .join(", ")}. Vibration spectrum and maintenance history are ready for the specialist agents. Similar work orders: ${similarWorkOrders.length}. Manual sections: ${manualSections.length}. Interviews: ${technicianInterviews.length}. Telemetry points: ${recentTelemetry.length}.`
+  );
 
   return {
     machine_id: resolvedMachineId,

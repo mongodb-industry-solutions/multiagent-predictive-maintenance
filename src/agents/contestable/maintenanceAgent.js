@@ -1,4 +1,5 @@
 import { invokeChat } from "@/integrations/chat_factory.js";
+import { createActivityLog } from "@/lib/contestable/activityLog.js";
 import { buildBenchmarkArguments } from "@/lib/contestable/scenarios.js";
 
 function extractJson(text = "") {
@@ -32,7 +33,9 @@ export async function runMaintenanceHistoryAgent({
   candidates,
   maintenanceHistory,
   machineId = "M1",
+  log,
 }) {
+  const activity = log || createActivityLog();
   const fallbackArgs = buildBenchmarkArguments(sessionId).filter(
     (a) => a.agent === "maintenance_history_agent"
   );
@@ -80,6 +83,26 @@ Return ONLY a valid JSON object in this exact shape:
   ]
 }`;
 
+  const historyRunId = await activity.toolStart("read_maintenance_history", {
+    machine_id: machineId,
+  });
+  await activity.toolEnd(historyRunId, "read_maintenance_history", {
+    repair_logs: (maintenanceHistory?.repair_logs || []).map((entry) => ({
+      date: entry.date,
+      work_order: entry.work_order,
+      component: entry.component,
+      action: entry.action,
+    })),
+    calibration_records: maintenanceHistory?.calibration_records || [],
+    tooling_changes: maintenanceHistory?.tooling_changes || [],
+  });
+  await activity.addMessage("system", systemPrompt);
+  await activity.addMessage("user", userPrompt);
+
+  const draftRunId = await activity.toolStart("draft_arguments", {
+    candidates: (candidates || []).map((candidate) => candidate.id),
+  });
+
   try {
     const response = await invokeChat([
       { role: "system", content: systemPrompt },
@@ -93,6 +116,7 @@ Return ONLY a valid JSON object in this exact shape:
           ? response.content.map((part) => part.text || "").join("")
           : "";
 
+    await activity.addMessage("assistant", rawText);
     const parsed = extractJson(rawText);
     const rawArgs = Array.isArray(parsed?.arguments) ? parsed.arguments : [];
 
@@ -131,11 +155,28 @@ Return ONLY a valid JSON object in this exact shape:
       }
     }
 
+    await activity.toolEnd(draftRunId, "draft_arguments", {
+      argument_count: normalized.length,
+      arguments: normalized.map((argument) => ({
+        candidate: argument.candidate,
+        stance: argument.stance,
+        score: argument.score,
+      })),
+    });
     return normalized;
   } catch (error) {
     console.warn(
       "Maintenance History Agent using benchmark fallback:",
       error?.message
+    );
+    await activity.toolError(
+      draftRunId,
+      "draft_arguments",
+      error?.message || "Model call failed"
+    );
+    await activity.addStatus(
+      "fallback",
+      "Benchmark arguments were used because the model call failed."
     );
     return fallbackArgs;
   }

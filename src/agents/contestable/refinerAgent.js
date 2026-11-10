@@ -1,4 +1,5 @@
 import { invokeChat } from "@/integrations/chat_factory.js";
+import { createActivityLog } from "@/lib/contestable/activityLog.js";
 import { isArgumentActive } from "@/lib/contestable/scoring.js";
 import { getCandidateById } from "@/lib/contestable/scenarios.js";
 
@@ -97,7 +98,9 @@ export async function runContestableRefinerAgent({
   argumentsList = [],
   reviewEvents = [],
   originalIncident = null,
+  log,
 }) {
+  const activity = log || createActivityLog();
   const winningMeta = getCandidateById(winningCandidateId, candidates);
   const fallback =
     FALLBACK_RESOLUTION_BY_CANDIDATE[winningCandidateId] ||
@@ -177,6 +180,27 @@ Return ONLY a JSON object with this exact structure:
   "confidence_summary": "1 paragraph summarizing how the score shifted from before to after human contestation."
 }`;
 
+  const readRunId = await activity.toolStart("read_contestation", {
+    machine_id: machineId,
+    winning_candidate: winningCandidateId,
+    winning_label: winningMeta.label,
+    score_before: beforeWinnerScore,
+    score_after: afterWinnerScore,
+  });
+  await activity.toolEnd(readRunId, "read_contestation", {
+    supporting_arguments: winningSupportArgs.length,
+    rejected_arguments: rejectedArgs.length,
+    modified_arguments: modifiedArgs.length,
+    added_arguments: addedArgs.length,
+    review_events: reviewEvents.length,
+  });
+  await activity.addMessage("system", systemPrompt);
+  await activity.addMessage("user", userPrompt);
+
+  const writeRunId = await activity.toolStart("write_incident_report", {
+    winning_candidate: winningCandidateId,
+  });
+
   try {
     const response = await invokeChat([
       { role: "system", content: systemPrompt },
@@ -190,6 +214,7 @@ Return ONLY a JSON object with this exact structure:
           ? response.content.map((part) => part.text || "").join("")
           : "";
 
+    await activity.addMessage("assistant", rawText);
     const parsed = extractJson(rawText);
     const instructions =
       Array.isArray(parsed?.repair_instructions) &&
@@ -203,7 +228,7 @@ Return ONLY a JSON object with this exact structure:
           }))
         : fallback.repair_instructions;
 
-    return {
+    const resolution = {
       winning_candidate: winningCandidateId,
       winning_label: winningMeta.label,
       root_cause:
@@ -226,8 +251,22 @@ Return ONLY a JSON object with this exact structure:
           ? parsed.confidence_summary.trim()
           : defaultSummary,
     };
+    await activity.toolEnd(writeRunId, "write_incident_report", {
+      root_cause: resolution.root_cause,
+      repair_steps: resolution.repair_instructions.length,
+    });
+    return resolution;
   } catch (error) {
     console.warn("Contestable Refiner Agent fallback:", error?.message);
+    await activity.toolError(
+      writeRunId,
+      "write_incident_report",
+      error?.message || "Model call failed"
+    );
+    await activity.addStatus(
+      "fallback",
+      "A fallback incident report was used because the model call failed."
+    );
     return {
       winning_candidate: winningCandidateId,
       winning_label: winningMeta.label,
