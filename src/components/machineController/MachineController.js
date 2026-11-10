@@ -10,36 +10,32 @@ export default function MachineController({
   vibration,
   onTemperatureChange,
   onVibrationChange,
+  sliderFooter = null,
+  sideFooter = null,
 }) {
   useMachineController(); // For future extensibility
   return (
-    <div className="flex flex-row items-center gap-3 w-full h-full min-h-[100px] max-h-[120px]">
-      {/* Machine Image with alert icon */}
-      <div
-        className="flex items-center justify-center relative"
-        style={{ flexBasis: "60%", flexGrow: 0, flexShrink: 0 }}
-      >
-        <Image
-          src="/img/robot.png"
-          alt="Machine"
-          width={100}
-          height={100}
-          className="object-contain"
-          priority
-        />
-        {status === "alert" && (
-          <span className="absolute top-1 right-12">
-            <Icon glyph="Warning" fill="red" size={25} />
-          </span>
-        )}
+    <div className="mx-auto grid w-fit grid-cols-[10rem_16rem] items-center gap-x-20 gap-y-3">
+      <div className="flex justify-center">
+        <div className="relative">
+          <Image
+            src="/img/robot.png"
+            alt="Machine"
+            width={100}
+            height={100}
+            className="object-contain"
+            priority
+          />
+          {status === "alert" && (
+            <span className="absolute -right-1 -top-1">
+              <Icon glyph="Warning" fill="red" size={25} />
+            </span>
+          )}
+        </div>
       </div>
-      {/* Sliders */}
-      <div
-        className="flex flex-col gap-1"
-        style={{ flexBasis: "40%", flexGrow: 1, flexShrink: 1 }}
-      >
+      <div className="flex flex-col gap-2">
         <div>
-          <div className="font-medium mb-1">Temperature</div>
+          <div className="font-medium">Temperature</div>
           <Slider
             value={temperature}
             min={0}
@@ -51,7 +47,7 @@ export default function MachineController({
           />
         </div>
         <div>
-          <div className="font-medium mb-1">Vibration</div>
+          <div className="font-medium">Vibration</div>
           <Slider
             value={vibration}
             min={0}
@@ -63,6 +59,12 @@ export default function MachineController({
           />
         </div>
       </div>
+      {sideFooter ? <div className="w-full">{sideFooter}</div> : <div />}
+      {sliderFooter ? (
+        <div className="flex justify-center">{sliderFooter}</div>
+      ) : (
+        <div />
+      )}
     </div>
   );
 }

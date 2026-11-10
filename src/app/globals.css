@@ -348,8 +348,10 @@ body.contestable-select-open [class*="selectDropdown"] {
   --dropdown-max-width: 26rem;
 }
 
-/* Form / JSON toggle: selected label stays readable on the light indicator. */
+/* Form / JSON toggle. The selected segment paints its own fill above the
+   sliding indicator, so the light surface has to be set on the segment. */
 .view-toggle [class*="_item"][aria-checked="true"] {
+  background-color: #fff;
   color: #112733;
 }
 .view-toggle [class*="_selectionIndicator"] {
