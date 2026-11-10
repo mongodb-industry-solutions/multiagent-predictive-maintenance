@@ -28,6 +28,8 @@ export default function CardList({
   emptyText = "No items",
   listTitle = "",
   listDescription = "",
+  onContestIncident,
+  onIncidentSaved,
 }) {
   const {
     cardConfigs,
@@ -180,7 +182,11 @@ export default function CardList({
                   {config.hasForm && view === "form" ? (
                     cardType === "incident-reports" ? (
                       <IncidentResponseForm
+                        incidentId={id}
+                        item={item}
                         editSlotId={editSlotId}
+                        onContestIncident={onContestIncident}
+                        onIncidentSaved={onIncidentSaved}
                         rootCause={item.root_cause || item.Root_cause || ""}
                         repairInstructions={
                           Array.isArray(item.repair_instructions)

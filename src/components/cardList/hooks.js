@@ -75,12 +75,12 @@ export function useCardList(
             title: `${item.error_name || item.Err_name || "Unknown Error"}${
               item.machine_id ? ` in ${item.machine_id}` : ""
             }`,
-            flagText: undefined,
+            flagText: item.contestation ? "Contested & Verified" : undefined,
+            flagTextColor: item.contestation ? "#00684A" : flagTextColor,
             description: formatTimestamp(item.ts),
             icon,
             titleColor,
             descColor,
-            flagTextColor,
             iconColor,
             hasForm,
           };
