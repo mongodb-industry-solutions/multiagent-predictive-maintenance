@@ -13,10 +13,10 @@ not from a formal schema — this application defines no JSON Schema validators.
 
 | Collection | Written by | Read by | Vector index |
 | --- | --- | --- | --- |
-| `telemetry` | Simulator (time series) | Failure agent, telemetry chart | — |
-| `alerts` | Simulator threshold check | Failure agent, Alerts list | — |
+| `telemetry` | Simulator + `seed:context` (time series) | Failure agent, telemetry chart, Connected Factory Context Explorer | — |
+| `alerts` | Simulator threshold check + `seed:context` | Failure agent, Alerts list, Connected Factory Context Explorer | — |
 | `incident_reports` | Failure agent | Work order agent, UI | — |
-| `workorders` | Work order agent + seed | Planning agent, vector retrieval | `default` |
+| `workorders` | Work order agent + seed + `seed:context` | Planning agent, vector retrieval, Connected Factory Context Explorer | `default` |
 | `manuals` | Seed | Failure agent (vector retrieval) | `default` |
 | `interviews` | Seed | Failure agent (vector retrieval) | `default` |
 | `inventory` | Seed | Work order agent | — |
@@ -24,44 +24,54 @@ not from a formal schema — this application defines no JSON Schema validators.
 | `production_calendar` | `generate_calendar` | Planning agent | — |
 | `argument_records` | Contestable AI agents + Engineer | Contestable AI scoring & UI | — |
 | `contestable_sessions` | Contestable AI API | Contestable AI UI, `$lookup` audit lineage | — |
+| `materials` | Auto-init / `seed:context` | Connected Factory Context Explorer (`$lookup` limits) | — |
+| `excursions` | Auto-init / `seed:context` | Connected Factory Context Explorer (`$vectorSearch`) | `excursion_signature_index` |
 | `checkpoints`, `checkpoint_writes` | LangGraph checkpointer | LangGraph | — |
 
 ---
 
 ## `telemetry`
 
-Time series collection. Created by [scripts/seed.mjs](./scripts/seed.mjs) with
-`timeField: ts`, `metaField: metadata`, `granularity: minutes`, and
-`expireAfterSeconds: 86400` — **documents self-delete after 24 hours.**
+Time series collection (`timeField: ts`, `metaField: metadata`, `expireAfterSeconds: 86400` — **documents self-delete after 24 hours**). Shared by the Failure Prediction simulator (`M1` temperature/vibration readings) and Connected Factory Context Explorer (`LTW-04` welding signals synced automatically to the current UTC day so readings stay within the 24-hour TTL window without accumulating).
 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `_id` | ObjectId | |
 | `ts` | date | Time field |
 | `metadata` | object | Meta field |
-| `metadata.factory_id` | string | |
-| `metadata.machine_id` | string | e.g. `M1` |
-| `metadata.prod_line_id` | string | |
-| `temperature` | double | °C |
-| `vibration` | double | mm/s |
+| `metadata.factory_id` | string | e.g. `leafy_factory` |
+| `metadata.machine_id` | string | e.g. `M1` \| `LTW-04` |
+| `metadata.prod_line_id` | string | e.g. `ev_module_assembly` |
+| `metadata.area` | string | Optional (`welding` on `LTW-04`) |
+| `metadata.signal` | string | Optional (`weld-zone-temp` \| `laser-power` \| `shield-gas-flow` on `LTW-04`) |
+| `metadata.unit` | string | Optional (`degC` \| `W` \| `L/min`) |
+| `metadata.workOrder` | string \| null | Optional edge-stamped MES order ID on `LTW-04` |
+| `metadata.materialMaster` | string \| null | Optional ERP foil material code on `LTW-04` |
+| `temperature` | double | °C (simulator readings on `M1`) |
+| `vibration` | double | mm/s (simulator readings on `M1`) |
+| `value` | double | Sensor measurement (`LTW-04` multi-signal telemetry) |
 
-Index: `metadata_1_ts_1` (implicit time series index).
+Indexes: `metadata_1_ts_1` (implicit), `{ "metadata.machine_id": 1, "metadata.signal": 1, ts: 1 }`, `{ "metadata.materialMaster": 1, ts: 1 }`.
 
 ## `alerts`
 
-Raised by [src/lib/simulation/failureDetection.js](./src/lib/simulation/failureDetection.js)
-when telemetry crosses a threshold (temperature > 90 → `E12`, vibration > 1.2 → `E13`).
+Shared operational alerts collection. Raised live on `M1` by [src/lib/simulation/failureDetection.js](./src/lib/simulation/failureDetection.js) and synced with 9 `LTW-04` edge-weld-monitor alerts (`ALT-LTW04-01` … `ALT-LTW04-09`) for the active UTC day (deliberately carrying no `workOrder`, `materialMaster`, or `operatorId` for read-time interval `$lookup`).
 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `_id` | ObjectId | |
-| `err_code` | string | `E12` \| `E13` |
-| `err_name` | string | `High temperature` \| `High vibration` |
-| `machine_id` | string | |
-| `details.temperature` | double | Reading at trigger time |
-| `details.vibration` | double | Reading at trigger time |
-| `ts` | date | |
-| `status` | string | `new` when created |
+| `alert_id` | string | Optional unique ID for `LTW-04` edge alerts (partial unique index) |
+| `err_code` | string | `E12` \| `E13` (`M1`) or `W-TEMP-01` etc. (`LTW-04`) |
+| `err_name` | string | Human-readable alarm label |
+| `machine_id` | string | `M1` \| `LTW-04` |
+| `area` | string | Optional (`welding`) |
+| `priority` | int | Optional (`1`–`3` on `LTW-04`, `1` = highest) |
+| `source` | string | Optional (`edge-weld-monitor`) |
+| `details` | object | `temperature` / `vibration` (`M1`) or `component` / `message` (`LTW-04`) |
+| `ts` | date | Point-in-time alert timestamp |
+| `status` | string | `new` \| `unacknowledged` |
+
+Indexes: `{ machine_id: 1, ts: 1 }`, `{ status: 1, priority: 1, ts: 1 }`, `{ alert_id: 1 }` (partial unique).
 
 ## `incident_reports`
 
@@ -82,24 +92,32 @@ Generated by the failure agent from retrieved manuals, work orders, and intervie
 
 ## `workorders`
 
-Seeded history plus agent-generated orders. Embedded for vector retrieval.
+Shared collection holding both maintenance work orders (`M1` seeded history + agent-generated orders, embedded for vector retrieval) and MES production order spans (`orderType: "production"` on `LTW-04` for read-time interval `$lookup` in Connected Factory Context Explorer).
 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `_id` | ObjectId | |
-| `machine_id` | string | |
-| `title` | string | Embedded |
-| `instructions` | string | Embedded |
+| `machine_id` | string | `M1` \| `LTW-04` |
+| `title` | string | Maintenance orders (embedded) |
+| `instructions` | string | Maintenance orders (embedded) |
 | `estimated_duration` | string | Free text, e.g. `3 hours` — not a number |
 | `proposed_start_time` | string | ISO-8601 **string**, not a BSON date |
 | `required_skills` | array\<string\> | Matched against `maintenance_staff.skills` |
-| `observations` | string | Embedded |
+| `observations` | string | Maintenance orders (embedded) |
 | `root cause` | string | ⚠️ Field name contains a space — see Known inconsistencies |
 | `status` | string | e.g. `completed` |
-| `created_at` | object | ⚠️ Stored as `{ $date: … }`, not a BSON date |
-| `embedding` | array\<double\> | 1024 dims |
+| `created_at` | object \| date | ⚠️ Seeded maintenance docs store `{ $date: … }` |
+| `embedding` | array\<double\> | 1024 dims (maintenance orders only) |
+| `workOrder` | string | Production order ID (`WO-1001232` … `WO-1001236`, partial unique index, updated in-place for active UTC day) |
+| `orderType` | string | `production` on `LTW-04` production order spans |
+| `startedAt` | date | Inclusive start of `LTW-04` production order window |
+| `endedAt` | date | Exclusive end of `LTW-04` production order window |
+| `materialMaster` | string | Logical ref to `materials.materialMaster` |
+| `product` | string | `EV-PM-4C-S` \| `EV-PM-4C-P` \| `EV-PK-8M-LR` |
+| `plannedQty` | int | |
+| `operatorId` | string | |
 
-Vector index `default`: `embedding`, cosine, 1024 dimensions.
+Indexes: `{ machine_id: 1, startedAt: 1 }`, `{ workOrder: 1 }` (partial unique). Vector index `default`: `embedding`, cosine, 1024 dimensions.
 
 ## `manuals`
 
@@ -219,6 +237,49 @@ post-contestation scores, engineer review events, and single-query `$lookup` lin
 | `review_events` | array\<object\> | Sequenced engineer accept/reject/modify/add actions |
 | `resolution` | object | Refined `root_cause`, `repair_instructions`, and `rationale` |
 | `status` | string | `in_review` \| `committed` |
+
+## `materials`
+
+ERP tab and busbar material master specifications (3 documents) used by Connected Factory Context Explorer (`/ai-workflows/context-explorer`).
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `_id` | ObjectId | |
+| `materialMaster` | string | Unique (`MAT-CU-020`, `MAT-AL-030`, `MAT-CU-025`) |
+| `name` | string | Foil/strip description |
+| `supplier` | string | |
+| `thicknessMm` | string | e.g. `0.20` |
+| `maxShieldO2Ppm` | int | |
+| `maxWeldTempC` | double | Maximum allowable weld-zone temperature (°C) |
+
+Index: `{ materialMaster: 1 }` (unique).
+
+## `excursions`
+
+Historical 4-minute weld-zone temperature excursions across the fleet (24 documents) with z-scored 24-bin curve vectors.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `_id` | ObjectId | |
+| `excursionId` | string | Unique (`EX-2026-0001` …) |
+| `machine_id` | string | `LTW-02` \| `LTW-03` \| `LTW-04` \| `LTW-06` \| `LTW-09` |
+| `site` | string | `leafy-ev-01` \| `leafy-ev-02` \| `leafy-na-01` |
+| `laserModel` | string | |
+| `signal` | string | `weld-zone-temp` (filter field) |
+| `start` | date | Window start |
+| `end` | date | Window end (+240s) |
+| `workOrder` | string | |
+| `materialMaster` | string | Filter field |
+| `material` | string | |
+| `operatorId` | string | |
+| `peakTempC` | double | |
+| `rootCause` | string \| null | `null` when `status === "open"` |
+| `fix` | string \| null | |
+| `status` | string | `closed` \| `open` (filter field) |
+| `signature` | array\<double\> | 24-dim z-scored 10-second curve bins |
+
+Indexes: `{ excursionId: 1 }` (unique), `{ machine_id: 1, start: 1 }`.
+Vector index `excursion_signature_index`: `signature` (`cosine`, `24` dims) with `filter` fields on `signal`, `status`, and `materialMaster`.
 
 ---
 

@@ -136,10 +136,10 @@ function MessageEntry({ role, content }) {
     role === "system" ? "System" : role === "user" ? "User" : "Agent";
   return (
     <article className="rounded-lg border border-[#E8EDEB] bg-[#F8FAF9] p-2.5">
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-[#5C6C75]">
+      <div className="text-sm font-semibold uppercase tracking-wider text-[#5C6C75]">
         {label}
       </div>
-      <pre className="mt-1 whitespace-pre-wrap break-words font-sans text-xs leading-5 text-[#112733]">
+      <pre className="mt-1 whitespace-pre-wrap break-words font-sans text-sm leading-5 text-[#112733]">
         {visible}
         {long && !expanded ? "…" : ""}
       </pre>
@@ -147,7 +147,7 @@ function MessageEntry({ role, content }) {
         <button
           type="button"
           onClick={() => setExpanded((open) => !open)}
-          className="mt-1 text-xs font-semibold text-[#00684A] hover:underline"
+          className="mt-1 text-sm font-semibold text-[#00684A] hover:underline"
         >
           {expanded ? "Show less" : "Show more"}
         </button>
@@ -216,8 +216,10 @@ export default function AgentActivityPanel({
   onContinue,
 }) {
   const logEndRef = useRef(null);
-  const events = activityByActor?.[selectedActorId] || [];
-  const items = useMemo(() => processActorActivity(events), [events]);
+  const items = useMemo(
+    () => processActorActivity(activityByActor?.[selectedActorId] || []),
+    [activityByActor, selectedActorId]
+  );
   const toolRows = useMemo(
     () => collapsedToolRows(activityByActor, step),
     [activityByActor, step]
@@ -252,7 +254,7 @@ export default function AgentActivityPanel({
       >
         <h2
           className={`font-semibold uppercase tracking-wider text-[#5C6C75] ${
-            open ? "text-xs" : "text-center text-[10px] leading-tight"
+            open ? "text-sm" : "text-center text-[10px] leading-tight"
           }`}
         >
           Agents overview
@@ -276,20 +278,20 @@ export default function AgentActivityPanel({
                   role="tab"
                   aria-selected={selected}
                   onClick={() => onSelectActor(actor.id)}
-                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-sm font-medium ${
                     selected
                       ? "border-[#00684A] bg-[#E3FCF7] text-[#00684A]"
                       : "border-[#E8EDEB] bg-white text-[#5C6C75] hover:bg-[#F8FAF9]"
                   } ${working ? "animate-contestable-agent" : ""}`}
                 >
-                  <Icon glyph={actor.icon} size={12} />
+                  <Icon glyph={actor.icon} size={13} />
                   {actor.short}
                 </button>
               );
             })}
           </div>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3">
-            <p className="text-sm font-semibold text-[#112733]">
+            <p className="text-base font-semibold text-[#112733]">
               {selectedActor?.label || "Agent"}
             </p>
             {items.length === 0 ? (
@@ -307,7 +309,7 @@ export default function AgentActivityPanel({
                   return (
                     <p
                       key={`${item.at}-${index}`}
-                      className={`rounded-lg px-2.5 py-2 text-xs ${
+                      className={`rounded-lg px-2.5 py-2 text-sm ${
                         item.status === "error" || item.status === "fallback"
                           ? "bg-[#FFEAE5] text-[#B1371F]"
                           : "bg-[#F8FAF9] text-[#5C6C75]"

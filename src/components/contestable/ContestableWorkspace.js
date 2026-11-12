@@ -256,7 +256,7 @@ function repairLines(instructions) {
 function ReportField({ label, value, onChange, minHeight = "7.5rem" }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-semibold uppercase tracking-wider text-[#5C6C75]">
+      <span className="text-sm font-semibold uppercase tracking-wider text-[#5C6C75]">
         {label}
       </span>
       <textarea
@@ -290,10 +290,10 @@ function IncidentReportSheet({
       <header className="border-b border-[#E8EDEB] px-5 py-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wider text-[#5C6C75]">
+            <div className="text-sm font-semibold uppercase tracking-wider text-[#5C6C75]">
               {eyebrow}
             </div>
-            <h3 className="mt-1 text-lg font-semibold text-[#112733]">
+            <h3 className="mt-1 text-xl font-semibold text-[#112733]">
               {errorName || "Incident report"}
             </h3>
           </div>
@@ -315,7 +315,7 @@ function IncidentReportSheet({
       </header>
       <div className="flex flex-1 flex-col gap-5 px-5 py-4">
         <section>
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-[#5C6C75]">
+          <h4 className="text-sm font-semibold uppercase tracking-wider text-[#5C6C75]">
             Root cause
           </h4>
           {editable ? (
@@ -332,7 +332,7 @@ function IncidentReportSheet({
           )}
         </section>
         <section className="flex-1">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-[#5C6C75]">
+          <h4 className="text-sm font-semibold uppercase tracking-wider text-[#5C6C75]">
             Repair instructions
           </h4>
           {editable ? (
@@ -365,7 +365,7 @@ function IncidentReportSheet({
               />
             ) : (
               <>
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#5C6C75]">
+                <h4 className="text-sm font-semibold uppercase tracking-wider text-[#5C6C75]">
                   Notes
                 </h4>
                 <p className="mt-1.5 text-sm leading-6 text-[#3D4F58]">
@@ -1537,7 +1537,7 @@ export default function ContestableWorkspace({
                   Candidate Root Causes
                 </span>
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#D8E3DF] bg-white px-2.5 py-0.5 text-xs font-medium text-[#3D4F58]"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#D8E3DF] bg-white px-2.5 py-0.5 text-sm font-medium text-[#3D4F58]"
                   title={currentSelection.label}
                 >
                   <Icon

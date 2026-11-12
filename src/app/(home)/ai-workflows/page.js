@@ -11,6 +11,13 @@ const useCases = [
     href: "/ai-workflows/factory-chat",
   },
   {
+    title: "Connected Factory Context Explorer",
+    description:
+      "Resolve sensor limits, join keyless alerts to active battery orders at read time, query in plain language, and match thermal curve shapes with Atlas Vector Search.",
+    glyph: "Database",
+    href: "/ai-workflows/context-explorer",
+  },
+  {
     title: "Criticality Analysis",
     description:
       "Retrieve evidence, score asset impact, explain the result, and route it through human review.",

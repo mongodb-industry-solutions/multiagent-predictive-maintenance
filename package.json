@@ -11,6 +11,7 @@
     "embed": "node scripts/embed_collections.mjs",
     "generate_calendar": "node scripts/generate_production_calendar.mjs",
     "seed": "node scripts/seed.mjs",
+    "seed:context": "node scripts/seed_connected_factory.mjs",
     "tpn": "npx --yes license-checker@25.0.1 --production --json > third-party-licenses.json && node scripts/generate_third_party_notices.mjs"
   },
   "dependencies": {

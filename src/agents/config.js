@@ -6,6 +6,7 @@ import { createAgentGraph as createWorkorderAgentGraph } from "./workorder/graph
 import { createAgentGraph as createPlanningAgentGraph } from "./planning/graph.js";
 import { createAgentGraph as createUnsChatAgentGraph } from "./uns-chat/graph.js";
 import { createAgentGraph as createContestableAgentGraph } from "./contestable/graph.js";
+import { createAgentGraph as createContextExplorerAgentGraph } from "./context-explorer/graph.js";
 
 export const AGENTS = [
   {
@@ -53,6 +54,13 @@ export const AGENTS = [
     createGraph: createUnsChatAgentGraph,
     description:
       "Answers manufacturing operations questions from live or locally simulated Unified Namespace data.",
+  },
+  {
+    id: "context-explorer",
+    name: "Connected Factory Context Explorer",
+    createGraph: createContextExplorerAgentGraph,
+    description:
+      "Writes and runs read-only MongoDB aggregation pipelines across EV battery welding telemetry, alerts, orders, and material master specs.",
   },
 ];
 
