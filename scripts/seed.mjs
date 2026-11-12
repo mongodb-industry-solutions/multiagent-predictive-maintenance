@@ -12,9 +12,15 @@ async function logStep(msg) {
 }
 
 async function checkDbEmpty(db) {
-  const collections = await db.listCollections().toArray();
-  for (const col of collections) {
-    const count = await db.collection(col.name).countDocuments();
+  const coreCollections = [
+    ["interviews", {}],
+    ["inventory", {}],
+    ["maintenance_staff", {}],
+    ["manuals", {}],
+    ["workorders", { title: { $exists: true } }],
+  ];
+  for (const [colName, filter] of coreCollections) {
+    const count = await db.collection(colName).countDocuments(filter, { limit: 1 });
     if (count > 0) return false;
   }
   return true;
@@ -89,7 +95,12 @@ async function main() {
     );
     currentStep = "generate_calendar";
     await runScript("npm", ["run", "generate_calendar", "6"]);
-    logStep("Production calendar generated. Initial setup complete!");
+    logStep(
+      "Production calendar generated. Seeding Connected Factory Context Explorer..."
+    );
+    currentStep = "seed_context";
+    await runScript("npm", ["run", "seed:context"]);
+    logStep("Connected Factory Context Explorer seeded. Initial setup complete!");
   } catch (err) {
     logStep(`Error: ${err.message}`);
     if (currentStep === "embed") {
@@ -97,6 +108,10 @@ async function main() {
     } else if (currentStep === "generate_calendar") {
       logStep(
         "Calendar generation failed. You can retry with: npm run generate_calendar 6"
+      );
+    } else if (currentStep === "seed_context") {
+      logStep(
+        "Connected Factory seed failed. You can retry with: npm run seed:context"
       );
     } else {
       logStep("You can try running the failed step manually.");

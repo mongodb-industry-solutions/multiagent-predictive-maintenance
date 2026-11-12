@@ -246,7 +246,10 @@ export async function gatherContestableEvidence({
           run: () =>
             db
               .collection("workorders")
-              .find({}, { projection: { _id: 0, embedding: 0 } })
+              .find(
+                { title: { $exists: true } },
+                { projection: { _id: 0, embedding: 0 } }
+              )
               .limit(6)
               .toArray(),
         });
