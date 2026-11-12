@@ -21,7 +21,7 @@ not from a formal schema — this application defines no JSON Schema validators.
 | `interviews` | Seed | Failure agent (vector retrieval) | `default` |
 | `inventory` | Seed | Work order agent | — |
 | `maintenance_staff` | Seed | Planning agent | — |
-| `production_calendar` | `generate_calendar` | Planning agent | — |
+| `production_calendar` | `generate_calendar` / release sync | Planning agent | — |
 | `argument_records` | Contestable AI agents + Engineer | Contestable AI scoring & UI | — |
 | `contestable_sessions` | Contestable AI API | Contestable AI UI, `$lookup` audit lineage | — |
 | `materials` | Auto-init / `seed:context` | Connected Factory Context Explorer (`$lookup` limits) | — |
@@ -179,7 +179,7 @@ Vector index `default`: `embedding`, cosine, 1024 dimensions.
 
 ## `production_calendar`
 
-Regenerated wholesale by `npm run generate_calendar <months>`.
+Regenerated wholesale by `npm run generate_calendar <months>` (and once per new staging/production deployment when `DEPLOYMENT_ID` is set).
 
 | Field | Type | Notes |
 | --- | --- | --- |
@@ -194,6 +194,7 @@ Regenerated wholesale by `npm run generate_calendar <months>`.
 | `delay_factor` | double | |
 | `priority` | string | `high` \| … |
 | `pieces_to_produce` | int | |
+| `deployment_id` | string | Optional; release tag stamped on managed deployments so pod restarts do not regenerate |
 
 ## `checkpoints` / `checkpoint_writes`
 
