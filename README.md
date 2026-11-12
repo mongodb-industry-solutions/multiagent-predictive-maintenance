@@ -10,7 +10,7 @@ This demo showcases:
 
 ## Architecture
 
-![High Level Architecture](public/img/high-level-architecture.svg)
+![High Level Architecture](public/img/high-level-architecture.png)
 
 ### How it works
 

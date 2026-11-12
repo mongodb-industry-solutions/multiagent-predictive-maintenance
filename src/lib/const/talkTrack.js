@@ -84,7 +84,7 @@ export const AI_WORKFLOWS_TALK_TRACK = [
         body: [
           "A workflow has predetermined code paths and operates in a defined order. This makes it a strong fit for repeatable, auditable tasks.",
           "An agent dynamically defines its own process and tool usage. It is more flexible, but requires stronger controls, observability, and trusted context.",
-          "Factory Chat demonstrates grounded access to unified context. Criticality Analysis demonstrates retrieve, score, explain, and human review as a bounded workflow.",
+          "Factory Chat demonstrates grounded access to unified context. Connected Factory Context Explorer shows how read-time joins, natural-language aggregations, and in-database signal-shape vector search turn raw telemetry and keyless alerts into operational answers.",
         ],
       },
     ],
@@ -95,9 +95,9 @@ export const AI_WORKFLOWS_TALK_TRACK = [
       {
         heading: "Suggested path",
         body: [
-          "Start with Factory Chat and show that answers expose the operational sources used to create them.",
-          "Continue to Criticality Analysis and walk through retrieve, evaluate, explain, and review.",
-          "Emphasize that both experiences use the same MongoDB-backed factory context while applying different, controlled interaction patterns.",
+          "Start with UNS Chat and show that answers expose the operational sources used to create them.",
+          "Open Connected Factory Context Explorer to walk through read-time material limit lookups, interval joins on keyless alerts, natural-language query generation, and 24-bin thermal curve vector search.",
+          "Emphasize that every experience uses the same MongoDB operational foundation without synchronizing data across separate time-series, relational, and vector stores.",
         ],
       },
     ],
@@ -108,6 +108,69 @@ export const AI_WORKFLOWS_TALK_TRACK = [
       {
         heading: "One retrieval and application data platform",
         body: "MongoDB stores operational documents, time series, text, and embeddings together. Atlas Search and Vector Search ground AI without introducing another synchronized data silo.",
+      },
+    ],
+  },
+];
+
+export const CONTEXT_EXPLORER_TALK_TRACK = [
+  {
+    heading: "Story in 3 Sentences",
+    content: [
+      {
+        heading: "Context at read time",
+        body: "A weld-zone reading and a PLC alarm arrive from Tab Laser Welding Cell LTW-04. Neither knows whether the reading violates the foil thermal spec, and the alarm carries no work order ID at all. One MongoDB query gives the reading its limit, an interval join gives the alarm its order across the whole day, a read-only agent writes that pipeline from plain English, and a 24-point curve vector finds the same optics spatter signature across the fleet.",
+      },
+      {
+        heading: "Shortcuts during the demo",
+        body: [
+          "Left / Right arrows: move between steps 0 through 6.1.",
+          "Cmd/Ctrl + Enter: execute the current MongoDB aggregation pipeline live.",
+          "e (or click the pipeline): edit any stage live; Esc returns to the diff view.",
+          "p (or click Story Visual): open the full-screen visual diagram for the current step.",
+        ],
+      },
+    ],
+  },
+  {
+    heading: "Step-by-Step Guide",
+    content: [
+      {
+        heading: "0 · The data & 1 · The reading",
+        body: [
+          "Step 0 shows four collections in one engine: telemetry (time-series collection with 24h TTL and 15,264 LTW-04 readings for today's shift), alerts (operational collection because alerts have an acknowledgement lifecycle), workorders (storing MES production order spans alongside maintenance orders), and materials (ERP foil specs).",
+          "Step 1 fetches the 08:14:12Z reading on LTW-04: 235.2 degC on MAT-CU-020. Point out that even with workOrder stamped at the edge, 235.2 degC tells us nothing without the material's thermal limit.",
+        ],
+      },
+      {
+        heading: "2 · The limit & 3 · The alert ★",
+        body: [
+          "Step 2 adds a $lookup to materials, resolving MAT-CU-020 to nickel-plated C11000 copper foil (max 230 degC) and computing overLimit: true. Keeping limits in master data means ERP spec revisions apply immediately without rewriting historical telemetry.",
+          "Step 3 is the anchor step: the PLC alert has NO workOrder, NO materialMaster, and NO operatorId — only machine_id LTW-04 and ts 08:14:12Z. An interval $lookup into workorders (startedAt <= t < endedAt) resolves WO-1001234 (EV-PM-4C-S, 100 packs, operator A. Vogel) at read time.",
+        ],
+      },
+      {
+        heading: "4 · The whole day & 5 · Ask in words",
+        body: [
+          "Step 4 removes the single timestamp filter and groups all 9 LTW-04 alerts of the day by work order: WO-1001234 jumps to the top (4 alerts, 2 priority-1), and preserveNullAndEmptyArrays surfaces the 22:47 alert during the post-shift gap (no order).",
+          "Step 5 lets a plant manager ask the exact same question in English. A read-only LangGraph agent writes and runs the aggregation pipeline live with untrusted-data prompt-injection guardrails.",
+        ],
+      },
+      {
+        heading: "6 · Has this happened before? & 6.1 · Only this material",
+        body: [
+          "Step 6 turns the 4 minutes around 08:14 into 24 ten-second z-scored bins directly inside MongoDB (click 'How the vector is computed' to show the $dateTrunc + $stdDevPop pipeline on telemetry) and runs $vectorSearch across excursions. Four fleet matches above 0.90 all point to protective window spatter contamination — including one unlinked open case at leafy-ev-02.",
+          "Step 6.1 adds materialMaster: 'MAT-CU-020' to $vectorSearch.filter. Because vector and metadata live in one document, pre-filtering runs before similarity scoring and proves the curve crosses materials — inspect the laser optics before calling the foil supplier.",
+        ],
+      },
+    ],
+  },
+  {
+    heading: "Why MongoDB",
+    content: [
+      {
+        heading: "Time series, relational-style joins, and vector search in one engine",
+        body: "Traditional architectures split sensor readings into a historian, orders into SQL, and embeddings into a separate vector store — forcing fragile ETL pipelines before any cross-domain question can be answered. MongoDB Atlas executes time-series bucketing, interval $lookup joins, and pre-filtered $vectorSearch in one operational database.",
       },
     ],
   },
@@ -140,6 +203,7 @@ export const AGENTIC_TALK_TRACK = [
           "Alerts are routed by the Supervisor Agent to the Failure Agent, which performs root cause analysis using data sources like past work orders, staff interviews, and the machine manual. You can view all tools called by the agent.",
           "(Optional) Click 'See Full Logs' to observe how vector search retrieves the most relevant information from available data sources, and see the agent's reasoning process.",
           "After analysis, the Failure Agent generates an incident report with root cause and recommended actions. The new report appears in the incident report list.",
+          "(Advanced / Contestable AI) Click 'Contest AI (Advanced)' on the incident report (or open the standalone Contestable AI use case) to see the Vibration Pattern Agent and Maintenance History Agent debate three candidate root causes. Accept, reject, or modify individual arguments to immediately recalculate candidate scores and refine the incident report before generating a work order.",
           "Navigate to the 'Work Order Generation' tab. Select your incident report and click 'Continue Workflow'. The Work Order Agent analyzes similar past work orders to estimate duration, required parts, and skills, then drafts a new work order.",
           "Next, go to the 'Work Order Scheduler' tab. Select the created work order and click 'Continue Workflow'. The Planning Agent checks inventory, technician availability, and the production calendar to suggest an optimized maintenance window, updating the calendar accordingly.",
           "(Optional) Test and chat with each agent individually from the 'Agent Sandbox' tab. Agents are integrated with the workflow, but you can interact with them directly to learn more about their capabilities.",

@@ -37,6 +37,17 @@ export const STORY_STAGES = [
         href: "/ai-workflows",
         description: "From retrieval to guided decisions.",
       },
+      {
+        label: "UNS Chat",
+        href: "/ai-workflows/factory-chat",
+        description: "Ask natural-language questions across live UNS context.",
+      },
+      {
+        label: "Connected Factory Context Explorer",
+        href: "/ai-workflows/context-explorer",
+        description:
+          "Join telemetry, alerts, orders, and curve vectors at read time.",
+      },
     ],
   },
   {
@@ -56,6 +67,11 @@ export const STORY_STAGES = [
         label: "Failure Prediction",
         href: "/agentic-ai/failure-prediction",
         description: "Detect anomalies and diagnose root cause.",
+      },
+      {
+        label: "Contestable AI",
+        href: "/agentic-ai/contestable-ai",
+        description: "Debate and contest AI root-cause arguments before action.",
       },
       {
         label: "Work Order Generation",

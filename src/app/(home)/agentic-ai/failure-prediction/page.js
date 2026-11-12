@@ -1,5 +1,6 @@
 "use client";
-import React from "react";
+import React, { useLayoutEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button, CodeBlock, CodeSnippet, CopyButton } from "@via-ds/components";
 import { Icon } from "@via-ds/icons";
 import { useFailureDetectionPage } from "./hooks";
@@ -14,8 +15,6 @@ export default function Page() {
     agentActive,
     showModal,
     setShowModal,
-    rootCause,
-    repairInstructions,
     incidentReports,
     modalContent,
     handleStart,
@@ -25,7 +24,13 @@ export default function Page() {
     agentThreadId,
     showTelemetry,
     setShowTelemetry,
+    refreshIncidentReports,
   } = useFailureDetectionPage();
+  const [toolbarNode, setToolbarNode] = useState(null);
+
+  useLayoutEffect(() => {
+    setToolbarNode(document.getElementById("agentic-demo-toolbar"));
+  }, []);
 
   const telemetryJson = sim.machineData
     ? JSON.stringify(
@@ -37,67 +42,46 @@ export default function Page() {
       )
     : "{}";
 
+  const sourceSelector = (
+    <div className="flex flex-col items-end gap-1">
+      <FactorySourceSelector
+        source={sim.dataSource}
+        onChange={handleSourceChange}
+        connected={sim.dataSource === "local" || sim.leafyAvailable === true}
+        isChecking={sim.isSourceChecking}
+        disabled={sim.isStarting || sim.isSourceChecking}
+        menuAlign="right"
+      />
+      {sim.sourceError && (
+        <p className="max-w-xs text-right text-sm font-medium text-[#B1371F]">
+          {sim.sourceError}
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <main className="flex flex-col w-full h-full">
+        {toolbarNode ? createPortal(sourceSelector, toolbarNode) : null}
         <div className="flex flex-1 min-h-0 w-full gap-6 px-2 pb-4">
           {/* Left Section: Machine Simulation */}
           <section
             id="detection"
             className="mx-2 mb-2 mt-0 flex min-h-[320px] min-w-[320px] w-1/2 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-4"
           >
-            {/* Top: data source and actions on the left, machine controls on the right */}
-            <div className="mb-4 flex min-h-[164px] w-full flex-row gap-6">
-              <div
-                className="flex h-full flex-col justify-center gap-3"
-                style={{ flexBasis: "34%", minWidth: 190 }}
-              >
-                <FactorySourceSelector
-                  source={sim.dataSource}
-                  onChange={handleSourceChange}
-                  connected={
-                    sim.dataSource === "local" || sim.leafyAvailable === true
-                  }
-                  isChecking={sim.isSourceChecking}
-                  disabled={sim.isStarting || sim.isSourceChecking}
-                  className="w-full"
-                  buttonClassName="w-full justify-between"
-                  menuAlign="left"
-                />
-                {sim.sourceError && (
-                  <p className="text-sm font-medium text-[#B1371F]">
-                    {sim.sourceError}
-                  </p>
-                )}
-                <Button
-                  variant={sim.isRunning ? "danger" : "primary"}
-                  onPress={sim.isRunning ? handleStop : handleStart}
-                  isDisabled={sim.isStarting}
-                  className="w-full"
-                >
-                  {sim.isStarting
-                    ? "Opening order..."
-                    : sim.isRunning
-                      ? "Stop Simulator"
-                      : "Start Simulator"}
-                </Button>
-              </div>
-              {/* Right: machine and sensor controls */}
-              <div className="flex min-w-0 flex-1 flex-col justify-center">
-                <div className="flex items-center">
-                  <MachineController
-                    status={sim.status}
-                    temperature={sim.temperature}
-                    vibration={sim.vibration}
-                    onTemperatureChange={sim.onTemperatureChange}
-                    onVibrationChange={sim.onVibrationChange}
-                  />
-                </div>
-                <div className="mt-1 grid grid-cols-[3fr_2fr]">
+            <div className="mb-4 w-full">
+              <MachineController
+                status={sim.status}
+                temperature={sim.temperature}
+                vibration={sim.vibration}
+                onTemperatureChange={sim.onTemperatureChange}
+                onVibrationChange={sim.onVibrationChange}
+                sliderFooter={
                   <button
                     type="button"
                     onClick={() => setShowTelemetry((visible) => !visible)}
                     aria-pressed={showTelemetry}
-                    className="inline-flex h-8 items-center justify-self-center gap-2 rounded-lg px-3 text-sm font-medium text-[#00684A] hover:bg-[#E3FCF7]"
+                    className="inline-flex h-8 items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium text-[#00684A] hover:bg-[#E3FCF7]"
                   >
                     <span
                       aria-hidden="true"
@@ -107,8 +91,22 @@ export default function Page() {
                     </span>
                     {showTelemetry ? "Hide telemetry" : "View telemetry"}
                   </button>
-                </div>
-              </div>
+                }
+                sideFooter={
+                  <Button
+                    variant={sim.isRunning ? "danger" : "primary"}
+                    onPress={sim.isRunning ? handleStop : handleStart}
+                    isDisabled={sim.isStarting}
+                    className="w-full"
+                  >
+                    {sim.isStarting
+                      ? "Opening order..."
+                      : sim.isRunning
+                        ? "Stop Simulator"
+                        : "Start Simulator"}
+                  </Button>
+                }
+              />
             </div>
             {/* Bottom part: Alerts and (optionally) Telemetry */}
             {showTelemetry ? (
@@ -194,6 +192,7 @@ export default function Page() {
                 emptyText="No incident reports"
                 listTitle="Incident Reports"
                 listDescription="Automated incident reports with root cause analysis."
+                onIncidentSaved={refreshIncidentReports}
               />
             </div>
           </section>

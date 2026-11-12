@@ -8,7 +8,10 @@ export async function fetchAlerts() {
     body: JSON.stringify({
       action: "find",
       collection: "alerts",
-      filter: { ts: { $gte: { $date: oneHourAgo.toISOString() } } },
+      filter: {
+        ts: { $gte: { $date: oneHourAgo.toISOString() } },
+        source: { $ne: "edge-weld-monitor" },
+      },
       sort: { ts: -1 },
       limit: 10,
     }),

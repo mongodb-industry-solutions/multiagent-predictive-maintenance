@@ -1,4 +1,6 @@
-FROM node:22-alpine AS base 
+FROM node:24-alpine AS base
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+RUN npm install -g npm@12.2.2
 
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
