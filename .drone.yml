@@ -13,8 +13,6 @@ trigger:
       - .gitignore
       - .env.example
       - LICENSE
-      - scripts/**
-      - data/**
 
 steps:
   - name: publish
@@ -75,8 +73,6 @@ trigger:
       - .gitignore
       - .env.example
       - LICENSE
-      - scripts/**
-      - data/**
 
 steps:
   - name: publish

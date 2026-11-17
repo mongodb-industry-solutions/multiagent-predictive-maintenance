@@ -48,6 +48,4 @@ third-party-licenses.json
 README.md
 
 # Ignore other folders not needed for build
-/data/
 /environments/
-/scripts/
