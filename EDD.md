@@ -58,19 +58,28 @@ Indexes: `metadata_1_ts_1` (implicit), `{ "metadata.machine_id": 1, "metadata.si
 
 ## `alerts`
 
-Shared operational alerts collection. Raised live on `M1` by [src/lib/simulation/failureDetection.js](./src/lib/simulation/failureDetection.js) and synced with 9 `LTW-04` edge-weld-monitor alerts (`ALT-LTW04-01` … `ALT-LTW04-09`) for the active UTC day (deliberately carrying no `workOrder`, `materialMaster`, or `operatorId` for read-time interval `$lookup`).
+Shared operational alerts collection. Raised live on `M1` (`Tab Laser Welding Cell`) from both **UNS in Action** ([src/components/factoryDataProvider/FactoryDataProvider.js](./src/components/factoryDataProvider/FactoryDataProvider.js)) and **Predictive Maintenance** ([src/lib/simulation/failureDetection.js](./src/lib/simulation/failureDetection.js) / [src/lib/api/alerts.js](./src/lib/api/alerts.js)), and synced with 9 `LTW-04` edge-weld-monitor alerts (`ALT-LTW04-01` … `ALT-LTW04-09`) for the active UTC day (deliberately carrying no `workOrder`, `materialMaster`, or `operatorId` for read-time interval `$lookup`).
 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `_id` | ObjectId | |
 | `alert_id` | string | Optional unique ID for `LTW-04` edge alerts (partial unique index) |
+| `uns_alert_key` | string | Optional deduplication key (`order_id:metric:timestamp`) for UNS / Predictive Maintenance alerts |
 | `err_code` | string | `E12` \| `E13` (`M1`) or `W-TEMP-01` etc. (`LTW-04`) |
 | `err_name` | string | Human-readable alarm label |
 | `machine_id` | string | `M1` \| `LTW-04` |
+| `machine` | string | Optional display asset label (`Tab Laser Welding Cell` on `M1`) |
+| `metric` | string | Optional (`temperature` \| `vibration` on `M1`) |
+| `value` | double | Optional measured reading at breach (`M1`) |
+| `threshold` | double | Optional active threshold at breach (`M1`) |
+| `severity` | string | Optional (`warning` \| `critical` on `M1`) |
+| `order_id` | string | Optional order ID associated with a UNS / Leafy Factory run |
+| `origin` | string | Optional (`uns-in-action` \| `predictive-maintenance`) |
+| `data_source` | string | Optional (`leafy` \| `local`) |
 | `area` | string | Optional (`welding`) |
 | `priority` | int | Optional (`1`–`3` on `LTW-04`, `1` = highest) |
-| `source` | string | Optional (`edge-weld-monitor`) |
-| `details` | object | `temperature` / `vibration` (`M1`) or `component` / `message` (`LTW-04`) |
+| `source` | string | Optional (`edge-weld-monitor` on `LTW-04`) |
+| `details` | object | `temperature` / `vibration` / `threshold` (`M1`) or `component` / `message` (`LTW-04`) |
 | `ts` | date | Point-in-time alert timestamp |
 | `status` | string | `new` \| `unacknowledged` |
 
@@ -107,9 +116,10 @@ Shared collection holding both maintenance work orders (`M1` seeded history + ag
 | `proposed_start_time` | string | ISO-8601 **string**, not a BSON date |
 | `required_skills` | array\<string\> | Matched against `maintenance_staff.skills` |
 | `observations` | string | Maintenance orders (embedded) |
-| `root cause` | string | ⚠️ Field name contains a space — see Known inconsistencies |
-| `status` | string | e.g. `completed` |
-| `created_at` | object \| date | ⚠️ Seeded maintenance docs store `{ $date: … }` |
+| `root_cause` | string | Maintenance orders (embedded) |
+| `status` | string | e.g. `completed` \| `new` |
+| `created_at` | date | BSON date (parsed via `EJSON` on seed/sync) |
+| `seed_version` | int | Optional (`2` for Tab Laser Welding Cell v2 seed sync) |
 | `embedding` | array\<double\> | 1024 dims (maintenance orders only) |
 | `workOrder` | string | Production order ID (`WO-1001232` … `WO-1001236`, partial unique index, updated in-place for active UTC day) |
 | `orderType` | string | `production` on `LTW-04` production order spans |
@@ -470,22 +480,5 @@ erDiagram
 These are present in the current code and data. Documented here so agents model
 reality rather than the intended design.
 
-1. **`workorders.root cause` contains a space.** Every other collection uses
-   snake_case (`incident_reports.root_cause`). Critically,
-   [scripts/config.js](./scripts/config.js) lists `root_cause` in the
-   `workorders` `textFields`, so
-   [scripts/embed_collections.mjs](./scripts/embed_collections.mjs) resolves
-   `doc["root_cause"]` to `undefined` and substitutes `""` — **root-cause text is
-   silently excluded from the work order embeddings.**
-
-2. **Extended JSON dates are stored as nested objects.**
-   [scripts/seed.mjs](./scripts/seed.mjs) uses `JSON.parse` on `data/*.json`,
-   which leaves `{"$date": "…"}` as a plain object instead of converting it to a
-   BSON date. This affects `interviews.creation_date`, `inventory.last_updated`,
-   and `workorders.created_at`. Date range queries on those fields will not work.
-   The API route at [src/app/api/action/[action]/route.js](./src/app/api/action/%5Baction%5D/route.js)
-   already uses `EJSON.parse` correctly — the seed script does not.
-
-3. **`workorders.proposed_start_time` and `estimated_duration` are strings**
-   (`"2025-04-10T08:00:00.000Z"`, `"3 hours"`), so they cannot be sorted or
-   compared as dates/durations without conversion.
+1. **`workorders.proposed_start_time` and `estimated_duration` on seeded records are strings**
+   (`"2025-04-10T08:00:00.000Z"`, `"3 hours"`), while agent-generated work orders store `proposed_start_time` as a BSON `Date` and `estimated_duration_days` as a number.

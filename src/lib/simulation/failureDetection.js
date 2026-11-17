@@ -1,10 +1,23 @@
 // Failure detection logic (not React)
 // Checks telemetry and generates alert if needed
+import { DEFAULT_THRESHOLDS } from "@/lib/factory/constants";
+import { buildUnifiedAlert } from "@/lib/api/alerts";
 
-const TEMP_THRESHOLD = 90;
-const VIB_THRESHOLD = 1.2;
+export function checkForAlert(
+  machineData,
+  alerts = [],
+  status = "running",
+  thresholds = DEFAULT_THRESHOLDS
+) {
+  const tempThreshold = Number(
+    thresholds?.temperature_threshold ?? DEFAULT_THRESHOLDS.temperature_threshold
+  );
+  const vibThreshold = Number(
+    thresholds?.vibration_threshold ?? DEFAULT_THRESHOLDS.vibration_threshold
+  );
+  const tempValue = Number(machineData?.temperature?.value);
+  const vibValue = Number(machineData?.vibration?.value);
 
-export function checkForAlert(machineData, alerts, status) {
   // Only one alert per excursion above threshold, and only if not already in alert status
   const tempAlertActive = alerts.some(
     (a) => a.err_code === "E12" && !a.resolved
@@ -12,42 +25,61 @@ export function checkForAlert(machineData, alerts, status) {
   const vibAlertActive = alerts.some(
     (a) => a.err_code === "E13" && !a.resolved
   );
-  const now = new Date();
+  const nowIso = new Date().toISOString();
+
   // High temperature alert
-  if (
-    machineData.temperature.value > TEMP_THRESHOLD &&
-    !tempAlertActive &&
-    status !== "alert"
-  ) {
-    return {
-      _id: "alert-" + now.getTime(),
-      err_code: "E12",
-      err_name: "High temperature",
-      machine_id: "M1",
-      ts: now.toLocaleString(),
-      details: {
-        temperature: machineData.temperature.value,
-        vibration: machineData.vibration.value,
+  if (tempValue > tempThreshold && !tempAlertActive && status !== "alert") {
+    const unified = buildUnifiedAlert(
+      {
+        metric: "temperature",
+        value: tempValue,
+        threshold: tempThreshold,
+        timestamp: nowIso,
       },
+      {
+        temperature: tempValue,
+        vibration: vibValue,
+        thresholds: {
+          temperature_threshold: tempThreshold,
+          vibration_threshold: vibThreshold,
+        },
+        origin: "predictive-maintenance",
+        dataSource: "local",
+      }
+    );
+    return {
+      ...unified,
+      _id: "alert-" + Date.now(),
+      ts: nowIso,
     };
   }
+
   // High vibration alert
-  if (
-    machineData.vibration.value > VIB_THRESHOLD &&
-    !vibAlertActive &&
-    status !== "alert"
-  ) {
-    return {
-      _id: "alert-" + now.getTime(),
-      err_code: "E13",
-      err_name: "High vibration",
-      machine_id: "M1",
-      ts: now.toLocaleString(),
-      details: {
-        temperature: machineData.temperature.value,
-        vibration: machineData.vibration.value,
+  if (vibValue > vibThreshold && !vibAlertActive && status !== "alert") {
+    const unified = buildUnifiedAlert(
+      {
+        metric: "vibration",
+        value: vibValue,
+        threshold: vibThreshold,
+        timestamp: nowIso,
       },
+      {
+        temperature: tempValue,
+        vibration: vibValue,
+        thresholds: {
+          temperature_threshold: tempThreshold,
+          vibration_threshold: vibThreshold,
+        },
+        origin: "predictive-maintenance",
+        dataSource: "local",
+      }
+    );
+    return {
+      ...unified,
+      _id: "alert-" + Date.now(),
+      ts: nowIso,
     };
   }
+
   return null;
 }

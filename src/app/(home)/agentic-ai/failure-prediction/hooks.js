@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   getInitialMachineData,
   updateMachineTelemetry,
@@ -7,162 +8,314 @@ import { checkForAlert } from "@/lib/simulation/failureDetection";
 import {
   buildLeafyMachineData,
   createLeafyPredictiveOrder,
-  LEAFY_PREDICTIVE_THRESHOLDS,
   toWorkflowAlert,
 } from "@/lib/simulation/leafyFactory";
 import {
   createRemoteOrder,
   fetchFactoryAlerts,
-  fetchFactoryStatus,
   fetchMachineEvents,
   sendRemoteMetrics,
   setRemoteThresholds,
   stopRemoteOrder,
 } from "@/lib/factory/factoryClient";
+import {
+  DEFAULT_SENSOR_READINGS,
+  DEFAULT_THRESHOLDS,
+} from "@/lib/factory/constants";
+import { useAgenticSource } from "@/components/agenticSourceProvider/AgenticSourceProvider";
 import { fetchIncidentReports } from "@/lib/api/incidentReports";
 import { callFailureAgent } from "@/lib/api/agent";
-import { fetchAlerts, persistAlert } from "@/lib/api/alerts";
+import {
+  ensureAlertPersisted,
+  fetchAlertById,
+  fetchAlerts,
+} from "@/lib/api/alerts";
 import { persistTelemetry } from "@/lib/api/telemetry";
 import { markAgenticProgress } from "@/lib/agenticProgress";
 
 export function useFailureDetectionPage() {
-  // Machine simulation logic
-  const [dataSource, setDataSource] = useState("leafy");
-  const [leafyAvailable, setLeafyAvailable] = useState(null);
-  const [isSourceChecking, setIsSourceChecking] = useState(true);
-  const [alertTrigger, setAlertTrigger] = useState(0);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const {
+    dataSource,
+    leafyAvailable,
+    isSourceChecking,
+    setIsSourceBusy,
+    sourceError,
+    setSourceError,
+    handleSourceChange,
+    reportLeafyUnavailable,
+    registerBeforeSourceChange,
+  } = useAgenticSource();
+
+  // Machine simulation state
   const [isRunning, setIsRunning] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
-  const [machineData, setMachineData] = useState(getInitialMachineData());
-  const [temperature, setTemperature] = useState(machineData.temperature.value);
-  const [vibration, setVibration] = useState(machineData.vibration.value);
+  const [isSensorBusy, setIsSensorBusy] = useState(false);
+  const [sensorMessage, setSensorMessage] = useState("");
+  const [machineData, setMachineData] = useState(() => getInitialMachineData());
+  const [temperature, setTemperature] = useState(
+    DEFAULT_SENSOR_READINGS.temperature
+  );
+  const [vibration, setVibration] = useState(DEFAULT_SENSOR_READINGS.vibration);
+  const [thresholds, setThresholds] = useState(() => ({
+    ...DEFAULT_THRESHOLDS,
+  }));
   const [status, setStatus] = useState("off");
-  const [localAlerts, setLocalAlerts] = useState([]);
-  const [factoryAlerts, setFactoryAlerts] = useState([]);
-  const [sourceError, setSourceError] = useState("");
-  const [expandedAlertId, setExpandedAlertId] = useState(null);
+  const [alerts, setAlerts] = useState([]);
+  const [alertsLoading, setAlertsLoading] = useState(true);
+  const [selectedAlertId, setSelectedAlertId] = useState(null);
+  const [activeAlertId, setActiveAlertId] = useState(null);
+  const [showTelemetry, setShowTelemetry] = useState(false);
+
   const intervalRef = useRef(null);
-  const alertActiveRef = useRef(false);
+  const statusRef = useRef("off");
+  const tempAlertActiveRef = useRef(false);
+  const vibAlertActiveRef = useRef(false);
   const remoteOrderIdRef = useRef(null);
   const remoteAbortControllerRef = useRef(null);
   const remoteTickInFlightRef = useRef(false);
   const temperatureRef = useRef(temperature);
   const vibrationRef = useRef(vibration);
-  const lastGeneratedAlertRef = useRef(null);
-  const [showTelemetry, setShowTelemetry] = useState(false);
+  const thresholdsRef = useRef(thresholds);
+
+  // Incident Reports & Failure Agent state
+  const [agentActive, setAgentActive] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [incidentReports, setIncidentReports] = useState([]);
+  const [rootCause, setRootCause] = useState("");
+  const [repairInstructions, setRepairInstructions] = useState("");
+  const processingRef = useRef(false);
+  const [agentLogs, setAgentLogs] = useState([]);
+  const [agentThreadId, setAgentThreadId] = useState(null);
+  const [contestableIncident, setContestableIncident] = useState(null);
+  const handledAutorunKeyRef = useRef(null);
 
   useEffect(() => {
     temperatureRef.current = temperature;
   }, [temperature]);
+
   useEffect(() => {
     vibrationRef.current = vibration;
   }, [vibration]);
 
-  const checkLeafyAvailability = useCallback(async (signal) => {
-    setIsSourceChecking(true);
-    try {
-      await fetchFactoryStatus({ signal });
-      if (signal?.aborted) return false;
-      setLeafyAvailable(true);
-      return true;
-    } catch (error) {
-      if (error.name === "AbortError") return false;
-      setLeafyAvailable(false);
-      return false;
-    } finally {
-      if (!signal?.aborted) setIsSourceChecking(false);
-    }
-  }, []);
+  useEffect(() => {
+    thresholdsRef.current = thresholds;
+  }, [thresholds]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    checkLeafyAvailability(controller.signal).then((available) => {
-      if (!controller.signal.aborted) {
-        setDataSource(available ? "leafy" : "local");
-      }
-    });
-    return () => controller.abort();
-  }, [checkLeafyAvailability]);
+    statusRef.current = status;
+  }, [status]);
 
-  // Alerts
+  useEffect(() => {
+    setIsSourceBusy(isStarting);
+    return () => setIsSourceBusy(false);
+  }, [isStarting, setIsSourceBusy]);
+
+  function formatRepairInstructions(instructions) {
+    if (!Array.isArray(instructions)) return "";
+    return instructions
+      .map((step) => `- Step ${step.step}: ${step.description}`)
+      .join("\n");
+  }
+
+  // Shared MongoDB `alerts` list (used for both Leafy Factory and Local simulation)
   const fetchAlertsCallback = useCallback(async () => {
-    const data = await fetchAlerts();
-    setLocalAlerts(data);
+    try {
+      const data = await fetchAlerts();
+      const list = Array.isArray(data) ? data : [];
+      setAlerts(list);
+      setSelectedAlertId((current) => {
+        if (
+          current &&
+          list.some(
+            (item) =>
+              String(item._id) === String(current) ||
+              item.uns_alert_key === current
+          )
+        ) {
+          return current;
+        }
+        return list[0]?._id ? String(list[0]._id) : null;
+      });
+      return list;
+    } finally {
+      setAlertsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     fetchAlertsCallback();
   }, [fetchAlertsCallback]);
 
-  const persistAlertCallback = useCallback(
-    async (alert) => {
-      await persistAlert(alert);
-      await fetchAlertsCallback();
-    },
-    [fetchAlertsCallback]
-  );
-
-  // Telemetry
   const persistTelemetryCallback = useCallback(async (telemetry) => {
     await persistTelemetry(telemetry);
   }, []);
 
-  const triggerAlertWorkflow = useCallback((alert) => {
-    lastGeneratedAlertRef.current = alert;
+  const runFailureAgentForAlert = useCallback(async (alertItem) => {
+    if (!alertItem || processingRef.current) return;
+    processingRef.current = true;
+    const alertId = String(alertItem._id || alertItem.uns_alert_key || "");
+    if (alertId) {
+      setSelectedAlertId(alertId);
+      setActiveAlertId(alertId);
+    }
     markAgenticProgress("detection");
-    alertActiveRef.current = true;
-    setAlertTrigger((current) => current + 1);
+    setAgentActive(true);
+    setAgentLogs([]);
+
+    try {
+      setAgentLogs([
+        {
+          type: "user",
+          values: {
+            content:
+              "New alert received:\n" + JSON.stringify(alertItem, null, 2),
+          },
+        },
+      ]);
+      await callFailureAgent(alertItem, {
+        onEvent: (evt) => {
+          if (evt.threadId) setAgentThreadId(evt.threadId);
+          if (
+            evt.type === "update" &&
+            (evt.name === "tool_start" || evt.name === "tool_end")
+          ) {
+            setAgentLogs((prev) => [...prev, evt]);
+          } else if (evt.type === "final") {
+            setAgentLogs((prev) => [...prev, evt]);
+          } else if (evt.type === "error") {
+            setAgentLogs((prev) => [...prev, evt]);
+          }
+        },
+      });
+    } finally {
+      setAgentActive(false);
+      setActiveAlertId(null);
+      processingRef.current = false;
+      const data = await fetchIncidentReports();
+      setIncidentReports(data);
+      if (data && data.length > 0) {
+        setRootCause(data[0].root_cause || "");
+        setRepairInstructions(
+          formatRepairInstructions(data[0].repair_instructions)
+        );
+        markAgenticProgress("root-cause");
+      } else {
+        setRootCause("");
+        setRepairInstructions("");
+      }
+    }
   }, []);
 
-  // Local simulation
+  const persistAndAutoTriggerAlert = useCallback(
+    async (rawAlert, context = {}) => {
+      const persisted = await ensureAlertPersisted(rawAlert, {
+        temperature: temperatureRef.current,
+        vibration: vibrationRef.current,
+        thresholds: thresholdsRef.current,
+        origin: "predictive-maintenance",
+        dataSource,
+        ...context,
+      });
+      await fetchAlertsCallback();
+      if (persisted?._id) {
+        setSelectedAlertId(String(persisted._id));
+      }
+      setSensorMessage(
+        `Generated ${persisted?.alert?.metric || "anomaly"} alert.`
+      );
+      runFailureAgentForAlert(persisted.alert);
+      return persisted;
+    },
+    [dataSource, fetchAlertsCallback, runFailureAgentForAlert]
+  );
+
+  // Local simulation tick
+  const evaluateLocalSample = useCallback(
+    (sampleData) => {
+      const activeThresholds = thresholdsRef.current;
+      const tempExceeded =
+        sampleData.temperature.value > activeThresholds.temperature_threshold;
+      const vibExceeded =
+        sampleData.vibration.value > activeThresholds.vibration_threshold;
+
+      if (tempExceeded && !tempAlertActiveRef.current) {
+        tempAlertActiveRef.current = true;
+        const newAlert = checkForAlert(
+          sampleData,
+          [],
+          "running",
+          activeThresholds
+        );
+        if (newAlert) {
+          persistAndAutoTriggerAlert(newAlert, { dataSource: "local" });
+        }
+      } else if (!tempExceeded) {
+        tempAlertActiveRef.current = false;
+      }
+
+      if (vibExceeded && !vibAlertActiveRef.current) {
+        vibAlertActiveRef.current = true;
+        const vibOnlySample = {
+          ...sampleData,
+          temperature: {
+            ...sampleData.temperature,
+            value: Math.min(
+              sampleData.temperature.value,
+              activeThresholds.temperature_threshold
+            ),
+          },
+        };
+        const newAlert = checkForAlert(
+          vibOnlySample,
+          [],
+          "running",
+          activeThresholds
+        );
+        if (newAlert) {
+          const enrichedAlert = {
+            ...newAlert,
+            details: {
+              ...newAlert.details,
+              temperature: sampleData.temperature.value,
+            },
+          };
+          persistAndAutoTriggerAlert(enrichedAlert, { dataSource: "local" });
+        }
+      } else if (!vibExceeded) {
+        vibAlertActiveRef.current = false;
+      }
+
+      setStatus(tempExceeded || vibExceeded ? "alert" : "running");
+    },
+    [persistAndAutoTriggerAlert]
+  );
+
   const startLocalSimulation = useCallback(() => {
     setIsRunning(true);
     setStatus("running");
     setSourceError("");
-    alertActiveRef.current = false;
+    setSensorMessage("");
+    tempAlertActiveRef.current = false;
+    vibAlertActiveRef.current = false;
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
       setMachineData((prev) => {
         const updated = updateMachineTelemetry(
           prev,
           temperatureRef.current,
-          vibrationRef.current
+          vibrationRef.current,
+          thresholdsRef.current
         );
-        // Persist telemetry to DB
         persistTelemetryCallback(updated);
-        let newAlert = null;
-        if (
-          (updated.temperature.value > 90 || updated.vibration.value > 1.2) &&
-          !alertActiveRef.current
-        ) {
-          newAlert = checkForAlert(updated, [], status);
-          if (newAlert) {
-            persistAlertCallback(newAlert);
-            triggerAlertWorkflow(newAlert);
-          }
-        } else if (
-          updated.temperature.value <= 90 &&
-          updated.vibration.value <= 1.2 &&
-          alertActiveRef.current
-        ) {
-          alertActiveRef.current = false;
-        }
-        setStatus(
-          updated.temperature.value > 90 || updated.vibration.value > 1.2
-            ? "alert"
-            : "running"
-        );
+        evaluateLocalSample(updated);
         return updated;
       });
     }, 1000);
-  }, [
-    persistAlertCallback,
-    persistTelemetryCallback,
-    status,
-    triggerAlertWorkflow,
-  ]);
+  }, [evaluateLocalSample, persistTelemetryCallback, setSourceError]);
 
-  // Leafy Factory simulation
+  // Leafy Factory simulation tick
   const runLeafyTick = useCallback(
     async (orderId, signal) => {
       if (document.hidden || signal.aborted) return true;
@@ -171,6 +324,7 @@ export function useFailureDetectionPage() {
       try {
         const requestedTemperature = temperatureRef.current;
         const requestedVibration = vibrationRef.current;
+        const activeThresholds = thresholdsRef.current;
         const metrics = await sendRemoteMetrics(
           orderId,
           {
@@ -199,26 +353,12 @@ export function useFailureDetectionPage() {
         const nextVibration = updated.vibration.value;
 
         setMachineData(updated);
-        setFactoryAlerts((current) => {
-          const previousDetails = new Map(
-            current.map((alert) => [alert._id, alert.details])
-          );
-          return remoteAlerts.map((alert) => {
-            const workflowAlert = toWorkflowAlert(alert, updated);
-            const details = previousDetails.get(workflowAlert._id);
-            return details
-              ? { ...workflowAlert, details }
-              : workflowAlert;
-          });
-        });
         persistTelemetryCallback(updated);
 
         const generatedMetrics = Array.isArray(metrics.alerts_generated)
           ? metrics.alerts_generated
           : [];
-        if (generatedMetrics.length > 0 && !alertActiveRef.current) {
-          // Preserve the local simulator's temperature-first behavior when
-          // both readings cross their thresholds in the same sample.
+        if (generatedMetrics.length > 0) {
           const metric = generatedMetrics.includes("temperature")
             ? "temperature"
             : generatedMetrics[0];
@@ -231,26 +371,34 @@ export function useFailureDetectionPage() {
                 metric === "temperature" ? nextTemperature : nextVibration,
               threshold:
                 metric === "temperature"
-                  ? LEAFY_PREDICTIVE_THRESHOLDS.temperature_threshold
-                  : LEAFY_PREDICTIVE_THRESHOLDS.vibration_threshold,
+                  ? activeThresholds.temperature_threshold
+                  : activeThresholds.vibration_threshold,
               timestamp: new Date().toISOString(),
             };
-          const workflowAlert = toWorkflowAlert(factoryAlert, updated);
-          persistAlert(workflowAlert);
-          triggerAlertWorkflow(workflowAlert);
+          const workflowAlert = toWorkflowAlert(
+            factoryAlert,
+            updated,
+            activeThresholds,
+            {
+              origin: "predictive-maintenance",
+              dataSource: "leafy",
+            }
+          );
+          await persistAndAutoTriggerAlert(workflowAlert, {
+            orderId,
+            dataSource: "leafy",
+          });
         }
 
         const temperatureAlertActive =
           metrics.temperature_alert_active ??
-          nextTemperature >
-            LEAFY_PREDICTIVE_THRESHOLDS.temperature_threshold;
+          nextTemperature > activeThresholds.temperature_threshold;
         const vibrationAlertActive =
           metrics.vibration_alert_active ??
-          nextVibration > LEAFY_PREDICTIVE_THRESHOLDS.vibration_threshold;
-        const alertActive =
-          temperatureAlertActive || vibrationAlertActive;
-        if (!alertActive) alertActiveRef.current = false;
-        setStatus(alertActive ? "alert" : "running");
+          nextVibration > activeThresholds.vibration_threshold;
+        setStatus(
+          temperatureAlertActive || vibrationAlertActive ? "alert" : "running"
+        );
         setSourceError("");
         return true;
       } catch (error) {
@@ -262,24 +410,30 @@ export function useFailureDetectionPage() {
           remoteAbortControllerRef.current = null;
           stopRemoteOrder(orderId).catch(() => {});
         }
-        setLeafyAvailable(false);
-        setDataSource("local");
         setIsRunning(false);
         setStatus("off");
-        setSourceError(error.message || "Leafy Factory is unavailable");
+        reportLeafyUnavailable(
+          error.message || "Leafy Factory is unavailable"
+        );
         return false;
       } finally {
         remoteTickInFlightRef.current = false;
       }
     },
-    [persistTelemetryCallback, triggerAlertWorkflow]
+    [
+      persistAndAutoTriggerAlert,
+      persistTelemetryCallback,
+      reportLeafyUnavailable,
+      setSourceError,
+    ]
   );
 
   const startLeafySimulation = useCallback(async () => {
     setIsStarting(true);
     setSourceError("");
-    setFactoryAlerts([]);
-    alertActiveRef.current = false;
+    setSensorMessage("");
+    tempAlertActiveRef.current = false;
+    vibAlertActiveRef.current = false;
     const controller = new AbortController();
     remoteAbortControllerRef.current = controller;
     let order = null;
@@ -288,11 +442,9 @@ export function useFailureDetectionPage() {
         signal: controller.signal,
       });
       remoteOrderIdRef.current = order.order_id;
-      await setRemoteThresholds(
-        order.order_id,
-        LEAFY_PREDICTIVE_THRESHOLDS,
-        { signal: controller.signal }
-      );
+      await setRemoteThresholds(order.order_id, thresholdsRef.current, {
+        signal: controller.signal,
+      });
       setIsRunning(true);
       setStatus("running");
 
@@ -304,10 +456,7 @@ export function useFailureDetectionPage() {
         );
       }
     } catch (error) {
-      if (
-        order?.order_id &&
-        remoteOrderIdRef.current === order.order_id
-      ) {
+      if (order?.order_id && remoteOrderIdRef.current === order.order_id) {
         remoteOrderIdRef.current = null;
         stopRemoteOrder(order.order_id).catch(() => {});
       }
@@ -317,14 +466,14 @@ export function useFailureDetectionPage() {
       setIsRunning(false);
       setStatus("off");
       if (error.name !== "AbortError") {
-        setLeafyAvailable(false);
-        setDataSource("local");
-        setSourceError(error.message || "Leafy Factory is unavailable");
+        reportLeafyUnavailable(
+          error.message || "Leafy Factory is unavailable"
+        );
       }
     } finally {
       setIsStarting(false);
     }
-  }, [runLeafyTick]);
+  }, [reportLeafyUnavailable, runLeafyTick, setSourceError]);
 
   const handleStart = useCallback(() => {
     if (isRunning || isStarting || isSourceChecking) return;
@@ -346,53 +495,38 @@ export function useFailureDetectionPage() {
     remoteAbortControllerRef.current = null;
     setIsRunning(false);
     setStatus("off");
-    alertActiveRef.current = false;
+    setSensorMessage("");
+    tempAlertActiveRef.current = false;
+    vibAlertActiveRef.current = false;
 
     const remoteOrderId = remoteOrderIdRef.current;
     remoteOrderIdRef.current = null;
-    if (dataSource === "leafy" && remoteOrderId) {
+    if (remoteOrderId) {
       try {
         await stopRemoteOrder(remoteOrderId);
       } catch (error) {
-        setSourceError(error.message || "Unable to stop the Leafy Factory order");
+        setSourceError(
+          error.message || "Unable to stop the Leafy Factory order"
+        );
       }
     }
-  }, [dataSource]);
+  }, [setSourceError]);
 
-  const handleSourceChange = useCallback(
-    async (nextSource) => {
-      if (
-        nextSource === dataSource ||
-        (nextSource !== "local" && nextSource !== "leafy")
-      ) {
-        return;
-      }
-      if (
-        nextSource === "leafy" &&
-        leafyAvailable !== true &&
-        !(await checkLeafyAvailability())
-      ) {
-        setSourceError("Leafy Factory is unavailable");
-        return;
-      }
-      await handleStop();
-      const initial = getInitialMachineData();
-      setDataSource(nextSource);
-      setMachineData(initial);
-      setTemperature(initial.temperature.value);
-      setVibration(initial.vibration.value);
-      temperatureRef.current = initial.temperature.value;
-      vibrationRef.current = initial.vibration.value;
-      setFactoryAlerts([]);
-      setSourceError("");
-    },
-    [
-      checkLeafyAvailability,
-      dataSource,
-      handleStop,
-      leafyAvailable,
-    ]
-  );
+  const resetToDefaults = useCallback(async () => {
+    await handleStop();
+    const initial = getInitialMachineData();
+    setMachineData(initial);
+    setTemperature(DEFAULT_SENSOR_READINGS.temperature);
+    setVibration(DEFAULT_SENSOR_READINGS.vibration);
+    setThresholds({ ...DEFAULT_THRESHOLDS });
+    temperatureRef.current = DEFAULT_SENSOR_READINGS.temperature;
+    vibrationRef.current = DEFAULT_SENSOR_READINGS.vibration;
+    thresholdsRef.current = { ...DEFAULT_THRESHOLDS };
+  }, [handleStop]);
+
+  useEffect(() => {
+    return registerBeforeSourceChange(resetToDefaults);
+  }, [registerBeforeSourceChange, resetToDefaults]);
 
   useEffect(
     () => () => {
@@ -406,64 +540,212 @@ export function useFailureDetectionPage() {
     []
   );
 
-  const onTemperatureChange = useCallback((v) => {
-    setTemperature(v);
-    setMachineData((prev) => ({
-      ...prev,
-      temperature: { ...prev.temperature, value: v },
-    }));
-  }, []);
-  const onVibrationChange = useCallback((v) => {
-    setVibration(v);
-    setMachineData((prev) => ({
-      ...prev,
-      vibration: { ...prev.vibration, value: v },
-    }));
-  }, []);
+  const onCommitTemperature = useCallback(
+    async (value) => {
+      const next = Number(value);
+      setSensorMessage("");
+      setTemperature(next);
+      temperatureRef.current = next;
+      setMachineData((prev) => {
+        const updated = {
+          ...prev,
+          temperature: { ...prev.temperature, value: next },
+        };
+        if (isRunning && dataSource === "local") {
+          evaluateLocalSample(updated);
+        }
+        return updated;
+      });
+      if (isRunning) {
+        const breached = next > thresholdsRef.current.temperature_threshold;
+        if (!breached) {
+          setSensorMessage("Reading applied. No threshold crossing.");
+        }
+        if (
+          dataSource === "leafy" &&
+          remoteOrderIdRef.current &&
+          remoteAbortControllerRef.current
+        ) {
+          await runLeafyTick(
+            remoteOrderIdRef.current,
+            remoteAbortControllerRef.current.signal
+          );
+        }
+      }
+    },
+    [dataSource, evaluateLocalSample, isRunning, runLeafyTick]
+  );
+
+  const onCommitVibration = useCallback(
+    async (value) => {
+      const next = Number(value);
+      setSensorMessage("");
+      setVibration(next);
+      vibrationRef.current = next;
+      setMachineData((prev) => {
+        const updated = {
+          ...prev,
+          vibration: { ...prev.vibration, value: next },
+        };
+        if (isRunning && dataSource === "local") {
+          evaluateLocalSample(updated);
+        }
+        return updated;
+      });
+      if (isRunning) {
+        const breached = next > thresholdsRef.current.vibration_threshold;
+        if (!breached) {
+          setSensorMessage("Reading applied. No threshold crossing.");
+        }
+        if (
+          dataSource === "leafy" &&
+          remoteOrderIdRef.current &&
+          remoteAbortControllerRef.current
+        ) {
+          await runLeafyTick(
+            remoteOrderIdRef.current,
+            remoteAbortControllerRef.current.signal
+          );
+        }
+      }
+    },
+    [dataSource, evaluateLocalSample, isRunning, runLeafyTick]
+  );
+
+  const commitThreshold = useCallback(
+    async (key, value) => {
+      const numeric = Number(value);
+      setSensorMessage("");
+      const previous = thresholdsRef.current;
+      const next = { ...previous, [key]: numeric };
+      setThresholds(next);
+      thresholdsRef.current = next;
+
+      if (dataSource === "leafy" && remoteOrderIdRef.current) {
+        setIsSensorBusy(true);
+        try {
+          await setRemoteThresholds(remoteOrderIdRef.current, next);
+          setSensorMessage("Threshold saved.");
+        } catch (error) {
+          setThresholds(previous);
+          thresholdsRef.current = previous;
+          setSourceError(error.message || "Unable to update threshold");
+        } finally {
+          setIsSensorBusy(false);
+        }
+      } else if (isRunning) {
+        setSensorMessage("Threshold saved.");
+      }
+    },
+    [dataSource, isRunning, setSourceError]
+  );
+
+  const onCommitTemperatureThreshold = useCallback(
+    (value) => commitThreshold("temperature_threshold", value),
+    [commitThreshold]
+  );
+
+  const onCommitVibrationThreshold = useCallback(
+    (value) => commitThreshold("vibration_threshold", value),
+    [commitThreshold]
+  );
 
   // Incident Reports
-  const [agentActive, setAgentActive] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [incidentReports, setIncidentReports] = useState([]);
-  const [rootCause, setRootCause] = useState("");
-  const [repairInstructions, setRepairInstructions] = useState("");
-  const processingRef = useRef(false);
-  const lastAlertRef = useRef(alertTrigger);
-  const [agentLogs, setAgentLogs] = useState([]);
-  const [agentThreadId, setAgentThreadId] = useState(null);
-  const [contestableIncident, setContestableIncident] = useState(null);
-
-  function formatRepairInstructions(instructions) {
-    if (!Array.isArray(instructions)) return "";
-    return instructions
-      .map((step) => `- Step ${step.step}: ${step.description}`)
-      .join("\n");
-  }
-
   const fetchIncidentReportsCallback = useCallback(async () => {
     const data = await fetchIncidentReports();
     setIncidentReports(data);
-    // Do not set root cause or repair instructions on page load
   }, []);
 
-  const handleOpenContestable = useCallback((incidentItem = null) => {
-    setContestableIncident(
-      incidentItem || incidentReports[0] || {
-        error_code: "E13",
-        error_name: "High vibration",
-        machine_id: "M1",
-        root_cause:
-          "Suspected bearing degradation on machine M1 based on elevated vibration.",
-        repair_instructions: [
-          {
-            step: 1,
-            description:
-              "Inspect and align shaft bearings on M1.",
-          },
-        ],
+  useEffect(() => {
+    fetchIncidentReportsCallback();
+    setRootCause("");
+    setRepairInstructions("");
+  }, [fetchIncidentReportsCallback]);
+
+  // Handle deep-link from UNS in Action (`?alertId=...&autorun=1`)
+  const queryAlertId = searchParams.get("alertId");
+  const autorunRequested = searchParams.get("autorun") === "1";
+
+  useEffect(() => {
+    if (!queryAlertId) return;
+    let cancelled = false;
+
+    const syncFromQuery = async () => {
+      let list = alerts;
+      if (list.length === 0) {
+        list = await fetchAlertsCallback();
       }
-    );
-  }, [incidentReports]);
+      if (cancelled) return;
+
+      let target = list.find(
+        (item) =>
+          String(item._id) === queryAlertId ||
+          item.uns_alert_key === queryAlertId
+      );
+      if (!target) {
+        const fetched = await fetchAlertById(queryAlertId);
+        if (cancelled) return;
+        if (fetched) {
+          target = fetched;
+          setAlerts((prev) =>
+            prev.some((item) => String(item._id) === String(fetched._id))
+              ? prev
+              : [fetched, ...prev]
+          );
+        }
+      }
+
+      if (!target) return;
+      const resolvedId = String(target._id || queryAlertId);
+      setSelectedAlertId(resolvedId);
+
+      const autorunKey = `${resolvedId}:autorun`;
+      if (autorunRequested && handledAutorunKeyRef.current !== autorunKey) {
+        handledAutorunKeyRef.current = autorunKey;
+        router.replace(
+          `/agentic-ai/failure-prediction?alertId=${encodeURIComponent(
+            resolvedId
+          )}`,
+          { scroll: false }
+        );
+        runFailureAgentForAlert(target);
+      }
+    };
+
+    syncFromQuery();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    alerts,
+    autorunRequested,
+    fetchAlertsCallback,
+    queryAlertId,
+    router,
+    runFailureAgentForAlert,
+  ]);
+
+  const handleOpenContestable = useCallback(
+    (incidentItem = null) => {
+      setContestableIncident(
+        incidentItem ||
+          incidentReports[0] || {
+            error_code: "E13",
+            error_name: "High vibration",
+            machine_id: "M1",
+            root_cause:
+              "Suspected bearing degradation on machine M1 based on elevated vibration.",
+            repair_instructions: [
+              {
+                step: 1,
+                description: "Inspect and align shaft bearings on M1.",
+              },
+            ],
+          }
+      );
+    },
+    [incidentReports]
+  );
 
   const handleCloseContestable = useCallback(() => {
     setContestableIncident(null);
@@ -480,75 +762,6 @@ export function useFailureDetectionPage() {
       markAgenticProgress("root-cause");
     }
   }, []);
-
-  useEffect(() => {
-    fetchIncidentReportsCallback();
-    // Always clear root cause and repair instructions on load
-    setRootCause("");
-    setRepairInstructions("");
-  }, [fetchIncidentReportsCallback]);
-
-  useEffect(() => {
-    if (typeof alertTrigger === "number") {
-      if (alertTrigger !== lastAlertRef.current && !processingRef.current) {
-        lastAlertRef.current = alertTrigger;
-        setAgentActive(true);
-        setAgentLogs([]); // Clear logs for new agent run
-        const callAgentAsync = async () => {
-          try {
-            const alertToSend = lastGeneratedAlertRef.current;
-            // Push initial user message with label
-            setAgentLogs((prev) => [
-              ...prev,
-              {
-                type: "user",
-                values: {
-                  content:
-                    "New alert received:\n" +
-                    JSON.stringify(alertToSend, null, 2),
-                },
-              },
-            ]);
-            await callFailureAgent(alertToSend, {
-              onEvent: (evt) => {
-                if (evt.threadId) setAgentThreadId(evt.threadId);
-                if (
-                  evt.type === "update" &&
-                  (evt.name === "tool_start" || evt.name === "tool_end")
-                ) {
-                  setAgentLogs((prev) => [...prev, evt]);
-                } else if (evt.type === "final") {
-                  setAgentLogs((prev) => [...prev, evt]);
-                } else if (evt.type === "error") {
-                  setAgentLogs((prev) => [...prev, evt]);
-                }
-              },
-            });
-          } finally {
-            setAgentActive(false);
-            processingRef.current = false;
-            // Fetch new incident reports and set root cause/repair instructions from the latest
-            const data = await fetchIncidentReports();
-            setIncidentReports(data);
-            if (data && data.length > 0) {
-              setRootCause(data[0].root_cause || "");
-              setRepairInstructions(
-                formatRepairInstructions(data[0].repair_instructions)
-              );
-              markAgenticProgress("root-cause");
-            } else {
-              setRootCause("");
-              setRepairInstructions("");
-            }
-          }
-        };
-        processingRef.current = true;
-        callAgentAsync();
-      } else {
-        lastAlertRef.current = alertTrigger;
-      }
-    }
-  }, [alertTrigger]);
 
   const modalContent = (
     <div className="p-4">
@@ -569,18 +782,26 @@ export function useFailureDetectionPage() {
     sim: {
       isRunning,
       isStarting,
+      isSensorBusy,
+      sensorMessage,
       dataSource,
-      onTemperatureChange,
-      onVibrationChange,
+      onCommitTemperature,
+      onCommitVibration,
+      onCommitTemperatureThreshold,
+      onCommitVibrationThreshold,
       machineData,
       status,
       temperature,
       vibration,
-      alerts: dataSource === "leafy" ? factoryAlerts : localAlerts,
+      thresholds,
+      alerts,
+      alertsLoading,
+      selectedAlertId,
+      setSelectedAlertId,
+      activeAlertId,
       sourceError,
       leafyAvailable,
       isSourceChecking,
-      expandedAlertId,
     },
     agentActive,
     showModal,
@@ -592,7 +813,8 @@ export function useFailureDetectionPage() {
     handleStart,
     handleStop,
     handleSourceChange,
-    agentLogs, // <-- pass logs to page
+    handleTriggerRootCause: runFailureAgentForAlert,
+    agentLogs,
     agentThreadId,
     showTelemetry,
     setShowTelemetry,

@@ -34,7 +34,7 @@ const FALLBACK_RESOLUTION_BY_CANDIDATE = {
       {
         step: 3,
         description:
-          "Verify 60 Hz (2X) sideband amplitude drops below 0.25 mm/s and overall vibration remains under 1.2 mm/s during a 15-minute load test.",
+          "Verify 60 Hz (2X) sideband amplitude drops and overall gantry vibration remains under 50 mm/s during a 15-minute load test.",
       },
     ],
   },

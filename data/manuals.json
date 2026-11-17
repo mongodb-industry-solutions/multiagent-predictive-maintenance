@@ -2,31 +2,31 @@
   {
     "pages": 1,
     "section": "Overview",
-    "text": "The CentriMax 2000 is a high-efficiency centrifugal pump designed for continuous industrial use. It is equipped with thermal and vibration sensors for predictive maintenance purposes. The system is designed to shut down automatically when safety thresholds are exceeded."
+    "text": "The Tab Laser Welding Cell (Unit M1) is a high-precision fiber laser welding station used in EV battery module assembly. It joins copper and aluminum cell tabs under inert shield gas and is equipped with thermal and vibration sensors for predictive maintenance. Automated alerts trigger when weld-zone housing temperature or gantry/fixture vibration exceeds safety thresholds."
   },
   {
     "pages": 2,
     "section": "Operating Parameters",
-    "text": "Operating Parameters:\n- Operating Temp.: 50°C – 65°C\n- Vibration Level: 0.5 – 1.5 mm/s\n- Max Flow Rate: 200 L/min\n- Max Pressure: 12 bar"
+    "text": "Operating Parameters (Tab Laser Welding Cell M1):\n- Operating Housing / Weld-Zone Temp.: 55°C – 75°C (Nominal: 68°C, Alert Threshold: > 80°C)\n- Gantry & Fixture Vibration Level: 15 – 40 mm/s (Nominal: 24 mm/s, Alert Threshold: > 50 mm/s)\n- Nominal Laser Power: 500 – 650 W\n- Shield Gas Flow: 14 – 18 L/min (Argon)"
   },
   {
     "pages": 3,
     "section": "Common Faults and Troubleshooting – E12: High Temperature",
-    "text": "Fault Code: E12 – High Temperature\nPossible Causes:\n- Tool wear or degradation\n- Blocked coolant channels\n- Inadequate lubrication\nRecommended Actions:\n1. Inspect cutting tool for wear; replace if needed.\n2. Check coolant system for blockages or low levels.\n3. Verify lubrication system is functioning."
+    "text": "Fault Code: E12 – High Temperature (> 80°C)\nPossible Causes:\n- Spatter contamination on the protective optics window causing localized laser energy absorption and thermal buildup\n- Restricted or kinked chiller coolant lines reducing heat dissipation at the laser head\n- Clogged coolant filter or degraded optical housing seals\nRecommended Actions:\n1. Inspect and clean or replace the Protective Optics Window if spatter or hazing is present.\n2. Check chiller flow and inspect Coolant Filter & Tubing for kinks or blockages.\n3. Verify Optical Housing Seals and purge gas flow are intact."
   },
   {
     "pages": 4,
     "section": "Common Faults and Troubleshooting – E13: High Vibration",
-    "text": "Fault Code: E13 – High Vibration\nPossible Causes:\n- Bearing misalignment\n- Loose mechanical fittings\n- Imbalance in rotating assembly\nRecommended Actions:\n1. Inspect and align shaft bearings.\n2. Tighten all mounting bolts and fixtures.\n3. Check for wear on impeller and balance as needed."
+    "text": "Fault Code: E13 – High Vibration (> 50 mm/s)\nPossible Causes:\n- Loose clamping fixture mounting bolts following a battery module tooling swap\n- Linear stage bearing wear or rail misalignment on the welding gantry\n- Accelerometer sensor mounting drift or uncalibrated offset\nRecommended Actions:\n1. Inspect and re-torque all Clamping Fixture Bolts and verify fixture alignment.\n2. Inspect Linear Stage Bearings and gantry rails for wear, debris, or binding.\n3. Check vibration sensor mounting stud and recalibrate against a reference vibrometer."
   },
   {
     "pages": 5,
     "section": "Maintenance Schedule",
-    "text": "Maintenance Schedule:\n- Lubricate bearings: Weekly\n- Inspect coolant lines: Weekly\n- Full system alignment check: Monthly\n- Replace wear-prone tools: Bi-monthly"
+    "text": "Maintenance Schedule (Tab Laser Welding Cell M1):\n- Inspect and clean Protective Optics Window: Weekly\n- Inspect Coolant Filter & Tubing and verify chiller flow: Weekly\n- Full gantry & clamping fixture alignment check: Monthly\n- Inspect Linear Stage Bearings and Optical Housing Seals: Bi-monthly"
   },
   {
     "pages": 6,
     "section": "Contact Information",
-    "text": "For further support, contact TechFlow Service at support@techflow.com or +1-800-TECH-123."
+    "text": "For further support on the Tab Laser Welding Cell (M1), contact Leafy Factory Laser Systems Support at support@leafyfactory.io or +1-800-LEAFY-EV."
   }
 ]

@@ -1,6 +1,8 @@
+import { DEFAULT_THRESHOLDS } from "@/lib/factory/constants";
+import { buildUnifiedAlert } from "@/lib/api/alerts";
+
 export const LEAFY_PREDICTIVE_THRESHOLDS = {
-  temperature_threshold: 90,
-  vibration_threshold: 1.2,
+  ...DEFAULT_THRESHOLDS,
 };
 
 export function createLeafyPredictiveOrder() {
@@ -37,6 +39,7 @@ export function buildLeafyMachineData({
       factory_id: "leafy_factory",
       prod_line_id: "ev_module_assembly",
       machine_id: "M1",
+      station: "Laser Tab Welding",
     },
     temperature: {
       value: finiteNumber(metrics?.temperature, temperature),
@@ -59,24 +62,24 @@ export function factoryAlertKey(alert) {
   ].join(":");
 }
 
-export function toWorkflowAlert(factoryAlert, machineData) {
-  const isVibration = factoryAlert?.metric === "vibration";
-  const timestamp = factoryAlert?.timestamp || new Date().toISOString();
-  const capturedValue = finiteNumber(factoryAlert?.value, undefined);
+export function toWorkflowAlert(
+  factoryAlert,
+  machineData,
+  thresholds = LEAFY_PREDICTIVE_THRESHOLDS,
+  extra = {}
+) {
+  const unified = buildUnifiedAlert(factoryAlert, {
+    temperature: machineData?.temperature?.value,
+    vibration: machineData?.vibration?.value,
+    thresholds,
+    orderId: factoryAlert?.order_id || machineData?.order_id,
+    origin: extra.origin || "predictive-maintenance",
+    dataSource: extra.dataSource || "leafy",
+  });
 
   return {
-    _id: `leafy-${factoryAlertKey(factoryAlert)}`,
-    err_code: isVibration ? "E13" : "E12",
-    err_name: isVibration ? "High vibration" : "High temperature",
-    machine_id: "M1",
-    ts: timestamp,
-    details: {
-      temperature: isVibration
-        ? machineData.temperature.value
-        : capturedValue ?? machineData.temperature.value,
-      vibration: isVibration
-        ? capturedValue ?? machineData.vibration.value
-        : machineData.vibration.value,
-    },
+    ...unified,
+    _id: factoryAlert?._id || `leafy-${factoryAlertKey(factoryAlert)}`,
+    ts: unified.ts?.$date || factoryAlert?.timestamp || new Date().toISOString(),
   };
 }
