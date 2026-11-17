@@ -21,6 +21,9 @@ steps:
       create_repository: true
       registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
       repo: industrysolutions/multiagent-pred-maint # Change to demo name (short)
+      enable_cache: true
+      cache_repo: industrysolutions/multiagent-pred-maint
+      snapshot_mode: redo
       tags:
         - git-${DRONE_COMMIT_SHA:0:7}
         - latest
@@ -81,6 +84,9 @@ steps:
       create_repository: true
       registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
       repo: industrysolutions/multiagent-pred-maint
+      enable_cache: true
+      cache_repo: industrysolutions/multiagent-pred-maint
+      snapshot_mode: redo
       tags:
         - git-${DRONE_COMMIT_SHA:0:7}
         - latest

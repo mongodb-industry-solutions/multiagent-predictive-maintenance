@@ -1,3 +1,7 @@
+# Ignore git directory
+.git
+.gitignore
+
 # Ignore node_modules and dependencies
 /node_modules/
 /.pnp
