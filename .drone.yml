@@ -45,6 +45,7 @@ steps:
       values:
         - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
         - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/multiagent-pred-maint" # Change to demo name (short)
+        - "env.DEPLOYMENT_ID=staging-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         - "ingress.enabled=true"
         - "ingress.hosts[0]=multiagent-predictive-maintenance.industrysolutions.staging.corp.mongodb.com" # Change to demo name (full)
         - "mesh.enabled=true"
@@ -106,6 +107,7 @@ steps:
       values:
         - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
         - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/multiagent-pred-maint"
+        - "env.DEPLOYMENT_ID=production-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         - "ingress.enabled=true"
         - "ingress.hosts[0]=multiagent-predictive-maintenance.industrysolutions.prod.corp.mongodb.com"
         - "mesh.enabled=true"

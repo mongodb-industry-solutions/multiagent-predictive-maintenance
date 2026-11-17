@@ -158,12 +158,15 @@ export default function AgenticDemoStepper() {
 
     return (
       <div className="shrink-0 px-4 py-3">
+        <h1 className="text-2xl font-semibold tracking-tight text-[#112733]">
+          Predictive Maintenance
+        </h1>
         <Link
           href={lastDemoRoute || fallbackRoute}
-          className="inline-flex items-center gap-2 text-sm font-medium text-[#00684A] hover:underline"
+          className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-[#00684A] hover:underline"
         >
           <Icon glyph="ArrowLeft" size={16} />
-          Back to demo
+          <span>Back to demo</span>
         </Link>
       </div>
     );
@@ -183,18 +186,23 @@ export default function AgenticDemoStepper() {
         : null;
 
   return (
-    <div className="agentic-demo-stepper relative shrink-0 px-2">
-      <div className="flex w-full items-center gap-3 px-4 py-1">
-        <Link
-          href="/agentic-ai"
-          className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-[#00684A] hover:underline"
-        >
-          <Icon glyph="ArrowLeft" size={16} />
-          <span className="hidden sm:inline">Back to overview</span>
-        </Link>
+    <div className="relative shrink-0">
+      <div className="grid shrink-0 grid-cols-[minmax(0,1fr)_minmax(36rem,56rem)_minmax(0,1fr)] items-center gap-6 px-4 py-3">
+        <div className="min-w-0 justify-self-start">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#112733]">
+            Predictive Maintenance
+          </h1>
+          <Link
+            href="/agentic-ai"
+            className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-[#00684A] hover:underline"
+          >
+            <Icon glyph="ArrowLeft" size={16} />
+            <span>Back to overview</span>
+          </Link>
+        </div>
 
         <div
-          className="min-w-[520px] flex-1 overflow-x-auto px-2"
+          className="agentic-demo-stepper relative min-w-0 overflow-x-auto"
           onClickCapture={handleStepperClick}
         >
           <Stepper
@@ -209,33 +217,23 @@ export default function AgenticDemoStepper() {
               </Step>
             ))}
           </Stepper>
+          {blockedMessage && (
+            <div
+              role="status"
+              aria-live="polite"
+              style={{ left: blockedMessage.left }}
+              className="absolute top-full z-30 mt-1 max-w-[300px] -translate-x-1/2 rounded-md bg-[#112733] px-3 py-2 text-center text-sm text-white"
+            >
+              {blockedMessage.text}
+            </div>
+          )}
         </div>
 
-        <Link
-          href="/agentic-ai/agent-sandbox"
-          onClick={() => {
-            window.sessionStorage.setItem(LAST_DEMO_ROUTE_KEY, pathname);
-            setLastDemoRoute(pathname);
-          }}
-          className="flex shrink-0 items-center gap-2 rounded-full border border-[#C1C7C6] px-3 py-1.5 text-[#00684A] shadow-sm transition-colors hover:border-[#00684A]"
-        >
-          <Icon glyph="Wrench" size={18} className="text-[#00684A]" />
-          <span className="hidden text-sm font-medium text-[#00684A] lg:block">
-            Agent Sandbox
-          </span>
-        </Link>
-      </div>
-
-      {blockedMessage && (
         <div
-          role="status"
-          aria-live="polite"
-          style={{ left: blockedMessage.left }}
-          className="absolute top-full z-30 mt-1 max-w-[300px] -translate-x-1/2 rounded-md bg-[#112733] px-3 py-2 text-center text-sm text-white"
-        >
-          {blockedMessage.text}
-        </div>
-      )}
+          id="agentic-demo-toolbar"
+          className="flex w-full items-center justify-end"
+        />
+      </div>
 
       {nextAction && (
         <NextStepButton href={nextAction.href} label={nextAction.label} />

@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { useAgentGraph } from "./hooks";
 import { Button, Select, SelectItem, TextArea } from "@via-ds/components";
 
@@ -46,17 +47,16 @@ export default function ChatInput({
             <div className="text-red-500 text-sm">{graphError}</div>
           )}
           {imageUrl && (
-            <div className="relative w-full h-full max-h-full flex items-center justify-center">
-              <img
-                src={imageUrl}
-                alt="Agent Graph"
-                style={{
-                  objectFit: "contain",
-                  width: "80%",
-                  height: "80%",
-                  padding: 20,
-                }}
-              />
+            <div className="relative flex h-full max-h-full w-full items-center justify-center">
+              <div className="relative h-[80%] w-[80%]">
+                <Image
+                  src={imageUrl}
+                  alt="Agent Graph"
+                  fill
+                  unoptimized
+                  className="object-contain p-5"
+                />
+              </div>
             </div>
           )}
         </div>
