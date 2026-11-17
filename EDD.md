@@ -5,7 +5,7 @@ MongoDB data model for the Agentic Predictive Maintenance demo.
 Database: `agentic_predictive_maintenance` (configurable via `DATABASE_NAME`)
 
 Field types below were derived from the seeded documents and the runtime writes,
-not from a formal schema — this application defines no JSON Schema validators.
+not from a formal schema — except `change_records`, which enforces a strict `$jsonSchema` validator for shopfloor attribution and governance.
 
 ---
 
@@ -24,8 +24,11 @@ not from a formal schema — this application defines no JSON Schema validators.
 | `production_calendar` | `generate_calendar` / release sync | Planning agent | — |
 | `argument_records` | Contestable AI agents + Engineer | Contestable AI scoring & UI | — |
 | `contestable_sessions` | Contestable AI API | Contestable AI UI, `$lookup` audit lineage | — |
-| `materials` | Auto-init / `seed:context` | Connected Factory Context Explorer (`$lookup` limits) | — |
+| `materials` | Auto-init / `seed:context` | Connected Factory Context Explorer (`$lookup` limits), Agentic Audit Trail | — |
 | `excursions` | Auto-init / `seed:context` | Connected Factory Context Explorer (`$vectorSearch`) | `excursion_signature_index` |
+| `change_records` | Auto-init + Agentic Audit Trail API (`$jsonSchema` strict) | Agentic Audit Trail UI, Documentation Agent episodic recall | — |
+| `change_record_revisions` | Auto-init + Agentic Audit Trail transactional versioning | Agentic Audit Trail `$lookup` lineage inspector | — |
+| `change_procedures` | Auto-init / `seed` | Change Documentation Agent (`$vectorSearch` pre-filtered) | `change_procedures_governed_idx` |
 | `checkpoints`, `checkpoint_writes` | LangGraph checkpointer | LangGraph | — |
 
 ---
@@ -282,6 +285,80 @@ Historical 4-minute weld-zone temperature excursions across the fleet (24 docume
 Indexes: `{ excursionId: 1 }` (unique), `{ machine_id: 1, start: 1 }`.
 Vector index `excursion_signature_index`: `signature` (`cosine`, `24` dims) with `filter` fields on `signal`, `status`, and `materialMaster`.
 
+## `change_records`
+
+Current-state operational governance collection for **Agentic Audit Trail** (`/agentic-ai/audit-trail`). Enforces a strict `$jsonSchema` validator (`validationLevel: "strict"`, `validationAction: "error"`) requiring `intervention_id`, `schema_version`, `v`, `status`, `agents` (`production_agent` and `documentation_agent` credentials), `intervention`, and `created_at`.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `_id` | ObjectId | |
+| `intervention_id` | string | Unique (`CHG-2026-0084` …) |
+| `schema_version` | int | `1` |
+| `v` | int | Monotonic revision counter (`1` .. `5`) |
+| `scenario_key` | string | `routine_trim` \| `out_of_bounds_deviation` \| `unauthorized_cloud_write` |
+| `data_source` | string | `leafy` \| `local` |
+| `status` | string | `captured` \| `policy_evaluated` \| `pending_human_review` \| `auto_approved` \| `approved_signed` \| `rejected` \| `quarantined_blocked` \| `closed_verified` \| `closed_exception` |
+| `agents` | object | Separated `production_agent`, `documentation_agent`, and optional `quality_engineer` credentials |
+| `intervention` | object | `ts`, `site`, `line`, `station`, `machine_id` (`LTW-04`), `mes_order_id`, `batch_unit_id`, `product`, `material_master`, `parameter`, `before_value`, `proposed_value`, `applied_value`, `execution_state` |
+| `reconstructed_context` | object | Deterministic UNS `telemetry` window, `materials` spec, MES order context, and `alerts` |
+| `policy_evaluation` | object | Deterministic rule checks (`R1` … `R4`), `classification`, `risk_level`, `routing_mode` |
+| `governed_requirements` | object \| null | Retrieved `approved_procedures` + `excluded_uncontrolled_docs` |
+| `episodic_recall` | array\<object\> | Prior closed `change_records` recalled for context |
+| `draft_record` | object \| null | Documentation Agent `change_summary`, `impact_assessment`, `compliance_rationale`, `recommended_actions` |
+| `approval` | object \| null | In-PAR auto-verification, quarantine notice, or 21 CFR Part 11 e-signature manifestation (`signer_user_id`, `auth_method`, `meaning_of_signature`, `signed_at`, `signature_sha256`) |
+| `outcome` | object \| null | Post-change telemetry check, `weld_ok`, `exception_opened`, and `closed_at` |
+| `evidence_sha256` | string | Canonical SHA-256 digest of the record state |
+| `created_at` | string | ISO-8601 timestamp |
+| `updated_at` | string | ISO-8601 timestamp |
+
+Indexes: `{ intervention_id: 1 }` (unique), `{ "intervention.machine_id": 1, "intervention.product": 1, created_at: -1 }`, `{ scenario_key: 1, status: 1, created_at: -1 }`.
+
+## `change_record_revisions`
+
+Append-only, hash-chained snapshot history implementing the MongoDB **Document Versioning Pattern** for `change_records` (aligned with 21 CFR §11.10(e) and EU GMP Annex 11 §9). Inserted atomically alongside `change_records` inside a multi-document transaction at every lifecycle transition.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `_id` | ObjectId | |
+| `intervention_id` | string | Joins with `change_records.intervention_id` |
+| `v` | int | Snapshot version (`1` .. `5`) |
+| `stage` | string | Lifecycle step identifier |
+| `triggered_by` | string | Agent display name (`Production Agent`, `Documentation Agent`, `Elena Rostova (Lead Quality Engineer)`) |
+| `agent_id` | string | `production_agent` \| `documentation_agent` \| `quality_engineer` |
+| `change_note` | string | Human-readable transition summary |
+| `field_changes` | array\<object\> | EU GMP Annex 11 §9 field-level `before` → `after` summary (`{ field, before, after }`) |
+| `prev_snapshot_sha256` | string \| null | Prior revision's `snapshot_sha256` (`null` on `v1`) forming a tamper-evident hash chain |
+| `snapshot_sha256` | string | Canonical SHA-256 hash of the snapshot state + `prev_snapshot_sha256` |
+| `snapshot` | object | Full historical `change_records` document at version `v` |
+| `changed_at` | string | ISO-8601 timestamp |
+
+Indexes: `{ intervention_id: 1, v: 1 }` (unique), `{ changed_at: -1 }`.
+
+## `change_procedures`
+
+Controlled SOPs, EV Welding Control Plans, and OT Security Policies (7 seeded documents spanning `approved`, `superseded`, and `draft` lifecycle states) grounded via governed `$vectorSearch` pre-filtering.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `_id` | ObjectId | |
+| `doc_id` | string | e.g. `SOP-LTW-014`, `SOP-QMS-008`, `CP-EV-WELD-004`, `POL-OTSEC-003` |
+| `version` | string | e.g. `3.2`, `2.1`, `4.0-rc1` |
+| `title` | string | |
+| `doc_type` | string | `SOP` \| `Control Plan` \| `Validation Protocol` \| `OT Security Policy` |
+| `status` | string | `approved` \| `superseded` \| `draft` (filter field) |
+| `site` | string | `leafy_factory` (filter field) |
+| `station` | string | `LTW-04` (filter field) |
+| `product` | string | `EV-PM-4C-S` \| `EV-PM-4C-P` \| `ALL` (filter field) |
+| `effective_from` | date | |
+| `approved_by` | string | |
+| `regulatory_refs` | array\<string\> | ISO 9001, IATF 16949, 21 CFR Part 11, EU GMP Annex 11, IEC 62443 |
+| `clauses` | array\<string\> | |
+| `text` | string | Embedded text |
+| `embedding` | array\<double\> | `EMBEDDING_DIMENSIONS` (default 1024) |
+
+Indexes: `{ doc_id: 1, version: 1 }` (unique), `{ status: 1, site: 1, station: 1, product: 1 }`.
+Vector index `change_procedures_governed_idx`: `embedding` (`cosine`, `1024` dims) with `filter` fields on `status`, `site`, `station`, and `product`.
+
 ---
 
 ## Relationships
@@ -301,6 +378,9 @@ erDiagram
     WORKORDERS }o--o{ INVENTORY : "parts consumed"
     WORKORDERS }o--o{ PRODUCTION_CALENDAR : "planning agent schedules around"
     INTERVIEWS }o--|| MAINTENANCE_STAFF : "employee_id"
+    CHANGE_RECORDS ||--o{ CHANGE_RECORD_REVISIONS : "transactional document versioning"
+    CHANGE_PROCEDURES }o--o{ CHANGE_RECORDS : "governed pre-filtered vectorSearch"
+    TELEMETRY }o--o{ CHANGE_RECORDS : "reconstructed 4-min window"
 
     TELEMETRY {
         date ts
@@ -359,6 +439,27 @@ erDiagram
         date planned_start_date
         date deadline_date
         string priority
+    }
+    CHANGE_RECORDS {
+        string intervention_id
+        int v
+        string status
+        object agents
+        object intervention
+        object policy_evaluation
+    }
+    CHANGE_RECORD_REVISIONS {
+        string intervention_id
+        int v
+        string snapshot_sha256
+        object snapshot
+    }
+    CHANGE_PROCEDURES {
+        string doc_id
+        string version
+        string status
+        string product
+        array embedding
     }
 ```
 

@@ -40,7 +40,6 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "^15.5.22",
     "@tailwindcss/postcss": "^4",
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",

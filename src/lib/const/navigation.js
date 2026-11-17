@@ -74,6 +74,12 @@ export const STORY_STAGES = [
         description: "Debate and contest AI root-cause arguments before action.",
       },
       {
+        label: "Agentic Audit Trail",
+        href: "/agentic-ai/audit-trail",
+        description:
+          "Turn shopfloor AI interventions into governed, versioned change records.",
+      },
+      {
         label: "Work Order Generation",
         href: "/agentic-ai/workorder-generation",
         description: "Turn incidents into maintenance plans.",

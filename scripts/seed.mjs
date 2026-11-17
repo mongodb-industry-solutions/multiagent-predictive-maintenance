@@ -100,7 +100,17 @@ async function main() {
     );
     currentStep = "seed_context";
     await runScript("npm", ["run", "seed:context"]);
-    logStep("Connected Factory Context Explorer seeded. Initial setup complete!");
+    logStep(
+      "Connected Factory Context Explorer seeded. Provisioning Agentic Audit Trail..."
+    );
+    currentStep = "seed_audit_trail";
+    const { seedAuditTrailData } = await import(
+      "../src/lib/auditTrail/seedData.js"
+    );
+    await seedAuditTrailData({
+      onProgress: (msg) => process.stdout.write(`[seed:audit] ${msg}\n`),
+    });
+    logStep("Agentic Audit Trail provisioned. Initial setup complete!");
   } catch (err) {
     logStep(`Error: ${err.message}`);
     if (currentStep === "embed") {
