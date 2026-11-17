@@ -204,6 +204,7 @@ export const AGENTIC_TALK_TRACK = [
           "(Optional) Click 'See Full Logs' to observe how vector search retrieves the most relevant information from available data sources, and see the agent's reasoning process.",
           "After analysis, the Failure Agent generates an incident report with root cause and recommended actions. The new report appears in the incident report list.",
           "(Advanced / Contestable AI) Click 'Contest AI (Advanced)' on the incident report (or open the standalone Contestable AI use case) to see the Vibration Pattern Agent and Maintenance History Agent debate three candidate root causes. Accept, reject, or modify individual arguments to immediately recalculate candidate scores and refine the incident report before generating a work order.",
+          "(Agentic Audit Trail) Open 'Agentic Audit Trail' from the Agentic AI overview to demonstrate how shopfloor AI interventions on LTW-04 are deterministically captured, checked against recipe and OT security policies, grounded in version-filtered SOPs, signed electronically when out of bounds, and verified through closed-loop outcomes in MongoDB.",
           "Navigate to the 'Work Order Generation' tab. Select your incident report and click 'Continue Workflow'. The Work Order Agent analyzes similar past work orders to estimate duration, required parts, and skills, then drafts a new work order.",
           "Next, go to the 'Work Order Scheduler' tab. Select the created work order and click 'Continue Workflow'. The Planning Agent checks inventory, technician availability, and the production calendar to suggest an optimized maintenance window, updating the calendar accordingly.",
           "(Optional) Test and chat with each agent individually from the 'Agent Sandbox' tab. Agents are integrated with the workflow, but you can interact with them directly to learn more about their capabilities.",
@@ -270,6 +271,71 @@ export const AGENTIC_TALK_TRACK = [
           src: "/img/ai-illustration-spot.png",
           alt: "AI Illustration",
         },
+      },
+    ],
+  },
+];
+
+export const AUDIT_TRAIL_TALK_TRACK = [
+  {
+    heading: "Overview",
+    content: [
+      {
+        heading: "Why shopfloor AI needs a GMP-grade audit trail",
+        body: "In regulated and high-spec manufacturing—from pharmaceuticals and medical devices (FDA 21 CFR Part 11, EU GMP Annex 11, ALCOA+) to safety-critical EV battery cells (IATF 16949, EU Battery Passport)—every parameter change must prove who changed what, when, why, under which effective SOP, and with what outcome. Because evidence is scattered across PLCs, MES, ERP, and QMS, many teams avoid autonomous optimization altogether.",
+      },
+      {
+        heading: "Core design rule",
+        body: [
+          "Capture evidence and enforce Proven Acceptable Range (PAR) & OT boundaries deterministically in code; use the Documentation Agent strictly to assemble the governed record.",
+          "Segregate duties across the Production Agent, the Documentation Agent, and the human Quality Engineer (2-factor Part 11 e-signature).",
+          "Pre-filter SOPs by status='approved', site, station, and product before vector similarity scoring so draft or obsolete procedures are never cited.",
+        ],
+      },
+    ],
+  },
+  {
+    heading: "Step-by-Step Demo",
+    content: [
+      {
+        heading: "1 · Auto-Verified (In-PAR laser trim)",
+        body: [
+          "Select 'Auto-Verified (In-PAR)' and click 'Start Audit Trail' (Step 1 visualizes 1480 → 1435 W inside the pre-validated 1380–1500 W PAR window and joins telemetry, MES order, and copper foil limits as Revision v1).",
+          "Use the 'Audit Lineage' button at any time (available from Step 0 onward) to inspect the $jsonSchema guard, revision snapshots, live $lookup lineage, and the GMP & ALCOA+ alignment tab.",
+          "Click 'Continue' (Step 2): deterministic rules pass, and governed $vectorSearch retrieves approved SOP-LTW-014 v3.2 while blocking superseded v2.1 and draft v4.0-rc1.",
+          "Click 'Continue' (Step 3): Documentation Agent drafts the QMS Change Record and auto-verifies the in-PAR adjustment without manual deviation paperwork.",
+          "Click 'Continue' (Step 4): post-change telemetry confirms 214.5 °C peak and 6/6 welds passed, displaying the hash-chained v1 → v4 MongoDB revision timeline.",
+        ],
+      },
+      {
+        heading: "2 · Human in the Loop (Out-of-PAR deviation & Part 11 e-sign)",
+        body: [
+          "Click 'Change Scenario', pick 'Human in the Loop' (1485 → 1560 W on aluminum tab), and step through Capture and Policy.",
+          "In Step 2, point out that deterministic rules hold the PLC (exceeds 1500 W PAR ceiling after 2 shift trims) and recall CHG-2026-0089 (laser window spatter lesson).",
+          "In Step 3, highlight the 21 CFR Part 11 signature block (unique authenticated signer ID, 2nd-factor signing PIN, and live Meaning of Signature) and execute the signature to view the full Part 11 manifestation.",
+          "Either reject the boost to clean optics (verified at 201.9 °C in Step 4) or approve a 1-batch override to watch Step 4 catch the 221.8 °C breach and auto-open DEV-CAPA-2026-041.",
+        ],
+      },
+      {
+        heading: "3 · Rejected (Unverified cloud script)",
+        body: [
+          "Click 'Change Scenario', pick 'Rejected' (unverified cloud script attempting 18.0 → 11.5 L/min with no OT certificate or MES order).",
+          "Step through to Step 3 to show the PLC write blocked under POL-OTSEC-003 v1.1, and click 'Test Unauthorized DB Write' to see MongoDB reject an unattributed bypass write live (DocumentValidationFailure, code 121).",
+        ],
+      },
+    ],
+  },
+  {
+    heading: "Why MongoDB",
+    content: [
+      {
+        heading: "GMP & ALCOA+ controls in one operational data platform",
+        body: [
+          "Attributable & Validated ($jsonSchema): enforces actor credentials and required shopfloor fields at the database layer.",
+          "Controlled Procedures ($vectorSearch pre-filtering): excludes draft and superseded SOPs prior to similarity ranking (Annex 11 Sec. 10).",
+          "Contemporaneous & Append-Only (ACID Document Versioning): writes hash-chained snapshots and Annex 11 Sec. 9 field diffs to change_record_revisions.",
+          "Linked E-Signatures & Episodic Memory: binds Part 11 signatures (11.50 / 11.70) to exact record hashes and recalls closed records to guide future decisions.",
+        ],
       },
     ],
   },

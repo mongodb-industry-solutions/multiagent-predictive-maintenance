@@ -31,8 +31,8 @@ the affected page in the browser. Do not claim tests pass — there are none.
 Smoke check after a change:
 
 1. `npm run dev`
-2. Open `http://localhost:8080/failure-prediction`
-3. Click **Start Simulator**, raise Temperature above 90 (or Vibration above 1.2)
+2. Open `http://localhost:8080/agentic-ai/failure-prediction`
+3. Click **Start simulation**, raise Temperature above its threshold (default `80 °C`) or Vibration above its threshold (default `50 mm/s`)
 4. An `E12`/`E13` alert appears, the agent status list turns green, and an
    incident report is written to the `incident_reports` collection
 
@@ -77,7 +77,7 @@ Notable files:
 - [scripts/config.js](./scripts/config.js) — embedding configuration. Field names
   here must match the actual document fields or the text is silently skipped.
 - [src/lib/simulation/failureDetection.js](./src/lib/simulation/failureDetection.js) —
-  alert thresholds (temperature > 90, vibration > 1.2).
+  alert threshold check (defaults: temperature > 80 °C, vibration > 50 mm/s, configurable via the dual-handle slider).
 
 ## API overview
 
@@ -142,3 +142,7 @@ Consult [EDD.md](./EDD.md) before making changes that touch:
 - API routes that read or write database records
 - Validation, form fields, API payloads, or UI that depend on persisted data
 - Schema documentation, Mermaid diagrams, or entity modeling discussions
+
+## UI Styling Rules
+
+- **Never use `text-xs`.** `text-xs` is strictly forbidden in this repository; use `text-sm` or larger for UI text.

@@ -12,12 +12,14 @@ import {
 import {
   createRemoteOrder,
   ensureRemoteOrder,
+  fetchFactoryAlerts,
   fetchRemoteSnapshot,
   fetchScadaState,
   sendRemoteMetrics,
   setRemoteThresholds,
   stopRemoteOrder,
 } from "@/lib/factory/factoryClient";
+import { ensureAlertPersisted } from "@/lib/api/alerts";
 import {
   advanceLocalFactory,
   buildLocalAnalytics,
@@ -33,6 +35,7 @@ import {
   DEFAULT_SENSOR_READINGS,
   DEFAULT_THRESHOLDS,
   FACTORY_SOURCES,
+  FACTORY_SOURCE_STORAGE_KEY,
   FACTORY_STATIONS,
   PRODUCTS,
 } from "@/lib/factory/constants";
@@ -297,6 +300,19 @@ export default function FactoryDataProvider({ children }) {
     } catch {
       // Storage is an enhancement; the in-memory simulation still works.
     }
+    try {
+      const savedSource = window.sessionStorage.getItem(
+        FACTORY_SOURCE_STORAGE_KEY
+      );
+      if (
+        savedSource === FACTORY_SOURCES.LOCAL ||
+        savedSource === FACTORY_SOURCES.LEAFY
+      ) {
+        setSourceState(savedSource);
+      }
+    } catch {
+      // Ignore disabled browser storage.
+    }
     commitLocalState(restored);
     const orders = readSessionJson(SESSION_ORDERS_STORAGE_KEY, []);
     if (Array.isArray(orders)) sessionOrdersRef.current = orders;
@@ -409,6 +425,14 @@ export default function FactoryDataProvider({ children }) {
           selectedOrderIdRef.current = null;
           setSelectedOrderId(null);
           setSourceState(FACTORY_SOURCES.LOCAL);
+          try {
+            window.sessionStorage.setItem(
+              FACTORY_SOURCE_STORAGE_KEY,
+              FACTORY_SOURCES.LOCAL
+            );
+          } catch {
+            // Ignore disabled browser storage.
+          }
           setError(null);
         }
       } finally {
@@ -500,6 +524,11 @@ export default function FactoryDataProvider({ children }) {
     setOrderDataLoading(EMPTY_ORDER_DATA_LOADING);
     heartbeatFailuresRef.current = 0;
     setSourceState(nextSource);
+    try {
+      window.sessionStorage.setItem(FACTORY_SOURCE_STORAGE_KEY, nextSource);
+    } catch {
+      // Ignore disabled browser storage.
+    }
   }, []);
 
   const selectOrder = useCallback(
@@ -785,9 +814,11 @@ export default function FactoryDataProvider({ children }) {
     (values, fallbackThresholds = DEFAULT_THRESHOLDS) =>
       runAction("metrics", async () => {
         if (!selectedOrderId) throw new Error("Select an active order first");
+        const numericTemperature = Number(values.temperature);
+        const numericVibration = Number(values.vibration);
         setRemoteSensor({
-          temperature: Number(values.temperature),
-          vibration: Number(values.vibration),
+          temperature: numericTemperature,
+          vibration: numericVibration,
         });
         if (source === FACTORY_SOURCES.LOCAL) {
           const result = sendLocalMetrics(
@@ -796,6 +827,45 @@ export default function FactoryDataProvider({ children }) {
             values
           );
           commitLocalState(result.state);
+          const generatedMetrics = Array.isArray(
+            result.result?.alerts_generated
+          )
+            ? result.result.alerts_generated
+            : [];
+          if (generatedMetrics.length > 0) {
+            const activeThresholds =
+              result.state.thresholds?.[selectedOrderId] || fallbackThresholds;
+            await Promise.all(
+              generatedMetrics.map((metric) => {
+                const createdAlert = result.state.alerts.find(
+                  (a) => a.order_id === selectedOrderId && a.metric === metric
+                );
+                return ensureAlertPersisted(
+                  createdAlert || {
+                    order_id: selectedOrderId,
+                    metric,
+                    value:
+                      metric === "vibration"
+                        ? numericVibration
+                        : numericTemperature,
+                    threshold:
+                      metric === "vibration"
+                        ? activeThresholds.vibration_threshold
+                        : activeThresholds.temperature_threshold,
+                    timestamp: new Date().toISOString(),
+                  },
+                  {
+                    temperature: numericTemperature,
+                    vibration: numericVibration,
+                    thresholds: activeThresholds,
+                    orderId: selectedOrderId,
+                    origin: "uns-in-action",
+                    dataSource: FACTORY_SOURCES.LOCAL,
+                  }
+                ).catch(() => null);
+              })
+            );
+          }
           return result.result;
         }
         // A newly-created remote order may not have threshold state until the
@@ -805,11 +875,13 @@ export default function FactoryDataProvider({ children }) {
         const thresholdsBelongToAnotherOrder =
           loadedThresholds?.order_id &&
           loadedThresholds.order_id !== selectedOrderId;
+        let activeThresholds = loadedThresholds || fallbackThresholds;
         if (!loadedThresholds || thresholdsBelongToAnotherOrder) {
           const initializedThresholds = await setRemoteThresholds(
             selectedOrderId,
             fallbackThresholds
           );
+          activeThresholds = initializedThresholds || fallbackThresholds;
           setRemoteSnapshot((current) =>
             current
               ? { ...current, thresholds: initializedThresholds }
@@ -818,9 +890,48 @@ export default function FactoryDataProvider({ children }) {
         }
         const result = await sendRemoteMetrics(selectedOrderId, values);
         await loadRemote(selectedOrderId, {
-          temperature: Number(values.temperature),
-          vibration: Number(values.vibration),
+          temperature: numericTemperature,
+          vibration: numericVibration,
         });
+        const generatedMetrics = Array.isArray(result?.alerts_generated)
+          ? result.alerts_generated
+          : [];
+        if (generatedMetrics.length > 0) {
+          const remoteAlerts = await fetchFactoryAlerts({
+            orderId: selectedOrderId,
+            limit: 10,
+          }).catch(() => []);
+          await Promise.all(
+            generatedMetrics.map((metric) => {
+              const remoteAlert = remoteAlerts.find(
+                (a) => a.metric === metric
+              );
+              return ensureAlertPersisted(
+                remoteAlert || {
+                  order_id: selectedOrderId,
+                  metric,
+                  value:
+                    metric === "vibration"
+                      ? numericVibration
+                      : numericTemperature,
+                  threshold:
+                    metric === "vibration"
+                      ? activeThresholds.vibration_threshold
+                      : activeThresholds.temperature_threshold,
+                  timestamp: new Date().toISOString(),
+                },
+                {
+                  temperature: numericTemperature,
+                  vibration: numericVibration,
+                  thresholds: activeThresholds,
+                  orderId: selectedOrderId,
+                  origin: "uns-in-action",
+                  dataSource: FACTORY_SOURCES.LEAFY,
+                }
+              ).catch(() => null);
+            })
+          );
+        }
         return result;
       }),
     [

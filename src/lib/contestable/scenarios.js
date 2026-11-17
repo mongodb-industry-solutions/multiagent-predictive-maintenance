@@ -18,7 +18,7 @@ export const DEFAULT_REFINEMENT_BY_CANDIDATE = {
       {
         step: 3,
         description:
-          "Verify 60 Hz (2X) sideband amplitude drops below 0.25 mm/s and overall vibration remains under 1.2 mm/s during a 15-minute load test.",
+          "Verify 60 Hz (2X) sideband amplitude drops and overall gantry vibration remains under 50 mm/s during a 15-minute load test.",
       },
     ],
   },
@@ -103,7 +103,7 @@ export const ENGINEER_PRESET_SUGGESTIONS = [
     stance: "support",
     score: 0.85,
     reason:
-      "Floor inspection confirmed the post-tooling-swap check was visual only; laser dial indicator shows a 0.18 mm fixture offset on the press/welding head.",
+      "Floor inspection confirmed the post-tooling-swap check was visual only; laser dial indicator shows a 0.18 mm fixture offset on the Tab Laser Welding Cell head.",
   },
   {
     id: "preset_sensor_window",
@@ -112,7 +112,7 @@ export const ENGINEER_PRESET_SUGGESTIONS = [
     stance: "support",
     score: 0.85,
     reason:
-      "Cross-checking with a portable reference vibrometer read 0.92 mm/s steady, confirming the newly installed accelerometer is reading +0.65 mm/s high during its 48h stabilization window.",
+      "Cross-checking with a portable reference vibrometer read 24.5 mm/s steady, confirming the newly installed accelerometer is reading +42 mm/s high during its 48h stabilization window.",
   },
   {
     id: "preset_bearing_acoustic",
@@ -129,7 +129,7 @@ export const STANDALONE_PRESET_SCENARIOS = [
   {
     id: "stamping-press-benchmark",
     title: "M1 · High Vibration & Thermal Spike (E13 / E12)",
-    subtitle: "Laser Tab Welding & Stamping Press Unit (CentriMax / Leafy EV Line)",
+    subtitle: "Tab Laser Welding Cell (Leafy EV Line · M1)",
     machine_id: "M1",
     equipment_model: "Leafy EV-Weld & Stamping Press Model SP-2000",
     error_code: "E13",
@@ -157,12 +157,12 @@ export const STANDALONE_PRESET_SCENARIOS = [
       {
         step: 2,
         description:
-          "Flush lubrication lines and verify oil pump flow rate before reassembly.",
+          "Inspect linear stage rails and chiller coolant lines on Tab Laser Welding Cell M1.",
       },
       {
         step: 3,
         description:
-          "Run unloaded test cycle for 30 minutes and verify vibration remains below 1.2 mm/s.",
+          "Run unloaded test cycle for 30 minutes and verify gantry vibration remains below 50 mm/s.",
       },
     ],
   },
@@ -404,11 +404,11 @@ export function buildInitialClientSession({
         machine_id: machineId,
         equipment_model:
           dataSource === "leafy"
-            ? "Leafy Factory Laser Tab Welder & Stamping Press (Model SP-2000)"
-            : "CentriMax 2000 / Stamping Press Unit M1",
-        overall_rms_mm_s: 1.68,
-        temperature_c: 93.4,
-        threshold_mm_s: 1.2,
+            ? "Leafy Factory Tab Laser Welding Cell (Unit M1)"
+            : "Tab Laser Welding Cell (Unit M1)",
+        overall_rms_mm_s: 68.4,
+        temperature_c: 86.4,
+        threshold_mm_s: 50,
         frequency_bands: [
           {
             band_hz: "30 Hz (1X Running Speed)",

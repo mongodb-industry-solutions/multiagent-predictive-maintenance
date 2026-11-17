@@ -1,11 +1,13 @@
 import "dotenv/config";
 import fs from "fs/promises";
 import path from "path";
+import { EJSON } from "bson";
 import { execa } from "execa";
 import getMongoClientPromise, {
   closeMongoClient,
 } from "../src/integrations/mongodb/client.js";
 import { createTimeSeriesCollection } from "../src/integrations/mongodb/timeSeries.js";
+import { PREDICTIVE_SEED_VERSION } from "../src/lib/simulation/predictiveSeedSync.js";
 
 async function logStep(msg) {
   process.stdout.write(`\n[seed] ${msg}\n`);
@@ -40,13 +42,20 @@ async function createCollectionsFromData(db) {
     logStep(`Seeding collection: ${colName}`);
     const filePath = path.join(dataDir, file);
     const raw = await fs.readFile(filePath, "utf8");
-    const docs = JSON.parse(raw);
+    const docs = EJSON.parse(raw);
     if (!Array.isArray(docs))
       throw new Error(`${file} does not contain a JSON array.`);
     if (docs.length === 0) continue;
-    await db.collection(colName).insertMany(docs);
+    const versionedDocs =
+      colName === "maintenance_staff"
+        ? docs
+        : docs.map((doc) => ({
+            ...doc,
+            seed_version: PREDICTIVE_SEED_VERSION,
+          }));
+    await db.collection(colName).insertMany(versionedDocs);
     process.stdout.write(
-      `[seed] Inserted ${docs.length} docs into ${colName}\n`
+      `[seed] Inserted ${versionedDocs.length} docs into ${colName}\n`
     );
   }
 }
@@ -100,7 +109,17 @@ async function main() {
     );
     currentStep = "seed_context";
     await runScript("npm", ["run", "seed:context"]);
-    logStep("Connected Factory Context Explorer seeded. Initial setup complete!");
+    logStep(
+      "Connected Factory Context Explorer seeded. Provisioning Agentic Audit Trail..."
+    );
+    currentStep = "seed_audit_trail";
+    const { seedAuditTrailData } = await import(
+      "../src/lib/auditTrail/seedData.js"
+    );
+    await seedAuditTrailData({
+      onProgress: (msg) => process.stdout.write(`[seed:audit] ${msg}\n`),
+    });
+    logStep("Agentic Audit Trail provisioned. Initial setup complete!");
   } catch (err) {
     logStep(`Error: ${err.message}`);
     if (currentStep === "embed") {

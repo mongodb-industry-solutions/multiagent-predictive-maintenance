@@ -19,11 +19,11 @@ const useCases = [
     glyph: "Person",
   },
   {
-    title: "Change Documentation Agent",
+    title: "Agentic Audit Trail",
     description:
-      "Capture shop-floor changes and keep procedures, asset records, and work instructions up to date automatically.",
+      "Capture shopfloor AI interventions deterministically, enforce recipe & OT security policies, ground records in governed SOPs, and preserve versioned lineage.",
+    href: "/agentic-ai/audit-trail",
     glyph: "File",
-    comingSoon: true,
   },
 ];
 
