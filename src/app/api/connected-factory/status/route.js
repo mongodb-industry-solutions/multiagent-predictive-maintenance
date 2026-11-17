@@ -41,10 +41,17 @@ export async function POST(request) {
     } catch {
       body = {};
     }
+    // The destructive "force" rebuild (drops and reseeds materials, telemetry,
+    // and excursions) is only honored for callers presenting the admin token,
+    // preventing any anonymous caller from triggering it.
+    const adminToken = process.env.CF_ADMIN_TOKEN;
+    const providedToken = request.headers.get("x-admin-token");
+    const forceAuthorized =
+      Boolean(adminToken) && providedToken === adminToken;
     // Kick off non-blocking background initialization so Kanopy/Envoy proxies
     // never time out waiting for 120,960 time-series inserts.
     void triggerConnectedFactoryBackgroundInit({
-      force: Boolean(body?.force),
+      force: forceAuthorized && Boolean(body?.force),
     });
     const status = await getConnectedFactoryStatus();
     return NextResponse.json({
