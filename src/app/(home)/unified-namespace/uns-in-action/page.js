@@ -80,7 +80,18 @@ export default function UnsInActionPage() {
               {showAnalytics ? "Back to operations" : "Back to overview"}
             </span>
           </Link>
-          <FactorySourceBar compact />
+          <div className="flex flex-wrap items-center gap-3">
+            {!showAnalytics && (
+              <Link
+                href="/unified-namespace/knowledge-graph"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-[#00684A] hover:underline"
+              >
+                <span>Knowledge Graph</span>
+                <Icon glyph="ArrowRight" size={16} />
+              </Link>
+            )}
+            <FactorySourceBar compact />
+          </div>
         </div>
 
         {!showAnalytics ? (

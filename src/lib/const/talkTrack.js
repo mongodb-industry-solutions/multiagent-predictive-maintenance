@@ -54,7 +54,8 @@ export const UNS_TALK_TRACK = [
         body: [
           "Start at the Unified Namespace overview and contrast transient broker data with durable MongoDB operational memory.",
           "Open Factory Explorer and follow the ISA-95 hierarchy from enterprise to a specific machine.",
-          "Show how telemetry, production, maintenance, quality, and ownership context appear together for the selected asset.",
+          "Open Knowledge Graph and show the same line as an ontology: stations feed each other, the laser welder is one cell (LTW-04, legacy id M1), and an E12 alarm points at parts, skills, and a manual section.",
+          "Run a $graphLookup, then the hybrid query that joins those parts to live inventory. The graph is the map; MongoDB is where the map and the live factory stay together.",
           "Explain that this shared context is what downstream applications, workflows, and agents consume.",
         ],
       },
@@ -66,6 +67,47 @@ export const UNS_TALK_TRACK = [
       {
         heading: "Operational memory",
         body: "MongoDB combines flexible documents, native time series, search, scale, and high availability so the UNS can serve as a real-time system of action without replacing MES, ERP, SCADA, or the data warehouse.",
+      },
+    ],
+  },
+];
+
+export const KNOWLEDGE_GRAPH_TALK_TRACK = [
+  {
+    heading: "Ontology in the UNS",
+    content: [
+      {
+        heading: "The factory, named",
+        body: "Leafy Factory already has a line, a welding cell, alarms, spare parts, manuals, materials, and controlled procedures. The knowledge graph writes those relationships down so they can be queried, instead of leaving them implied in a prompt.",
+      },
+      {
+        heading: "One welder, one legacy id",
+        body: "There is one laser tab welder, shopfloor id LTW-04. M1 is the legacy asset id still used by predictive-maintenance telemetry, alerts, and work orders. E12 and W-TEMP-01 are alarms on that same cell, and both can point at optics spatter.",
+      },
+    ],
+  },
+  {
+    heading: "How to Demo",
+    content: [
+      {
+        heading: "Suggested path",
+        body: [
+          "Start on Laser Welding Cell so the canvas opens on the station, the one welding cell, and the faults around it. Switch to Full Factory Ontology or Battery Line Process Flow when you want the rest of the line.",
+          "Select E12 and open Stored in MongoDB. Show _id, the edges array, parent_id, and external_ref. Those four fields are the whole graph model.",
+          "Run Alarm to repair. The canvas badges the start node, then hop 0 and hop 1 as $graphLookup walks failure modes, parts, skills, and the E12 manual section.",
+          "Run Scoped traversal and point out restrictSearchWithMatch: recipes and SOPs connected to the welding cell stay out of the result.",
+          "Run Downstream blast radius to follow the line from laser welding to pack release, then ISA-95 drilldown to show parent_id instead of the edge list.",
+          "Run Graph plus live stock. The ontology names P-001 and the manual page. $lookup reads quantity, location, and the manual section from the operational collections.",
+        ],
+      },
+    ],
+  },
+  {
+    heading: "Why MongoDB?",
+    content: [
+      {
+        heading: "A graph, without a second database",
+        body: "The ontology, the time-series weld trace, the inventory balance, and the controlled SOP live in one system. $graphLookup traverses the ontology. $lookup, time series, and vector search answer the next question in the same pipeline. Agents can reuse these traversals later without a new store or a sync job.",
       },
     ],
   },

@@ -17,6 +17,13 @@ const useCases = [
     href: "/unified-namespace/uns-in-action",
     glyph: "Database",
   },
+  {
+    title: "Knowledge Graph",
+    description:
+      "Traverse the factory ontology with $graphLookup and join it to live inventory, manuals, and procedures.",
+    href: "/unified-namespace/knowledge-graph",
+    glyph: "Sparkle",
+  },
 ];
 
 const resources = [
@@ -43,6 +50,14 @@ const resources = [
     type: "Documentation",
     image: "/img/read.png",
     href: "https://www.mongodb.com/docs/atlas/atlas-stream-processing/",
+  },
+  {
+    title: "$graphLookup",
+    description:
+      "Walk relationships such as equipment trees, failure paths, and provenance inside an aggregation.",
+    type: "Documentation",
+    image: "/img/read.png",
+    href: "https://www.mongodb.com/docs/manual/reference/operator/aggregation/graphLookup/",
   },
 ];
 

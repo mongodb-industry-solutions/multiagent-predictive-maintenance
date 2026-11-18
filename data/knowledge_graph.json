@@ -1,0 +1,2156 @@
+[
+  {
+    "_id": "site:leafy_factory",
+    "code": "leafy_factory",
+    "label": "Leafy Factory",
+    "node_type": "site",
+    "layer": "uns_hierarchy",
+    "parent_id": null,
+    "uns_topic": "factory",
+    "summary": "EV battery module plant. Enterprise root of the Leafy Factory unified namespace.",
+    "attributes": {
+      "isa95_level": "site",
+      "customer": "H Motors"
+    },
+    "edges": [
+      {
+        "target": "line:ev_module_assembly",
+        "rel": "OPERATES",
+        "label": "Module assembly line"
+      }
+    ]
+  },
+  {
+    "_id": "line:ev_module_assembly",
+    "code": "ev_module_assembly",
+    "label": "EV Module Assembly",
+    "node_type": "line",
+    "layer": "uns_hierarchy",
+    "parent_id": "site:leafy_factory",
+    "uns_topic": "factory/ev-line",
+    "summary": "Leafy Factory module assembly line that builds 4-cell EV battery modules and long-range packs.",
+    "attributes": {
+      "isa95_level": "production_line",
+      "mes_name": "Leafy Factory | Module Assembly | EV Line"
+    },
+    "edges": [
+      {
+        "target": "product:EV-PM-4C-S",
+        "rel": "BUILDS",
+        "label": "4-cell series module"
+      },
+      {
+        "target": "product:EV-PM-4C-P",
+        "rel": "BUILDS",
+        "label": "4-cell parallel module"
+      },
+      {
+        "target": "product:EV-PK-8M-LR",
+        "rel": "BUILDS",
+        "label": "8-module long-range pack"
+      },
+      {
+        "target": "phase:preprocessing",
+        "rel": "CONTAINS",
+        "label": "Cell preprocessing and sorting"
+      },
+      {
+        "target": "phase:assembly",
+        "rel": "CONTAINS",
+        "label": "Stacking and module assembly"
+      },
+      {
+        "target": "phase:welding",
+        "rel": "CONTAINS",
+        "label": "Tab and busbar welding"
+      },
+      {
+        "target": "phase:thermal",
+        "rel": "CONTAINS",
+        "label": "Cooling, sealing, and leak test"
+      },
+      {
+        "target": "phase:inspection",
+        "rel": "CONTAINS",
+        "label": "Final electrical release"
+      }
+    ]
+  },
+  {
+    "_id": "phase:preprocessing",
+    "code": "01",
+    "label": "01 Cell Preprocessing",
+    "node_type": "phase",
+    "layer": "uns_hierarchy",
+    "parent_id": "line:ev_module_assembly",
+    "uns_topic": "factory/ev-line/phases/01-preprocessing",
+    "summary": "Qualify every incoming cell and prepare its tabs before module assembly.",
+    "attributes": {
+      "sequence": 1,
+      "outcome": "Graded, traceable cells"
+    },
+    "edges": [
+      {
+        "target": "station:cell-screening",
+        "rel": "CONTAINS",
+        "label": "Cell Screening"
+      },
+      {
+        "target": "station:tab-processing",
+        "rel": "CONTAINS",
+        "label": "Tab Processing"
+      },
+      {
+        "target": "phase:assembly",
+        "rel": "FEEDS_INTO",
+        "label": "Prepared cells enter stacking"
+      }
+    ]
+  },
+  {
+    "_id": "phase:assembly",
+    "code": "02",
+    "label": "02 Module Assembly",
+    "node_type": "phase",
+    "layer": "uns_hierarchy",
+    "parent_id": "line:ev_module_assembly",
+    "uns_topic": "factory/ev-line/phases/02-assembly",
+    "summary": "Build the cell stack and locate it in the mechanical module fixture.",
+    "attributes": {
+      "sequence": 2,
+      "outcome": "Fixtured four-cell module"
+    },
+    "edges": [
+      {
+        "target": "station:z-fold",
+        "rel": "CONTAINS",
+        "label": "Z-Fold Stacking"
+      },
+      {
+        "target": "station:module-assembly",
+        "rel": "CONTAINS",
+        "label": "Module Pre-Assembly"
+      },
+      {
+        "target": "phase:welding",
+        "rel": "FEEDS_INTO",
+        "label": "Fixtured module enters welding"
+      }
+    ]
+  },
+  {
+    "_id": "phase:welding",
+    "code": "03",
+    "label": "03 High Precision Welding",
+    "node_type": "phase",
+    "layer": "uns_hierarchy",
+    "parent_id": "line:ev_module_assembly",
+    "uns_topic": "factory/ev-line/phases/03-welding",
+    "summary": "Create low-resistance electrical joints and watch the process for quality and maintenance signals.",
+    "attributes": {
+      "sequence": 3,
+      "outcome": "Electrically connected module"
+    },
+    "edges": [
+      {
+        "target": "station:laser-welding",
+        "rel": "CONTAINS",
+        "label": "Laser Tab Welding"
+      },
+      {
+        "target": "station:ultrasonic-welding",
+        "rel": "CONTAINS",
+        "label": "Ultrasonic Busbar Welding"
+      },
+      {
+        "target": "station:weld-monitoring",
+        "rel": "CONTAINS",
+        "label": "Weld Monitoring"
+      },
+      {
+        "target": "phase:thermal",
+        "rel": "FEEDS_INTO",
+        "label": "Connected module enters thermal assembly"
+      }
+    ]
+  },
+  {
+    "_id": "phase:thermal",
+    "code": "04",
+    "label": "04 Thermal and Encapsulation",
+    "node_type": "phase",
+    "layer": "uns_hierarchy",
+    "parent_id": "line:ev_module_assembly",
+    "uns_topic": "factory/ev-line/phases/04-thermal",
+    "summary": "Add the thermal path, close the enclosure, and prove the pack is leak-tight.",
+    "attributes": {
+      "sequence": 4,
+      "outcome": "Sealed and leak-tested pack"
+    },
+    "edges": [
+      {
+        "target": "station:cooling-plate",
+        "rel": "CONTAINS",
+        "label": "Cooling Plate Assembly"
+      },
+      {
+        "target": "station:pouch-sealing",
+        "rel": "CONTAINS",
+        "label": "Pouch Sealing"
+      },
+      {
+        "target": "station:helium-test",
+        "rel": "CONTAINS",
+        "label": "Helium Leak Test"
+      },
+      {
+        "target": "phase:inspection",
+        "rel": "FEEDS_INTO",
+        "label": "Sealed pack enters final test"
+      }
+    ]
+  },
+  {
+    "_id": "phase:inspection",
+    "code": "05",
+    "label": "05 Final Inspection",
+    "node_type": "phase",
+    "layer": "uns_hierarchy",
+    "parent_id": "line:ev_module_assembly",
+    "uns_topic": "factory/ev-line/phases/05-inspection",
+    "summary": "Validate electrical performance and release a traceable production unit.",
+    "attributes": {
+      "sequence": 5,
+      "outcome": "Validated production unit"
+    },
+    "edges": [
+      {
+        "target": "station:eol-test",
+        "rel": "CONTAINS",
+        "label": "Pack EOL Test"
+      }
+    ]
+  },
+  {
+    "_id": "station:cell-screening",
+    "code": "cell-screening",
+    "label": "Cell Screening",
+    "node_type": "station",
+    "layer": "uns_hierarchy",
+    "parent_id": "phase:preprocessing",
+    "uns_topic": "factory/ev-line/stations/Cell-Screening",
+    "summary": "Measures open-circuit voltage and internal resistance, then grades every incoming cell.",
+    "attributes": {
+      "metrics": [
+        "ocv_v",
+        "ir_milliohm",
+        "grade"
+      ]
+    },
+    "edges": [
+      {
+        "target": "station:tab-processing",
+        "rel": "FEEDS_INTO",
+        "label": "Graded cells move to tab prep"
+      },
+      {
+        "target": "machine:CS-01",
+        "rel": "OPERATED_BY",
+        "label": "Cell Screening Cell"
+      }
+    ]
+  },
+  {
+    "_id": "station:tab-processing",
+    "code": "tab-processing",
+    "label": "Tab Processing",
+    "node_type": "station",
+    "layer": "uns_hierarchy",
+    "parent_id": "phase:preprocessing",
+    "uns_topic": "factory/ev-line/stations/Tab-Processing",
+    "summary": "Trims, cleans, and checks cell tabs so every downstream joint starts from consistent material.",
+    "attributes": {
+      "metrics": [
+        "trim_dev_mm",
+        "cleanliness_score",
+        "process_ok"
+      ]
+    },
+    "edges": [
+      {
+        "target": "station:z-fold",
+        "rel": "FEEDS_INTO",
+        "label": "Prepared cells enter stacking"
+      },
+      {
+        "target": "machine:TP-01",
+        "rel": "OPERATED_BY",
+        "label": "Tab Processing Cell"
+      }
+    ]
+  },
+  {
+    "_id": "station:z-fold",
+    "code": "z-fold",
+    "label": "Z-Fold Stacking",
+    "node_type": "station",
+    "layer": "uns_hierarchy",
+    "parent_id": "phase:assembly",
+    "uns_topic": "factory/ev-line/stations/Z-Fold-Stacking",
+    "summary": "Builds the four-cell stack and records layer count, height, and alignment.",
+    "attributes": {
+      "metrics": [
+        "layer_count",
+        "alignment_err_mm",
+        "stack_height_mm"
+      ]
+    },
+    "edges": [
+      {
+        "target": "station:module-assembly",
+        "rel": "FEEDS_INTO",
+        "label": "Aligned stack enters the fixture"
+      },
+      {
+        "target": "machine:ZF-01",
+        "rel": "OPERATED_BY",
+        "label": "Z-Fold Stacking Cell"
+      }
+    ]
+  },
+  {
+    "_id": "station:module-assembly",
+    "code": "module-assembly",
+    "label": "Module Pre-Assembly",
+    "node_type": "station",
+    "layer": "uns_hierarchy",
+    "parent_id": "phase:assembly",
+    "uns_topic": "factory/ev-line/stations/Module-Pre-Assembly",
+    "summary": "Positions the cell stack in the module structure and applies controlled clamp force.",
+    "attributes": {
+      "metrics": [
+        "fit_align_mm",
+        "clamp_force_n",
+        "module_id"
+      ]
+    },
+    "edges": [
+      {
+        "target": "station:laser-welding",
+        "rel": "FEEDS_INTO",
+        "label": "Fixtured module enters tab welding"
+      },
+      {
+        "target": "machine:MA-01",
+        "rel": "OPERATED_BY",
+        "label": "Module Assembly Cell"
+      }
+    ]
+  },
+  {
+    "_id": "station:laser-welding",
+    "code": "laser-welding",
+    "label": "Laser Tab Welding",
+    "node_type": "station",
+    "layer": "uns_hierarchy",
+    "parent_id": "phase:welding",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding",
+    "summary": "Joins copper and aluminum cell tabs. One machine, shopfloor id LTW-04. Predictive maintenance still files its readings under the legacy asset id M1.",
+    "attributes": {
+      "metrics": [
+        "laser_power_w",
+        "weld_points",
+        "weld_ok"
+      ],
+      "area": "welding"
+    },
+    "edges": [
+      {
+        "target": "machine:LTW-04",
+        "rel": "OPERATED_BY",
+        "label": "Shopfloor laser cell LTW-04"
+      },
+      {
+        "target": "station:ultrasonic-welding",
+        "rel": "FEEDS_INTO",
+        "label": "Welded tabs move to busbar joining"
+      },
+      {
+        "target": "sop:CP-EV-WELD-004",
+        "rel": "GOVERNED_BY",
+        "label": "EV welding control plan"
+      }
+    ]
+  },
+  {
+    "_id": "station:ultrasonic-welding",
+    "code": "ultrasonic-welding",
+    "label": "Ultrasonic Busbar Welding",
+    "node_type": "station",
+    "layer": "uns_hierarchy",
+    "parent_id": "phase:welding",
+    "uns_topic": "factory/ev-line/stations/Ultrasonic-Busbar-Welding",
+    "summary": "Connects busbars with ultrasonic energy and checks weld duration and joint quality.",
+    "attributes": {
+      "metrics": [
+        "weld_energy_j",
+        "weld_time_ms",
+        "weld_ok"
+      ]
+    },
+    "edges": [
+      {
+        "target": "station:cooling-plate",
+        "rel": "FEEDS_INTO",
+        "label": "Electrically complete module enters thermal assembly"
+      },
+      {
+        "target": "machine:USW-01",
+        "rel": "OPERATED_BY",
+        "label": "Ultrasonic Busbar Cell"
+      }
+    ]
+  },
+  {
+    "_id": "station:weld-monitoring",
+    "code": "weld-monitoring",
+    "label": "Weld Monitoring",
+    "node_type": "station",
+    "layer": "uns_hierarchy",
+    "parent_id": "phase:welding",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/condition",
+    "summary": "Observes housing temperature and gantry vibration so abnormal weld conditions become maintenance alerts.",
+    "attributes": {
+      "metrics": [
+        "temperature",
+        "vibration",
+        "severity"
+      ]
+    },
+    "edges": [
+      {
+        "target": "machine:WM-01",
+        "rel": "OPERATED_BY",
+        "label": "Weld Monitoring Cell"
+      }
+    ]
+  },
+  {
+    "_id": "station:cooling-plate",
+    "code": "cooling-plate",
+    "label": "Cooling Plate Assembly",
+    "node_type": "station",
+    "layer": "uns_hierarchy",
+    "parent_id": "phase:thermal",
+    "uns_topic": "factory/ev-line/stations/Cooling-Plate-Assembly",
+    "summary": "Dispenses thermal interface material and aligns the cooling plate.",
+    "attributes": {
+      "metrics": [
+        "tim_volume_ml",
+        "tim_thickness_mm",
+        "align_offset_mm"
+      ]
+    },
+    "edges": [
+      {
+        "target": "station:pouch-sealing",
+        "rel": "FEEDS_INTO",
+        "label": "Cooled module enters sealing"
+      },
+      {
+        "target": "machine:CP-01",
+        "rel": "OPERATED_BY",
+        "label": "Cooling Plate Cell"
+      }
+    ]
+  },
+  {
+    "_id": "station:pouch-sealing",
+    "code": "pouch-sealing",
+    "label": "Pouch Sealing",
+    "node_type": "station",
+    "layer": "uns_hierarchy",
+    "parent_id": "phase:thermal",
+    "uns_topic": "factory/ev-line/stations/Pouch-Sealing",
+    "summary": "Seals the pack under controlled temperature and pressure before leak testing.",
+    "attributes": {
+      "metrics": [
+        "seal_temp_c",
+        "seal_pressure_kpa",
+        "seal_ok"
+      ]
+    },
+    "edges": [
+      {
+        "target": "station:helium-test",
+        "rel": "FEEDS_INTO",
+        "label": "Sealed pack enters leak test"
+      },
+      {
+        "target": "machine:PS-01",
+        "rel": "OPERATED_BY",
+        "label": "Pouch Sealing Cell"
+      }
+    ]
+  },
+  {
+    "_id": "station:helium-test",
+    "code": "helium-test",
+    "label": "Helium Leak Test",
+    "node_type": "station",
+    "layer": "uns_hierarchy",
+    "parent_id": "phase:thermal",
+    "uns_topic": "factory/ev-line/stations/Helium-Leak-Test",
+    "summary": "Checks enclosure integrity and records leak rate against the pass limit.",
+    "attributes": {
+      "metrics": [
+        "leak_rate_pa_l_s",
+        "test_pressure_kpa",
+        "pass"
+      ]
+    },
+    "edges": [
+      {
+        "target": "station:eol-test",
+        "rel": "FEEDS_INTO",
+        "label": "Leak-tight pack enters end-of-line test"
+      },
+      {
+        "target": "machine:HLT-01",
+        "rel": "OPERATED_BY",
+        "label": "Helium Leak Test Cell"
+      }
+    ]
+  },
+  {
+    "_id": "station:eol-test",
+    "code": "eol-test",
+    "label": "Pack EOL Test",
+    "node_type": "station",
+    "layer": "uns_hierarchy",
+    "parent_id": "phase:inspection",
+    "uns_topic": "factory/ev-line/stations/Pack-EOL-Test",
+    "summary": "Final voltage, current, resistance, and insulation checks before the unit is released.",
+    "attributes": {
+      "metrics": [
+        "pack_voltage_v",
+        "pack_current_a",
+        "insulation_resistance_mohm",
+        "pass"
+      ]
+    },
+    "edges": [
+      {
+        "target": "product:EV-PM-4C-S",
+        "rel": "RELEASES",
+        "label": "Series module can ship"
+      },
+      {
+        "target": "product:EV-PM-4C-P",
+        "rel": "RELEASES",
+        "label": "Parallel module can ship"
+      },
+      {
+        "target": "product:EV-PK-8M-LR",
+        "rel": "RELEASES",
+        "label": "Long-range pack can ship"
+      },
+      {
+        "target": "machine:EOL-01",
+        "rel": "OPERATED_BY",
+        "label": "Pack EOL Test Cell"
+      }
+    ]
+  },
+  {
+    "_id": "machine:LTW-04",
+    "code": "LTW-04",
+    "label": "Tab Laser Welding Cell",
+    "node_type": "machine",
+    "layer": "uns_hierarchy",
+    "parent_id": "station:laser-welding",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/assets/LTW-04",
+    "summary": "The laser tab welder on the module line. Shopfloor id LTW-04. Predictive maintenance telemetry, alerts, and work orders still use the legacy asset id M1.",
+    "attributes": {
+      "role": "shopfloor_cell",
+      "area": "welding",
+      "signals": [
+        "weld-zone-temp",
+        "laser-power",
+        "shield-gas-flow"
+      ],
+      "nominal_weld_zone_c": 174,
+      "legacy_id": "M1",
+      "temperature_threshold_c": 80,
+      "vibration_threshold_mm_s": 50,
+      "nominal_temperature_c": 68,
+      "nominal_vibration_mm_s": 24
+    },
+    "external_ref": {
+      "collection": "telemetry",
+      "field": "metadata.machine_id",
+      "value": "LTW-04"
+    },
+    "edges": [
+      {
+        "target": "alarm:W-TEMP-01",
+        "rel": "RAISES",
+        "label": "Weld-zone over temperature"
+      },
+      {
+        "target": "alarm:W-PLUME-01",
+        "rel": "RAISES",
+        "label": "Plume on the weld head"
+      },
+      {
+        "target": "alarm:W-GAS-02",
+        "rel": "RAISES",
+        "label": "Shield-gas deviation"
+      },
+      {
+        "target": "alarm:W-LASER-02",
+        "rel": "RAISES",
+        "label": "Fiber laser power deviation"
+      },
+      {
+        "target": "alarm:W-CLAMP-03",
+        "rel": "RAISES",
+        "label": "Clamp force deviation"
+      },
+      {
+        "target": "material:MAT-CU-020",
+        "rel": "WELDS",
+        "label": "Copper tab foil"
+      },
+      {
+        "target": "material:MAT-AL-030",
+        "rel": "WELDS",
+        "label": "Aluminum cathode tab"
+      },
+      {
+        "target": "material:MAT-CU-025",
+        "rel": "WELDS",
+        "label": "Bimetal busbar strip"
+      },
+      {
+        "target": "product:EV-PM-4C-S",
+        "rel": "RUNS",
+        "label": "Series module recipe"
+      },
+      {
+        "target": "product:EV-PM-4C-P",
+        "rel": "RUNS",
+        "label": "Parallel module recipe"
+      },
+      {
+        "target": "product:EV-PK-8M-LR",
+        "rel": "RUNS",
+        "label": "Long-range pack recipe"
+      },
+      {
+        "target": "sop:SOP-LTW-014",
+        "rel": "GOVERNED_BY",
+        "label": "Approved welding SOP"
+      },
+      {
+        "target": "sop:SOP-QMS-008",
+        "rel": "GOVERNED_BY",
+        "label": "Out-of-envelope quality SOP"
+      },
+      {
+        "target": "sop:POL-OTSEC-003",
+        "rel": "GOVERNED_BY",
+        "label": "OT write policy"
+      },
+      {
+        "target": "alarm:E12",
+        "rel": "RAISES",
+        "label": "Housing temperature above 80 C"
+      },
+      {
+        "target": "alarm:E13",
+        "rel": "RAISES",
+        "label": "Gantry vibration above 50 mm/s"
+      },
+      {
+        "target": "manual:M1-sec-2",
+        "rel": "DOCUMENTED_IN",
+        "label": "Operating window"
+      },
+      {
+        "target": "manual:M1-sec-5",
+        "rel": "DOCUMENTED_IN",
+        "label": "Maintenance schedule"
+      },
+      {
+        "target": "sub:protective-optics",
+        "rel": "CONTAINS",
+        "label": "Protective Optics"
+      },
+      {
+        "target": "sub:focusing-lens",
+        "rel": "CONTAINS",
+        "label": "Focusing Lens"
+      },
+      {
+        "target": "sub:chiller-coolant-loop",
+        "rel": "CONTAINS",
+        "label": "Chiller Coolant Loop"
+      },
+      {
+        "target": "sub:gantry-linear-stage",
+        "rel": "CONTAINS",
+        "label": "Gantry Linear Stage"
+      },
+      {
+        "target": "sub:clamping-fixture",
+        "rel": "CONTAINS",
+        "label": "Clamping Fixture"
+      },
+      {
+        "target": "sub:argon-purge-loop",
+        "rel": "CONTAINS",
+        "label": "Argon Purge Loop"
+      }
+    ]
+  },
+  {
+    "_id": "sub:protective-optics",
+    "code": "protective-optics",
+    "label": "Protective Optics",
+    "node_type": "subsystem",
+    "layer": "uns_hierarchy",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/assets/LTW-04/subsystems/protective-optics",
+    "summary": "Cover glass and weld-head optics. Spatter on this window is the usual cause of a fast thermal rise.",
+    "attributes": {
+      "component": "weld-head-optics"
+    },
+    "edges": [
+      {
+        "target": "sensor:THERM-M1-IR-02",
+        "rel": "MEASURED_BY",
+        "label": "M1 housing IR probe"
+      },
+      {
+        "target": "sensor:LTW04-PYRO-01",
+        "rel": "MEASURED_BY",
+        "label": "LTW-04 weld-zone pyrometer"
+      }
+    ]
+  },
+  {
+    "_id": "sub:focusing-lens",
+    "code": "focusing-lens",
+    "label": "Focusing Lens",
+    "node_type": "subsystem",
+    "layer": "uns_hierarchy",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/assets/LTW-04/subsystems/focusing-lens",
+    "summary": "200 mm fused-silica lens cartridge. Inspected with the cover glass whenever E12 trips.",
+    "attributes": {
+      "focal_length_mm": 200
+    },
+    "edges": []
+  },
+  {
+    "_id": "sub:chiller-coolant-loop",
+    "code": "chiller-coolant-loop",
+    "label": "Chiller Coolant Loop",
+    "node_type": "subsystem",
+    "layer": "uns_hierarchy",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/assets/LTW-04/subsystems/chiller",
+    "summary": "Laser-head chiller, inline filter, and flexible return tubing that can kink during gantry moves.",
+    "attributes": {
+      "filter_micron": 5
+    },
+    "edges": []
+  },
+  {
+    "_id": "sub:gantry-linear-stage",
+    "code": "gantry-linear-stage",
+    "label": "Gantry Linear Stage",
+    "node_type": "subsystem",
+    "layer": "uns_hierarchy",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/assets/LTW-04/subsystems/gantry",
+    "summary": "High-speed welding gantry rails and carriage bearings. Healthy high-speed motion sits near 24 mm/s.",
+    "attributes": {
+      "nominal_vibration_mm_s": 24
+    },
+    "edges": [
+      {
+        "target": "sensor:ACCEL-M1-VIB-01",
+        "rel": "MEASURED_BY",
+        "label": "Gantry accelerometer"
+      }
+    ]
+  },
+  {
+    "_id": "sub:clamping-fixture",
+    "code": "clamping-fixture",
+    "label": "Clamping Fixture",
+    "node_type": "subsystem",
+    "layer": "uns_hierarchy",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/assets/LTW-04/subsystems/fixture",
+    "summary": "Module fixture and mounting bolts. Torque is rechecked after every EV-PM-4C-S tooling swap.",
+    "attributes": {
+      "bolt": "M10 x 40 mm"
+    },
+    "edges": []
+  },
+  {
+    "_id": "sub:argon-purge-loop",
+    "code": "argon-purge-loop",
+    "label": "Argon Purge Loop",
+    "node_type": "subsystem",
+    "layer": "uns_hierarchy",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/assets/LTW-04/subsystems/argon",
+    "summary": "Shield-gas and optical-housing purge. Nominal flow is 14 to 18 L/min of argon.",
+    "attributes": {
+      "gas": "argon",
+      "nominal_flow_l_min": "14-18"
+    },
+    "edges": [
+      {
+        "target": "sensor:LTW04-FLOW-AR2",
+        "rel": "MEASURED_BY",
+        "label": "Argon loop flow meter"
+      }
+    ]
+  },
+  {
+    "_id": "sensor:THERM-M1-IR-02",
+    "code": "THERM-M1-IR-02",
+    "label": "Housing IR Probe",
+    "node_type": "sensor",
+    "layer": "uns_hierarchy",
+    "parent_id": "sub:protective-optics",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/assets/M1/temperature",
+    "summary": "Infrared probe on the welder weld-head housing. Alerts above 80 C.",
+    "attributes": {
+      "signal": "temperature",
+      "unit": "degC",
+      "threshold": 80,
+      "machine_id": "M1"
+    },
+    "edges": [
+      {
+        "target": "alarm:E12",
+        "rel": "TRIGGERS",
+        "label": "Crosses the housing limit"
+      }
+    ]
+  },
+  {
+    "_id": "sensor:ACCEL-M1-VIB-01",
+    "code": "ACCEL-M1-VIB-01",
+    "label": "Gantry Accelerometer",
+    "node_type": "sensor",
+    "layer": "uns_hierarchy",
+    "parent_id": "sub:gantry-linear-stage",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/assets/M1/vibration",
+    "summary": "Accelerometer on the Gantry. Alerts above 50 mm/s.",
+    "attributes": {
+      "signal": "vibration",
+      "unit": "mm/s",
+      "threshold": 50,
+      "machine_id": "M1"
+    },
+    "edges": [
+      {
+        "target": "alarm:E13",
+        "rel": "TRIGGERS",
+        "label": "Crosses the vibration limit"
+      }
+    ]
+  },
+  {
+    "_id": "sensor:LTW04-PYRO-01",
+    "code": "LTW04-PYRO-01",
+    "label": "LTW-04 Weld-Zone Pyrometer",
+    "node_type": "sensor",
+    "layer": "uns_hierarchy",
+    "parent_id": "sub:protective-optics",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/assets/LTW-04/weld-zone-temp",
+    "summary": "Weld-zone pyrometer on LTW-04. The 08:14 excursion peaked at 235.2 C against a 230 C copper limit.",
+    "attributes": {
+      "signal": "weld-zone-temp",
+      "unit": "degC",
+      "machine_id": "LTW-04"
+    },
+    "edges": [
+      {
+        "target": "alarm:W-TEMP-01",
+        "rel": "TRIGGERS",
+        "label": "Weld-zone over temperature"
+      }
+    ]
+  },
+  {
+    "_id": "sensor:LTW04-FLOW-AR2",
+    "code": "LTW04-FLOW-AR2",
+    "label": "LTW-04 Argon Flow Meter",
+    "node_type": "sensor",
+    "layer": "uns_hierarchy",
+    "parent_id": "sub:argon-purge-loop",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/assets/LTW-04/shield-gas-flow",
+    "summary": "Shield-gas flow meter on argon loop 2. Nominal flow sits near 14.5 L/min.",
+    "attributes": {
+      "signal": "shield-gas-flow",
+      "unit": "L/min",
+      "machine_id": "LTW-04"
+    },
+    "edges": [
+      {
+        "target": "alarm:W-GAS-02",
+        "rel": "TRIGGERS",
+        "label": "Shield-gas deviation"
+      }
+    ]
+  },
+  {
+    "_id": "alarm:E12",
+    "code": "E12",
+    "label": "E12 High Housing Temperature",
+    "node_type": "alarm",
+    "layer": "diagnostics",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/alerts/E12",
+    "summary": "Housing temperature exceeded 80 C. The usual path is optics spatter, then coolant restriction, then a leaking purge seal.",
+    "attributes": {
+      "metric": "temperature",
+      "threshold": 80,
+      "unit": "degC",
+      "severity": "critical",
+      "machine_id": "M1"
+    },
+    "external_ref": {
+      "collection": "alerts",
+      "field": "err_code",
+      "value": "E12"
+    },
+    "edges": [
+      {
+        "target": "failure:optics-spatter",
+        "rel": "INDICATES",
+        "label": "Spatter absorbs laser energy"
+      },
+      {
+        "target": "failure:coolant-restriction",
+        "rel": "INDICATES",
+        "label": "Chiller flow is restricted"
+      },
+      {
+        "target": "failure:housing-seal-degradation",
+        "rel": "INDICATES",
+        "label": "Purge air contaminates the head"
+      },
+      {
+        "target": "manual:M1-sec-3",
+        "rel": "DOCUMENTED_IN",
+        "label": "E12 troubleshooting section"
+      }
+    ]
+  },
+  {
+    "_id": "alarm:E13",
+    "code": "E13",
+    "label": "E13 High Vibration",
+    "node_type": "alarm",
+    "layer": "diagnostics",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/alerts/E13",
+    "summary": "Gantry vibration exceeded 50 mm/s. Separate fixture torque, bearing wear, and sensor drift before replacing hardware.",
+    "attributes": {
+      "metric": "vibration",
+      "threshold": 50,
+      "unit": "mm/s",
+      "severity": "critical",
+      "machine_id": "M1"
+    },
+    "external_ref": {
+      "collection": "alerts",
+      "field": "err_code",
+      "value": "E13"
+    },
+    "edges": [
+      {
+        "target": "failure:fixture-misalignment",
+        "rel": "INDICATES",
+        "label": "Loose or uneven fixture torque"
+      },
+      {
+        "target": "failure:bearing-degradation",
+        "rel": "INDICATES",
+        "label": "Linear stage bearing wear"
+      },
+      {
+        "target": "failure:sensor-drift",
+        "rel": "INDICATES",
+        "label": "Accelerometer offset after a swap"
+      },
+      {
+        "target": "manual:M1-sec-4",
+        "rel": "DOCUMENTED_IN",
+        "label": "E13 troubleshooting section"
+      }
+    ]
+  },
+  {
+    "_id": "alarm:W-TEMP-01",
+    "code": "W-TEMP-01",
+    "label": "W-TEMP-01 Weld Zone Over Temp",
+    "node_type": "alarm",
+    "layer": "diagnostics",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/alerts/W-TEMP-01",
+    "summary": "Edge alarm at 08:14:12 Z on LTW-04. The reading carries no order id; the order is joined later by time window.",
+    "attributes": {
+      "priority": 1,
+      "component": "weld-head-optics",
+      "machine_id": "LTW-04",
+      "source": "edge-weld-monitor"
+    },
+    "external_ref": {
+      "collection": "alerts",
+      "field": "err_code",
+      "value": "W-TEMP-01"
+    },
+    "edges": [
+      {
+        "target": "failure:optics-spatter",
+        "rel": "INDICATES",
+        "label": "Same optics-spatter signature as E12"
+      },
+      {
+        "target": "material:MAT-CU-020",
+        "rel": "COMPARED_WITH",
+        "label": "Copper foil limit is 230 C"
+      }
+    ]
+  },
+  {
+    "_id": "alarm:W-PLUME-01",
+    "code": "W-PLUME-01",
+    "label": "W-PLUME-01 Weld Plume",
+    "node_type": "alarm",
+    "layer": "diagnostics",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/alerts/W-PLUME-01",
+    "summary": "Plume alarm on the weld head 29 seconds after the 08:14 thermal peak. Points at contaminated optics.",
+    "attributes": {
+      "priority": 1,
+      "component": "weld-head-optics",
+      "machine_id": "LTW-04"
+    },
+    "external_ref": {
+      "collection": "alerts",
+      "field": "err_code",
+      "value": "W-PLUME-01"
+    },
+    "edges": [
+      {
+        "target": "failure:optics-spatter",
+        "rel": "INDICATES",
+        "label": "Plume from spatter on the cover glass"
+      }
+    ]
+  },
+  {
+    "_id": "alarm:W-GAS-02",
+    "code": "W-GAS-02",
+    "label": "W-GAS-02 Shield Gas Deviation",
+    "node_type": "alarm",
+    "layer": "diagnostics",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/alerts/W-GAS-02",
+    "summary": "Argon loop 2 flow left the recipe window. Also the alarm that fires in the post-shift gap with no running order.",
+    "attributes": {
+      "priority": 2,
+      "component": "argon-loop-2",
+      "machine_id": "LTW-04"
+    },
+    "external_ref": {
+      "collection": "alerts",
+      "field": "err_code",
+      "value": "W-GAS-02"
+    },
+    "edges": [
+      {
+        "target": "failure:housing-seal-degradation",
+        "rel": "INDICATES",
+        "label": "Purge seal or gas loop leak"
+      }
+    ]
+  },
+  {
+    "_id": "alarm:W-LASER-02",
+    "code": "W-LASER-02",
+    "label": "W-LASER-02 Laser Power Deviation",
+    "node_type": "alarm",
+    "layer": "diagnostics",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/alerts/W-LASER-02",
+    "summary": "Fiber laser 4 left the 500 to 650 W operating window. Often follows optics contamination rather than a laser fault.",
+    "attributes": {
+      "priority": 2,
+      "component": "fiber-laser-4",
+      "machine_id": "LTW-04"
+    },
+    "external_ref": {
+      "collection": "alerts",
+      "field": "err_code",
+      "value": "W-LASER-02"
+    },
+    "edges": [
+      {
+        "target": "failure:optics-spatter",
+        "rel": "INDICATES",
+        "label": "Delivered power drops through a dirty window"
+      }
+    ]
+  },
+  {
+    "_id": "alarm:W-CLAMP-03",
+    "code": "W-CLAMP-03",
+    "label": "W-CLAMP-03 Clamp Deviation",
+    "node_type": "alarm",
+    "layer": "diagnostics",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/alerts/W-CLAMP-03",
+    "summary": "Clamp unit B force left the recipe window. Same fixture path as an M1 E13 after a tooling swap.",
+    "attributes": {
+      "priority": 3,
+      "component": "clamp-unit-b",
+      "machine_id": "LTW-04"
+    },
+    "external_ref": {
+      "collection": "alerts",
+      "field": "err_code",
+      "value": "W-CLAMP-03"
+    },
+    "edges": [
+      {
+        "target": "failure:fixture-misalignment",
+        "rel": "INDICATES",
+        "label": "Fixture torque or clamp alignment"
+      }
+    ]
+  },
+  {
+    "_id": "failure:optics-spatter",
+    "code": "optics-spatter",
+    "label": "Optics Spatter Contamination",
+    "node_type": "failure",
+    "layer": "diagnostics",
+    "parent_id": "sub:protective-optics",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/failures/optics-spatter",
+    "summary": "Weld spatter on the protective window absorbs 1070 nm energy, heats the head, and throws a plume. The fleet excursion signature points here.",
+    "attributes": {
+      "likelihood": "high",
+      "check_first": true
+    },
+    "edges": [
+      {
+        "target": "sub:protective-optics",
+        "rel": "AFFECTS",
+        "label": "Cover glass and weld-head optics"
+      },
+      {
+        "target": "sub:focusing-lens",
+        "rel": "AFFECTS",
+        "label": "Lens is inspected with the window"
+      },
+      {
+        "target": "part:P-001",
+        "rel": "REQUIRES_PART",
+        "label": "Replace the protective window"
+      },
+      {
+        "target": "part:P-002",
+        "rel": "REQUIRES_PART",
+        "label": "Inspect the focusing lens"
+      },
+      {
+        "target": "skill:welding",
+        "rel": "REQUIRES_SKILL",
+        "label": "Laser optics handling"
+      },
+      {
+        "target": "skill:diagnostics",
+        "rel": "REQUIRES_SKILL",
+        "label": "Confirm spatter before swapping hardware"
+      },
+      {
+        "target": "manual:M1-sec-3",
+        "rel": "DOCUMENTED_IN",
+        "label": "E12 recommended actions"
+      }
+    ]
+  },
+  {
+    "_id": "failure:coolant-restriction",
+    "code": "coolant-restriction",
+    "label": "Coolant Flow Restriction",
+    "node_type": "failure",
+    "layer": "diagnostics",
+    "parent_id": "sub:chiller-coolant-loop",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/failures/coolant-restriction",
+    "summary": "Kinked chiller return tubing or a clogged 5-micron filter. Shows up as repeated E12 alerts while the optics look clean.",
+    "attributes": {
+      "likelihood": "medium"
+    },
+    "edges": [
+      {
+        "target": "sub:chiller-coolant-loop",
+        "rel": "AFFECTS",
+        "label": "Laser-head heat rejection"
+      },
+      {
+        "target": "part:P-003",
+        "rel": "REQUIRES_PART",
+        "label": "Filter and PTFE hose"
+      },
+      {
+        "target": "skill:mechanical-maintenance",
+        "rel": "REQUIRES_SKILL",
+        "label": "Chiller tubing and brackets"
+      },
+      {
+        "target": "skill:diagnostics",
+        "rel": "REQUIRES_SKILL",
+        "label": "Flow check before parts are issued"
+      },
+      {
+        "target": "manual:M1-sec-3",
+        "rel": "DOCUMENTED_IN",
+        "label": "Coolant checks in the E12 section"
+      }
+    ]
+  },
+  {
+    "_id": "failure:housing-seal-degradation",
+    "code": "housing-seal-degradation",
+    "label": "Housing Seal Degradation",
+    "node_type": "failure",
+    "layer": "diagnostics",
+    "parent_id": "sub:argon-purge-loop",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/failures/housing-seal",
+    "summary": "A degraded Viton seal lets shop air into the optical housing and both temperature and shield-gas alarms follow.",
+    "attributes": {
+      "likelihood": "medium"
+    },
+    "edges": [
+      {
+        "target": "sub:argon-purge-loop",
+        "rel": "AFFECTS",
+        "label": "Purge integrity"
+      },
+      {
+        "target": "part:P-006",
+        "rel": "REQUIRES_PART",
+        "label": "O-ring and purge seal kit"
+      },
+      {
+        "target": "skill:welding",
+        "rel": "REQUIRES_SKILL",
+        "label": "Head rebuild"
+      },
+      {
+        "target": "skill:safety-compliance",
+        "rel": "REQUIRES_SKILL",
+        "label": "Inert-gas handling"
+      },
+      {
+        "target": "manual:M1-sec-3",
+        "rel": "DOCUMENTED_IN",
+        "label": "Seal and purge checks"
+      }
+    ]
+  },
+  {
+    "_id": "failure:fixture-misalignment",
+    "code": "fixture-misalignment",
+    "label": "Fixture Misalignment",
+    "node_type": "failure",
+    "layer": "diagnostics",
+    "parent_id": "sub:clamping-fixture",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/failures/fixture-misalignment",
+    "summary": "Loose or uneven clamp bolts after a module tooling swap. Contestable candidate: misalignment.",
+    "attributes": {
+      "likelihood": "high",
+      "contestable_candidate": "misalignment"
+    },
+    "edges": [
+      {
+        "target": "sub:clamping-fixture",
+        "rel": "AFFECTS",
+        "label": "Module fixture"
+      },
+      {
+        "target": "part:P-005",
+        "rel": "REQUIRES_PART",
+        "label": "Fixture bolt pack"
+      },
+      {
+        "target": "skill:mechanical-maintenance",
+        "rel": "REQUIRES_SKILL",
+        "label": "Torque and alignment"
+      },
+      {
+        "target": "skill:welding",
+        "rel": "REQUIRES_SKILL",
+        "label": "Tooling changeover"
+      },
+      {
+        "target": "skill:calibration",
+        "rel": "REQUIRES_SKILL",
+        "label": "Focal offset after the swap"
+      },
+      {
+        "target": "manual:M1-sec-4",
+        "rel": "DOCUMENTED_IN",
+        "label": "E13 fixture actions"
+      }
+    ]
+  },
+  {
+    "_id": "failure:bearing-degradation",
+    "code": "bearing-degradation",
+    "label": "Linear Stage Bearing Wear",
+    "node_type": "failure",
+    "layer": "diagnostics",
+    "parent_id": "sub:gantry-linear-stage",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/failures/bearing-wear",
+    "summary": "Carriage bearing wear or rail debris. Vibration trends up from the 24 mm/s baseline. Contestable candidate: bearing degradation.",
+    "attributes": {
+      "likelihood": "medium",
+      "contestable_candidate": "bearing_degradation"
+    },
+    "edges": [
+      {
+        "target": "sub:gantry-linear-stage",
+        "rel": "AFFECTS",
+        "label": "Gantry rails"
+      },
+      {
+        "target": "part:P-004",
+        "rel": "REQUIRES_PART",
+        "label": "Carriage bearing block"
+      },
+      {
+        "target": "skill:mechanical-maintenance",
+        "rel": "REQUIRES_SKILL",
+        "label": "Rail and bearing replacement"
+      },
+      {
+        "target": "skill:calibration",
+        "rel": "REQUIRES_SKILL",
+        "label": "Travel check after replacement"
+      },
+      {
+        "target": "manual:M1-sec-4",
+        "rel": "DOCUMENTED_IN",
+        "label": "E13 bearing actions"
+      }
+    ]
+  },
+  {
+    "_id": "failure:sensor-drift",
+    "code": "sensor-drift",
+    "label": "Sensor Calibration Drift",
+    "node_type": "failure",
+    "layer": "diagnostics",
+    "parent_id": "sub:gantry-linear-stage",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/failures/sensor-drift",
+    "summary": "Accelerometer stud, cable shield, or IR probe offset after a sensor swap. Contestable candidate: sensor fault.",
+    "attributes": {
+      "likelihood": "medium",
+      "contestable_candidate": "sensor_fault"
+    },
+    "edges": [
+      {
+        "target": "sensor:ACCEL-M1-VIB-01",
+        "rel": "AFFECTS",
+        "label": "Vibration channel"
+      },
+      {
+        "target": "sensor:THERM-M1-IR-02",
+        "rel": "AFFECTS",
+        "label": "Temperature channel"
+      },
+      {
+        "target": "skill:electrical-maintenance",
+        "rel": "REQUIRES_SKILL",
+        "label": "Sensor mounting and shielding"
+      },
+      {
+        "target": "skill:calibration",
+        "rel": "REQUIRES_SKILL",
+        "label": "Reference vibrometer and IR check"
+      },
+      {
+        "target": "manual:M1-sec-4",
+        "rel": "DOCUMENTED_IN",
+        "label": "E13 sensor actions"
+      }
+    ]
+  },
+  {
+    "_id": "part:P-001",
+    "code": "P-001",
+    "label": "Protective Optics Window",
+    "node_type": "part",
+    "layer": "maintenance",
+    "parent_id": "sub:protective-optics",
+    "uns_topic": "factory/ev-line/parts/P-001",
+    "summary": "Fused-silica AR-coated cover glass, 30 mm by 5 mm, for the 1070 nm welding head.",
+    "attributes": {
+      "lead_time_days": 5
+    },
+    "external_ref": {
+      "collection": "inventory",
+      "field": "part_id",
+      "value": "P-001"
+    },
+    "edges": [
+      {
+        "target": "sub:protective-optics",
+        "rel": "FITS",
+        "label": "Installed on the weld head"
+      }
+    ]
+  },
+  {
+    "_id": "part:P-002",
+    "code": "P-002",
+    "label": "Focusing Lens Assembly",
+    "node_type": "part",
+    "layer": "maintenance",
+    "parent_id": "sub:focusing-lens",
+    "uns_topic": "factory/ev-line/parts/P-002",
+    "summary": "200 mm focal-length fused-silica lens cartridge for the tab laser welding cell.",
+    "attributes": {
+      "lead_time_days": 14
+    },
+    "external_ref": {
+      "collection": "inventory",
+      "field": "part_id",
+      "value": "P-002"
+    },
+    "edges": [
+      {
+        "target": "sub:focusing-lens",
+        "rel": "FITS",
+        "label": "Lens cartridge"
+      }
+    ]
+  },
+  {
+    "_id": "part:P-003",
+    "code": "P-003",
+    "label": "Coolant Filter and Tubing",
+    "node_type": "part",
+    "layer": "maintenance",
+    "parent_id": "sub:chiller-coolant-loop",
+    "uns_topic": "factory/ev-line/parts/P-003",
+    "summary": "5-micron chiller filter with 3 m reinforced PTFE coolant hose.",
+    "attributes": {
+      "lead_time_days": 3
+    },
+    "external_ref": {
+      "collection": "inventory",
+      "field": "part_id",
+      "value": "P-003"
+    },
+    "edges": [
+      {
+        "target": "sub:chiller-coolant-loop",
+        "rel": "FITS",
+        "label": "Inline filter and return hose"
+      }
+    ]
+  },
+  {
+    "_id": "part:P-004",
+    "code": "P-004",
+    "label": "Linear Stage Bearings",
+    "node_type": "part",
+    "layer": "maintenance",
+    "parent_id": "sub:gantry-linear-stage",
+    "uns_topic": "factory/ev-line/parts/P-004",
+    "summary": "Precision linear-rail carriage bearing block for the welding gantry.",
+    "attributes": {
+      "lead_time_days": 7
+    },
+    "external_ref": {
+      "collection": "inventory",
+      "field": "part_id",
+      "value": "P-004"
+    },
+    "edges": [
+      {
+        "target": "sub:gantry-linear-stage",
+        "rel": "FITS",
+        "label": "Carriage bearing"
+      }
+    ]
+  },
+  {
+    "_id": "part:P-005",
+    "code": "P-005",
+    "label": "Clamping Fixture Bolts",
+    "node_type": "part",
+    "layer": "maintenance",
+    "parent_id": "sub:clamping-fixture",
+    "uns_topic": "factory/ev-line/parts/P-005",
+    "summary": "M10 by 40 mm high-tensile fixture bolts, pack of 10.",
+    "attributes": {
+      "lead_time_days": 2
+    },
+    "external_ref": {
+      "collection": "inventory",
+      "field": "part_id",
+      "value": "P-005"
+    },
+    "edges": [
+      {
+        "target": "sub:clamping-fixture",
+        "rel": "FITS",
+        "label": "Fixture mounts"
+      }
+    ]
+  },
+  {
+    "_id": "part:P-006",
+    "code": "P-006",
+    "label": "Optical Housing Seals",
+    "node_type": "part",
+    "layer": "maintenance",
+    "parent_id": "sub:argon-purge-loop",
+    "uns_topic": "factory/ev-line/parts/P-006",
+    "summary": "Viton O-ring and argon purge seal kit for the laser welding head.",
+    "attributes": {
+      "lead_time_days": 5
+    },
+    "external_ref": {
+      "collection": "inventory",
+      "field": "part_id",
+      "value": "P-006"
+    },
+    "edges": [
+      {
+        "target": "sub:argon-purge-loop",
+        "rel": "FITS",
+        "label": "Housing purge seal"
+      }
+    ]
+  },
+  {
+    "_id": "manual:M1-sec-2",
+    "code": "M1-sec-2",
+    "label": "Manual: Operating Parameters",
+    "node_type": "manual",
+    "layer": "maintenance",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/manuals/M1/operating-parameters",
+    "summary": "Housing 55 to 75 C, vibration 15 to 40 mm/s, laser 500 to 650 W, argon 14 to 18 L/min.",
+    "attributes": {
+      "section": "Operating Parameters",
+      "pages": 2
+    },
+    "external_ref": {
+      "collection": "manuals",
+      "field": "pages",
+      "value": 2
+    },
+    "edges": []
+  },
+  {
+    "_id": "manual:M1-sec-3",
+    "code": "M1-sec-3",
+    "label": "Manual: E12 Troubleshooting",
+    "node_type": "manual",
+    "layer": "maintenance",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/manuals/M1/e12",
+    "summary": "High-temperature checks: optics window, coolant lines, housing seals, and purge flow.",
+    "attributes": {
+      "section": "Common Faults and Troubleshooting – E12: High Temperature",
+      "pages": 3
+    },
+    "external_ref": {
+      "collection": "manuals",
+      "field": "pages",
+      "value": 3
+    },
+    "edges": []
+  },
+  {
+    "_id": "manual:M1-sec-4",
+    "code": "M1-sec-4",
+    "label": "Manual: E13 Troubleshooting",
+    "node_type": "manual",
+    "layer": "maintenance",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/manuals/M1/e13",
+    "summary": "High-vibration checks: fixture torque, linear stage bearings, and accelerometer calibration.",
+    "attributes": {
+      "section": "Common Faults and Troubleshooting – E13: High Vibration",
+      "pages": 4
+    },
+    "external_ref": {
+      "collection": "manuals",
+      "field": "pages",
+      "value": 4
+    },
+    "edges": []
+  },
+  {
+    "_id": "manual:M1-sec-5",
+    "code": "M1-sec-5",
+    "label": "Manual: Maintenance Schedule",
+    "node_type": "manual",
+    "layer": "maintenance",
+    "parent_id": "machine:LTW-04",
+    "uns_topic": "factory/ev-line/manuals/M1/schedule",
+    "summary": "Weekly optics and coolant checks, monthly fixture alignment, bi-monthly bearings and seals.",
+    "attributes": {
+      "section": "Maintenance Schedule",
+      "pages": 5
+    },
+    "external_ref": {
+      "collection": "manuals",
+      "field": "pages",
+      "value": 5
+    },
+    "edges": []
+  },
+  {
+    "_id": "skill:mechanical-maintenance",
+    "code": "Mechanical Maintenance",
+    "label": "Mechanical Maintenance",
+    "node_type": "skill",
+    "layer": "maintenance",
+    "parent_id": null,
+    "uns_topic": "factory/skills/mechanical-maintenance",
+    "summary": "Fixture, gantry, chiller, and bearing work. Matched to maintenance staff skill tags.",
+    "attributes": {
+      "staff_match": "skills"
+    },
+    "external_ref": {
+      "collection": "maintenance_staff",
+      "field": "skills",
+      "value": "Mechanical Maintenance"
+    },
+    "edges": []
+  },
+  {
+    "_id": "skill:welding",
+    "code": "Welding",
+    "label": "Welding",
+    "node_type": "skill",
+    "layer": "maintenance",
+    "parent_id": null,
+    "uns_topic": "factory/skills/welding",
+    "summary": "Laser optics, purge rebuilds, and tooling changeover on the tab welder.",
+    "attributes": {
+      "staff_match": "skills"
+    },
+    "external_ref": {
+      "collection": "maintenance_staff",
+      "field": "skills",
+      "value": "Welding"
+    },
+    "edges": []
+  },
+  {
+    "_id": "skill:diagnostics",
+    "code": "Diagnostics",
+    "label": "Diagnostics",
+    "node_type": "skill",
+    "layer": "maintenance",
+    "parent_id": null,
+    "uns_topic": "factory/skills/diagnostics",
+    "summary": "Separate a true process fault from a sensor or fixture false path before parts are consumed.",
+    "attributes": {
+      "staff_match": "skills"
+    },
+    "external_ref": {
+      "collection": "maintenance_staff",
+      "field": "skills",
+      "value": "Diagnostics"
+    },
+    "edges": []
+  },
+  {
+    "_id": "skill:electrical-maintenance",
+    "code": "Electrical Maintenance",
+    "label": "Electrical Maintenance",
+    "node_type": "skill",
+    "layer": "maintenance",
+    "parent_id": null,
+    "uns_topic": "factory/skills/electrical-maintenance",
+    "summary": "Sensor mounting, cable shielding, and instrument replacement.",
+    "attributes": {
+      "staff_match": "skills"
+    },
+    "external_ref": {
+      "collection": "maintenance_staff",
+      "field": "skills",
+      "value": "Electrical Maintenance"
+    },
+    "edges": []
+  },
+  {
+    "_id": "skill:calibration",
+    "code": "Calibration",
+    "label": "Calibration",
+    "node_type": "skill",
+    "layer": "maintenance",
+    "parent_id": null,
+    "uns_topic": "factory/skills/calibration",
+    "summary": "Reference vibrometer, IR probe, and focal-offset checks after a repair or tooling swap.",
+    "attributes": {
+      "staff_match": "skills"
+    },
+    "external_ref": {
+      "collection": "maintenance_staff",
+      "field": "skills",
+      "value": "Calibration"
+    },
+    "edges": []
+  },
+  {
+    "_id": "skill:safety-compliance",
+    "code": "Safety Compliance",
+    "label": "Safety Compliance",
+    "node_type": "skill",
+    "layer": "maintenance",
+    "parent_id": null,
+    "uns_topic": "factory/skills/safety-compliance",
+    "summary": "Inert-gas handling and optical-housing leak checks.",
+    "attributes": {
+      "staff_match": "skills"
+    },
+    "external_ref": {
+      "collection": "maintenance_staff",
+      "field": "skills",
+      "value": "Safety Compliance"
+    },
+    "edges": []
+  },
+  {
+    "_id": "product:EV-PM-4C-S",
+    "code": "EV-PM-4C-S",
+    "label": "EV-PM-4C-S Series Module",
+    "node_type": "product",
+    "layer": "production_governance",
+    "parent_id": "line:ev_module_assembly",
+    "uns_topic": "factory/ev-line/products/EV-PM-4C-S",
+    "summary": "Four-cell series module. Copper tab recipe RCP-LTW04-CU-3.2, laser 1380 to 1500 W.",
+    "attributes": {
+      "recipe": "RCP-LTW04-CU-3.2",
+      "config": "4S"
+    },
+    "edges": [
+      {
+        "target": "material:MAT-CU-020",
+        "rel": "USES",
+        "label": "0.20 mm copper tab foil"
+      },
+      {
+        "target": "sop:SOP-LTW-014",
+        "rel": "GOVERNED_BY",
+        "label": "Copper PAR trim procedure"
+      },
+      {
+        "target": "sop:CP-EV-WELD-004",
+        "rel": "GOVERNED_BY",
+        "label": "Welding control plan"
+      }
+    ]
+  },
+  {
+    "_id": "product:EV-PM-4C-P",
+    "code": "EV-PM-4C-P",
+    "label": "EV-PM-4C-P Parallel Module",
+    "node_type": "product",
+    "layer": "production_governance",
+    "parent_id": "line:ev_module_assembly",
+    "uns_topic": "factory/ev-line/products/EV-PM-4C-P",
+    "summary": "Four-cell parallel module. Aluminum tab recipe RCP-LTW04-AL-2.8.",
+    "attributes": {
+      "recipe": "RCP-LTW04-AL-2.8",
+      "config": "4P"
+    },
+    "edges": [
+      {
+        "target": "material:MAT-AL-030",
+        "rel": "USES",
+        "label": "0.30 mm aluminum cathode tab"
+      },
+      {
+        "target": "sop:SOP-QMS-008",
+        "rel": "GOVERNED_BY",
+        "label": "Out-of-envelope deviation SOP"
+      },
+      {
+        "target": "sop:CP-EV-WELD-004",
+        "rel": "GOVERNED_BY",
+        "label": "Welding control plan"
+      }
+    ]
+  },
+  {
+    "_id": "product:EV-PK-8M-LR",
+    "code": "EV-PK-8M-LR",
+    "label": "EV-PK-8M-LR Long-Range Pack",
+    "node_type": "product",
+    "layer": "production_governance",
+    "parent_id": "line:ev_module_assembly",
+    "uns_topic": "factory/ev-line/products/EV-PK-8M-LR",
+    "summary": "Eight-module long-range pack joined with bimetal Al-Cu busbar strip.",
+    "attributes": {
+      "config": "8M"
+    },
+    "edges": [
+      {
+        "target": "material:MAT-CU-025",
+        "rel": "USES",
+        "label": "0.25 mm bimetal busbar strip"
+      },
+      {
+        "target": "sop:CP-EV-WELD-004",
+        "rel": "GOVERNED_BY",
+        "label": "Welding control plan"
+      }
+    ]
+  },
+  {
+    "_id": "material:MAT-CU-020",
+    "code": "MAT-CU-020",
+    "label": "MAT-CU-020 Copper Tab Foil",
+    "node_type": "material",
+    "layer": "production_governance",
+    "parent_id": null,
+    "uns_topic": "factory/ev-line/materials/MAT-CU-020",
+    "summary": "Nickel-plated C11000 copper tab foil, 0.20 mm, from Aurubis. Weld-zone limit 230 C.",
+    "attributes": {
+      "supplier": "Aurubis",
+      "thickness_mm": "0.20",
+      "max_weld_temp_c": 230
+    },
+    "external_ref": {
+      "collection": "materials",
+      "field": "materialMaster",
+      "value": "MAT-CU-020"
+    },
+    "edges": []
+  },
+  {
+    "_id": "material:MAT-AL-030",
+    "code": "MAT-AL-030",
+    "label": "MAT-AL-030 Aluminum Tab",
+    "node_type": "material",
+    "layer": "production_governance",
+    "parent_id": null,
+    "uns_topic": "factory/ev-line/materials/MAT-AL-030",
+    "summary": "AA1050 aluminum cathode tab, 0.30 mm, from Hydro. Weld-zone limit 215 C.",
+    "attributes": {
+      "supplier": "Hydro",
+      "thickness_mm": "0.30",
+      "max_weld_temp_c": 215
+    },
+    "external_ref": {
+      "collection": "materials",
+      "field": "materialMaster",
+      "value": "MAT-AL-030"
+    },
+    "edges": []
+  },
+  {
+    "_id": "material:MAT-CU-025",
+    "code": "MAT-CU-025",
+    "label": "MAT-CU-025 Busbar Strip",
+    "node_type": "material",
+    "layer": "production_governance",
+    "parent_id": null,
+    "uns_topic": "factory/ev-line/materials/MAT-CU-025",
+    "summary": "Bimetal aluminum-copper clad busbar strip, 0.25 mm, from Wieland. Weld-zone limit 245 C.",
+    "attributes": {
+      "supplier": "Wieland",
+      "thickness_mm": "0.25",
+      "max_weld_temp_c": 245
+    },
+    "external_ref": {
+      "collection": "materials",
+      "field": "materialMaster",
+      "value": "MAT-CU-025"
+    },
+    "edges": []
+  },
+  {
+    "_id": "sop:SOP-LTW-014",
+    "code": "SOP-LTW-014",
+    "label": "SOP-LTW-014 Laser Tab Welding",
+    "node_type": "sop",
+    "layer": "production_governance",
+    "parent_id": null,
+    "uns_topic": "factory/ev-line/procedures/SOP-LTW-014",
+    "summary": "Controlled laser tab welding procedure. Approved v3.2 is the citable revision; v2.1 is superseded and v4.0-rc1 is still draft.",
+    "attributes": {
+      "doc_type": "SOP",
+      "approved_version": "3.2"
+    },
+    "external_ref": {
+      "collection": "change_procedures",
+      "field": "doc_id",
+      "value": "SOP-LTW-014"
+    },
+    "edges": [
+      {
+        "target": "machine:LTW-04",
+        "rel": "GOVERNS",
+        "label": "Applies on the shopfloor cell"
+      },
+      {
+        "target": "product:EV-PM-4C-S",
+        "rel": "GOVERNS",
+        "label": "Copper PAR trims"
+      }
+    ]
+  },
+  {
+    "_id": "sop:SOP-QMS-008",
+    "code": "SOP-QMS-008",
+    "label": "SOP-QMS-008 Out-of-Envelope",
+    "node_type": "sop",
+    "layer": "production_governance",
+    "parent_id": null,
+    "uns_topic": "factory/ev-line/procedures/SOP-QMS-008",
+    "summary": "Quality procedure for parameter changes outside the proven acceptable range, including the Part 11 signature path.",
+    "attributes": {
+      "doc_type": "SOP",
+      "approved_version": "2.0"
+    },
+    "external_ref": {
+      "collection": "change_procedures",
+      "field": "doc_id",
+      "value": "SOP-QMS-008"
+    },
+    "edges": [
+      {
+        "target": "machine:LTW-04",
+        "rel": "GOVERNS",
+        "label": "Deviation and e-signature path"
+      }
+    ]
+  },
+  {
+    "_id": "sop:CP-EV-WELD-004",
+    "code": "CP-EV-WELD-004",
+    "label": "CP-EV-WELD-004 Control Plan",
+    "node_type": "sop",
+    "layer": "production_governance",
+    "parent_id": null,
+    "uns_topic": "factory/ev-line/procedures/CP-EV-WELD-004",
+    "summary": "EV welding control plan for station 05 laser tab welding, revision 5.1.",
+    "attributes": {
+      "doc_type": "Control Plan",
+      "approved_version": "5.1"
+    },
+    "external_ref": {
+      "collection": "change_procedures",
+      "field": "doc_id",
+      "value": "CP-EV-WELD-004"
+    },
+    "edges": [
+      {
+        "target": "station:laser-welding",
+        "rel": "GOVERNS",
+        "label": "Station control plan"
+      }
+    ]
+  },
+  {
+    "_id": "sop:POL-OTSEC-003",
+    "code": "POL-OTSEC-003",
+    "label": "POL-OTSEC-003 OT Security",
+    "node_type": "sop",
+    "layer": "production_governance",
+    "parent_id": null,
+    "uns_topic": "factory/ev-line/procedures/POL-OTSEC-003",
+    "summary": "OT write-segmentation policy. Blocks unverified cloud scripts from writing the PLC or the record.",
+    "attributes": {
+      "doc_type": "OT Security Policy",
+      "approved_version": "1.1"
+    },
+    "external_ref": {
+      "collection": "change_procedures",
+      "field": "doc_id",
+      "value": "POL-OTSEC-003"
+    },
+    "edges": [
+      {
+        "target": "machine:LTW-04",
+        "rel": "GOVERNS",
+        "label": "Who may write the cell"
+      }
+    ]
+  },
+  {
+    "_id": "machine:CS-01",
+    "code": "CS-01",
+    "label": "Cell Screening Cell",
+    "node_type": "machine",
+    "layer": "uns_hierarchy",
+    "parent_id": "station:cell-screening",
+    "uns_topic": "factory/ev-line/stations/Cell-Screening/assets/CS-01",
+    "summary": "Measures open-circuit voltage and internal resistance, then grades each incoming cell.",
+    "attributes": {
+      "role": "station_cell",
+      "station": "cell-screening"
+    },
+    "edges": []
+  },
+  {
+    "_id": "machine:TP-01",
+    "code": "TP-01",
+    "label": "Tab Processing Cell",
+    "node_type": "machine",
+    "layer": "uns_hierarchy",
+    "parent_id": "station:tab-processing",
+    "uns_topic": "factory/ev-line/stations/Tab-Processing/assets/TP-01",
+    "summary": "Trims and cleans cell tabs before they enter the stack.",
+    "attributes": {
+      "role": "station_cell",
+      "station": "tab-processing"
+    },
+    "edges": []
+  },
+  {
+    "_id": "machine:ZF-01",
+    "code": "ZF-01",
+    "label": "Z-Fold Stacking Cell",
+    "node_type": "machine",
+    "layer": "uns_hierarchy",
+    "parent_id": "station:z-fold",
+    "uns_topic": "factory/ev-line/stations/Z-Fold-Stacking/assets/ZF-01",
+    "summary": "Builds the four-cell stack and checks alignment and height.",
+    "attributes": {
+      "role": "station_cell",
+      "station": "z-fold"
+    },
+    "edges": []
+  },
+  {
+    "_id": "machine:MA-01",
+    "code": "MA-01",
+    "label": "Module Assembly Cell",
+    "node_type": "machine",
+    "layer": "uns_hierarchy",
+    "parent_id": "station:module-assembly",
+    "uns_topic": "factory/ev-line/stations/Module-Pre-Assembly/assets/MA-01",
+    "summary": "Fixtures the stack and applies the clamp force for welding.",
+    "attributes": {
+      "role": "station_cell",
+      "station": "module-assembly"
+    },
+    "edges": []
+  },
+  {
+    "_id": "machine:USW-01",
+    "code": "USW-01",
+    "label": "Ultrasonic Busbar Cell",
+    "node_type": "machine",
+    "layer": "uns_hierarchy",
+    "parent_id": "station:ultrasonic-welding",
+    "uns_topic": "factory/ev-line/stations/Ultrasonic-Busbar-Welding/assets/USW-01",
+    "summary": "Joins the busbars and checks weld energy and duration.",
+    "attributes": {
+      "role": "station_cell",
+      "station": "ultrasonic-welding"
+    },
+    "edges": []
+  },
+  {
+    "_id": "machine:WM-01",
+    "code": "WM-01",
+    "label": "Weld Monitoring Cell",
+    "node_type": "machine",
+    "layer": "uns_hierarchy",
+    "parent_id": "station:weld-monitoring",
+    "uns_topic": "factory/ev-line/stations/Laser-Tab-Welding/condition/assets/WM-01",
+    "summary": "Watches weld temperature and vibration for the tab welding station.",
+    "attributes": {
+      "role": "station_cell",
+      "station": "weld-monitoring"
+    },
+    "edges": []
+  },
+  {
+    "_id": "machine:CP-01",
+    "code": "CP-01",
+    "label": "Cooling Plate Cell",
+    "node_type": "machine",
+    "layer": "uns_hierarchy",
+    "parent_id": "station:cooling-plate",
+    "uns_topic": "factory/ev-line/stations/Cooling-Plate-Assembly/assets/CP-01",
+    "summary": "Dispenses thermal interface material and fits the cooling plate.",
+    "attributes": {
+      "role": "station_cell",
+      "station": "cooling-plate"
+    },
+    "edges": []
+  },
+  {
+    "_id": "machine:PS-01",
+    "code": "PS-01",
+    "label": "Pouch Sealing Cell",
+    "node_type": "machine",
+    "layer": "uns_hierarchy",
+    "parent_id": "station:pouch-sealing",
+    "uns_topic": "factory/ev-line/stations/Pouch-Sealing/assets/PS-01",
+    "summary": "Seals the pack under controlled temperature and pressure.",
+    "attributes": {
+      "role": "station_cell",
+      "station": "pouch-sealing"
+    },
+    "edges": []
+  },
+  {
+    "_id": "machine:HLT-01",
+    "code": "HLT-01",
+    "label": "Helium Leak Test Cell",
+    "node_type": "machine",
+    "layer": "uns_hierarchy",
+    "parent_id": "station:helium-test",
+    "uns_topic": "factory/ev-line/stations/Helium-Leak-Test/assets/HLT-01",
+    "summary": "Checks enclosure leak rate against the pass limit.",
+    "attributes": {
+      "role": "station_cell",
+      "station": "helium-test"
+    },
+    "edges": []
+  },
+  {
+    "_id": "machine:EOL-01",
+    "code": "EOL-01",
+    "label": "Pack EOL Test Cell",
+    "node_type": "machine",
+    "layer": "uns_hierarchy",
+    "parent_id": "station:eol-test",
+    "uns_topic": "factory/ev-line/stations/Pack-EOL-Test/assets/EOL-01",
+    "summary": "Runs final voltage, insulation, and release checks.",
+    "attributes": {
+      "role": "station_cell",
+      "station": "eol-test"
+    },
+    "edges": []
+  }
+]

@@ -12,8 +12,9 @@ export const LASER_WELDING_MACHINE = {
   station: "Laser Tab Welding",
   phaseLabel: "03 · High Precision Welding",
   image: "/img/machines/Tab-Laser-Welding-Cell.png",
+  shopfloorId: "LTW-04",
   description:
-    "Joins cell tabs with a monitored laser process. Temperature and vibration thresholds drive maintenance alerts.",
+    "Joins cell tabs with a monitored laser process. This is shopfloor cell LTW-04. Predictive maintenance records still use the legacy asset id M1.",
 };
 
 export const PRODUCTS = [
