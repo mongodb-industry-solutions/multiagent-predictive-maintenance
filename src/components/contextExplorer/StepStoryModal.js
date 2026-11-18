@@ -34,7 +34,7 @@ function SlideOverview() {
           {
             name: "workorders",
             badge: "Collection · 5 LTW-04 order spans",
-            desc: "Stores M1 maintenance orders alongside MES/ERP battery module order spans (startedAt → endedAt)",
+            desc: "Stores welding-cell maintenance orders (legacy asset id M1) alongside MES/ERP battery module order spans (startedAt → endedAt)",
           },
           {
             name: "materials",

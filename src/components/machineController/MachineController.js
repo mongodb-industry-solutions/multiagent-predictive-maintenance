@@ -118,7 +118,10 @@ export default function MachineController({
                   className="absolute left-0 top-full z-30 mt-2 w-80 max-w-[calc(100vw-3rem)] rounded-xl border border-[#D8E3DF] bg-white p-4 text-sm text-[#112733] shadow-lg"
                 >
                   <p className="font-semibold text-[#112733]">
-                    {LASER_WELDING_MACHINE.title} ({LASER_WELDING_MACHINE.id})
+                    {LASER_WELDING_MACHINE.title}
+                  </p>
+                  <p className="mt-0.5 text-[#5C6C75]">
+                    Shopfloor id {LASER_WELDING_MACHINE.shopfloorId}. Legacy asset id {LASER_WELDING_MACHINE.id}.
                   </p>
                   <p className="mt-0.5 font-medium text-[#00684A]">
                     Leafy Factory · EV Module Assembly Line

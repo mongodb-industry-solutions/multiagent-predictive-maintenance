@@ -22,6 +22,11 @@ export const STORY_STAGES = [
         href: "/unified-namespace/uns-in-action",
         description: "Run orders and inspect live operational data.",
       },
+      {
+        label: "Knowledge Graph",
+        href: "/unified-namespace/knowledge-graph",
+        description: "Model factory ontology and traverse relationships with $graphLookup.",
+      },
     ],
   },
   {
