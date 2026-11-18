@@ -7,6 +7,7 @@ import { createAgentGraph as createPlanningAgentGraph } from "./planning/graph.j
 import { createAgentGraph as createUnsChatAgentGraph } from "./uns-chat/graph.js";
 import { createAgentGraph as createContestableAgentGraph } from "./contestable/graph.js";
 import { createAgentGraph as createContextExplorerAgentGraph } from "./context-explorer/graph.js";
+import { createAgentGraph as createAuditTrailAgentGraph } from "./audit-trail/graph.js";
 
 export const AGENTS = [
   {
@@ -35,6 +36,13 @@ export const AGENTS = [
     createGraph: createContestableAgentGraph,
     description:
       "Coordinates Vibration Pattern and Maintenance History agents to debate candidate root causes with bipolar argumentation scoring.",
+  },
+  {
+    id: "audit-trail",
+    name: "Change Documentation Agent",
+    createGraph: createAuditTrailAgentGraph,
+    description:
+      "Grounds shopfloor AI interventions in governed SOP retrieval and episodic memory to assemble standards-aligned audit records.",
   },
   {
     id: "workorder",

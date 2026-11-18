@@ -43,12 +43,12 @@ export const checkInventoryAvailability = tool(
           items: {
             type: "string",
             enum: [
-              "Bearings",
-              "Shafts",
-              "Lubricant",
-              "Seals",
-              "Bolts",
-              "Gaskets",
+              "Protective Optics Window",
+              "Focusing Lens Assembly",
+              "Coolant Filter & Tubing",
+              "Linear Stage Bearings",
+              "Clamping Fixture Bolts",
+              "Optical Housing Seals",
             ],
           },
           minItems: 1,

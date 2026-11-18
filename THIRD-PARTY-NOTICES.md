@@ -483,14 +483,14 @@ This project includes third-party packages listed below:
 - **Repository**: https://github.com/lovell/colour
 
 ---
-### @img/sharp-darwin-arm64@0.35.4
+### @img/sharp-darwin-arm64@0.35.5
 - **License**: Apache-2.0
 - **Author**: Lovell Fuller
 - **Repository**: https://github.com/lovell/sharp
 - **Contact**: npm@lovell.info
 
 ---
-### @img/sharp-libvips-darwin-arm64@1.3.3
+### @img/sharp-libvips-darwin-arm64@1.3.4
 - **License**: LGPL-3.0-or-later
 - **Author**: Lovell Fuller
 - **Repository**: https://github.com/lovell/sharp-libvips
@@ -580,7 +580,7 @@ This project includes third-party packages listed below:
 - **Repository**: https://github.com/langchain-ai/langgraphjs
 
 ---
-### @langchain/mongodb@1.1.0
+### @langchain/mongodb@1.3.1
 - **License**: MIT
 - **Author**: LangChain
 - **Repository**: https://github.com/langchain-ai/langchainjs
@@ -750,14 +750,14 @@ This project includes third-party packages listed below:
 - **Repository**: https://github.com/mui/material-ui
 
 ---
-### @next/env@15.5.26
+### @next/env@15.5.29
 - **License**: MIT
 - **Author**: Next.js Team
 - **Repository**: https://github.com/vercel/next.js
 - **Contact**: support@vercel.com
 
 ---
-### @next/swc-darwin-arm64@15.5.26
+### @next/swc-darwin-arm64@15.5.29
 - **License**: MIT
 - **Repository**: https://github.com/vercel/next.js
 
@@ -1630,7 +1630,7 @@ This project includes third-party packages listed below:
 - **Contact**: andrey@sitnik.ru
 
 ---
-### next@15.5.26
+### next@15.5.29
 - **License**: MIT
 - **Repository**: https://github.com/vercel/next.js
 
@@ -1869,7 +1869,7 @@ This project includes third-party packages listed below:
 - **Repository**: https://github.com/npm/node-semver
 
 ---
-### sharp@0.35.4
+### sharp@0.35.5
 - **License**: Apache-2.0
 - **Author**: Lovell Fuller
 - **Repository**: https://github.com/lovell/sharp
@@ -1897,7 +1897,7 @@ This project includes third-party packages listed below:
 - **Contact**: ben@npmjs.com
 
 ---
-### source-map-js@1.2.1
+### source-map-js@1.2.2
 - **License**: BSD-3-Clause
 - **Author**: Valentin 7rulnik Semirulnik
 - **Repository**: https://github.com/7rulnik/source-map-js
@@ -2029,7 +2029,7 @@ This project includes third-party packages listed below:
 - **Contact**: sindresorhus@gmail.com
 
 ---
-### zod@3.25.76
+### zod@4.6.7
 - **License**: MIT
 - **Author**: Colin McDonnell
 - **Repository**: https://github.com/colinhacks/zod

@@ -349,29 +349,29 @@ export async function gatherContestableEvidence({
   const latestTemp =
     alert?.details?.temperature ??
     recentTelemetry[0]?.temperature ??
-    93.4;
+    86.4;
   const latestVib =
     alert?.details?.vibration ??
     recentTelemetry[0]?.vibration ??
-    1.68;
+    68.4;
 
   // Vibration frequency spectrum packet for vibration_pattern_agent
   const vibrationSpectrum = {
     machine_id: resolvedMachineId,
     equipment_model:
       dataSource === "leafy"
-        ? "Leafy Factory Laser Tab Welder & Stamping Press (Model SP-2000 / CentriMax)"
-        : "CentriMax 2000 / Stamping Press Unit M1",
+        ? "Leafy Factory Tab Laser Welding Cell (Unit M1)"
+        : "Tab Laser Welding Cell (Unit M1)",
     captured_at: alert?.ts || incident?.ts || new Date().toISOString(),
     overall_rms_mm_s: Number(latestVib),
     temperature_c: Number(latestTemp),
-    threshold_mm_s: 1.2,
+    threshold_mm_s: 50,
     recent_checks: [
-      { check: -5, rms_mm_s: 1.64, temp_c: 91.2 },
-      { check: -4, rms_mm_s: 1.66, temp_c: 91.8 },
-      { check: -3, rms_mm_s: 1.65, temp_c: 92.1 },
-      { check: -2, rms_mm_s: 1.67, temp_c: 92.9 },
-      { check: -1, rms_mm_s: 1.66, temp_c: 93.1 },
+      { check: -5, rms_mm_s: 64.2, temp_c: 82.1 },
+      { check: -4, rms_mm_s: 65.8, temp_c: 83.4 },
+      { check: -3, rms_mm_s: 66.5, temp_c: 84.2 },
+      { check: -2, rms_mm_s: 67.4, temp_c: 85.1 },
+      { check: -1, rms_mm_s: 67.9, temp_c: 85.8 },
       { check: 0, rms_mm_s: Number(latestVib), temp_c: Number(latestTemp) },
     ],
     frequency_bands: [

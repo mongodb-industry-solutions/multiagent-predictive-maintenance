@@ -99,6 +99,15 @@ export const generateWorkOrder = tool(
           type: "string",
           description: "Title of the work order",
         },
+        instructions: {
+          type: "string",
+          description:
+            "Step-by-step maintenance instructions derived from the incident report and past work orders",
+        },
+        root_cause: {
+          type: "string",
+          description: "Root cause from the incident report",
+        },
         estimated_duration_days: {
           type: "number",
           description: "Estimated duration in days (1-5)",
@@ -128,12 +137,12 @@ export const generateWorkOrder = tool(
           items: {
             type: "string",
             enum: [
-              "Bearings",
-              "Shafts",
-              "Lubricant",
-              "Seals",
-              "Bolts",
-              "Gaskets",
+              "Protective Optics Window",
+              "Focusing Lens Assembly",
+              "Coolant Filter & Tubing",
+              "Linear Stage Bearings",
+              "Clamping Fixture Bolts",
+              "Optical Housing Seals",
             ],
           },
           minItems: 0,
@@ -148,6 +157,8 @@ export const generateWorkOrder = tool(
         "name",
         "machine_id",
         "title",
+        "instructions",
+        "root_cause",
         "estimated_duration_days",
         "required_skills",
         "required_materials",

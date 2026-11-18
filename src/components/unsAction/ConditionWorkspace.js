@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Icon } from "@via-ds/icons";
 import { Body, Description, H2, H3 } from "@via-ds/components";
 import { useFactoryData } from "@/components/factoryDataProvider/FactoryDataProvider";
+import SensorSlider, {
+  SensorLegend,
+} from "@/components/sensorSlider/SensorSlider";
+import { ensureAlertPersisted } from "@/lib/api/alerts";
 import {
   DEFAULT_SENSOR_READINGS,
   DEFAULT_THRESHOLDS,
+  FACTORY_SOURCE_STORAGE_KEY,
+  LASER_WELDING_MACHINE,
 } from "@/lib/factory/constants";
 import { isRunningOrder } from "@/lib/factory/sessionOrders";
 
@@ -15,178 +22,17 @@ function severityClass(severity) {
   return "bg-[#FFF1E5] text-[#944F01]";
 }
 
-const COLORS = {
-  normal: "#00A35C",
-  warning: "#DB6C00",
-  critical: "#DB3030",
-};
-
-function severityFor(value, threshold) {
-  const ratio = value / Math.max(1, threshold);
-  if (ratio >= 1.5) return "critical";
-  if (ratio > 1) return "warning";
-  return "normal";
-}
-
-/**
- * Range-input state that only commits when the interaction ends: on pointer
- * release after a drag, on a plain click (press + release on a new value), or
- * on key release. The returned `draft` follows the thumb live.
- */
-function useCommitOnRelease(value, onCommit) {
-  const [draft, setDraft] = useState(value);
-  const dragging = useRef(false);
-  const draftRef = useRef(value);
-  const lastCommitted = useRef(value);
-
-  useEffect(() => {
-    if (!dragging.current) {
-      setDraft(value);
-      draftRef.current = value;
-      lastCommitted.current = value;
-    }
-  }, [value]);
-
-  const commit = (next) => {
-    const numeric = Number(next);
-    if (numeric === lastCommitted.current) return;
-    lastCommitted.current = numeric;
-    onCommit(numeric);
-  };
-
-  // Fallback for a pointer released outside the slider while dragging.
-  useEffect(() => {
-    const release = () => {
-      if (!dragging.current) return;
-      dragging.current = false;
-      commit(draftRef.current);
-    };
-    window.addEventListener("pointerup", release);
-    window.addEventListener("pointercancel", release);
-    return () => {
-      window.removeEventListener("pointerup", release);
-      window.removeEventListener("pointercancel", release);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onCommit]);
-
-  const handlers = {
-    onPointerDown: () => {
-      dragging.current = true;
-    },
-    onPointerUp: (event) => {
-      dragging.current = false;
-      commit(event.currentTarget.value);
-    },
-    onKeyUp: (event) => commit(event.currentTarget.value),
-    onChange: (event) => {
-      const next = Number(event.target.value);
-      draftRef.current = next;
-      setDraft(next);
-    },
-  };
-
-  return [draft, handlers];
-}
-
-/**
- * One track, two handles: a round thumb for the injected reading and an
- * orange flag for the alert threshold. The track is tinted green below the
- * threshold and red above it, and the filled reading bar takes the current
- * severity colour, so the relationship between the two is visible at a glance.
- */
-function SensorSlider({
-  label,
-  unit,
-  min,
-  max,
-  value,
-  threshold,
-  onCommitValue,
-  onCommitThreshold,
-  disabled = false,
-}) {
-  const [draftValue, valueHandlers] = useCommitOnRelease(value, onCommitValue);
-  const [draftThreshold, thresholdHandlers] = useCommitOnRelease(
-    threshold,
-    onCommitThreshold
-  );
-  const percent = (number) =>
-    Math.min(100, Math.max(0, ((number - min) / (max - min)) * 100));
-  const valuePct = percent(draftValue);
-  const thresholdPct = percent(draftThreshold);
-  const severity = severityFor(draftValue, draftThreshold);
-  const color = COLORS[severity];
-
-  return (
-    <div className={`grid gap-1 ${disabled ? "opacity-50" : ""}`}>
-      <div className="flex items-baseline justify-between gap-2">
-        <Body className="text-sm text-[#3D4F58] font-medium">
-          {label}
-        </Body>
-        <span className="flex items-baseline gap-3 font-mono text-sm">
-          <span className="text-[#944F01]" title="Alert threshold">
-            ▮ {draftThreshold} {unit}
-          </span>
-          <span
-            className="text-sm font-semibold"
-            style={{ color: severity === "normal" ? "#112733" : color }}
-            title="Current reading"
-          >
-            ● {draftValue} {unit}
-          </span>
-        </span>
-      </div>
-
-      <div
-        className={`relative h-8 ${disabled ? "cursor-not-allowed" : ""}`}
-        style={{ "--sensor-value-color": color }}
-        title={
-          disabled
-            ? "Readings and thresholds can only be changed while the selected order is running."
-            : undefined
-        }
-      >
-        {/* Track: safe zone up to the threshold, alert zone beyond it. */}
-        <div
-          aria-hidden="true"
-          className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full"
-          style={{
-            background: `linear-gradient(to right, #C0E9DA ${thresholdPct}%, #F6D3CD ${thresholdPct}%)`,
-          }}
-        >
-          <div
-            className="h-full rounded-full transition-[width] duration-100"
-            style={{ width: `${valuePct}%`, backgroundColor: color }}
-          />
-        </div>
-        <input
-          type="range"
-          aria-label={`${label} alert threshold`}
-          min={min}
-          max={max}
-          value={draftThreshold}
-          disabled={disabled}
-          className="sensor-range sensor-range--threshold"
-          {...thresholdHandlers}
-        />
-        <input
-          type="range"
-          aria-label={`${label} reading`}
-          min={min}
-          max={max}
-          value={draftValue}
-          disabled={disabled}
-          className="sensor-range sensor-range--value"
-          {...valueHandlers}
-        />
-      </div>
-    </div>
-  );
+function formatMachineLabel(machine) {
+  if (!machine || machine === "Laser Tab Welding" || machine === "M1") {
+    return LASER_WELDING_MACHINE.title;
+  }
+  return machine;
 }
 
 export default function ConditionWorkspace() {
+  const router = useRouter();
   const {
+    source,
     snapshot,
     selectedOrderId,
     selectedOrder,
@@ -201,6 +47,7 @@ export default function ConditionWorkspace() {
   const canControl = !isOrderLoading && selectedOrderRunning;
   const [alertFilter, setAlertFilter] = useState("all");
   const [message, setMessage] = useState("");
+  const [launchingKey, setLaunchingKey] = useState(null);
 
   const [thresholds, setThresholds] = useState(() => ({
     temperature_threshold: Number(
@@ -285,6 +132,33 @@ export default function ConditionWorkspace() {
     }
   };
 
+  const handleRootCause = async (alert, alertKey) => {
+    if (launchingKey) return;
+    setLaunchingKey(alertKey);
+    try {
+      try {
+        window.sessionStorage.setItem(FACTORY_SOURCE_STORAGE_KEY, source);
+      } catch {
+        // Ignore disabled storage.
+      }
+      const persisted = await ensureAlertPersisted(alert, {
+        temperature: readings.temperature,
+        vibration: readings.vibration,
+        thresholds,
+        orderId: alert.order_id || selectedOrderId,
+        origin: "uns-in-action",
+        dataSource: source,
+      });
+      router.push(
+        `/agentic-ai/failure-prediction?alertId=${encodeURIComponent(
+          persisted._id
+        )}&autorun=1`
+      );
+    } finally {
+      setLaunchingKey(null);
+    }
+  };
+
   const busy = busyAction === "metrics" || busyAction === "thresholds";
   const controlsDisabled =
     !canControl || busy || busyAction === "start-order";
@@ -304,6 +178,7 @@ export default function ConditionWorkspace() {
             value={readings.temperature}
             threshold={thresholds.temperature_threshold}
             disabled={controlsDisabled}
+            disabledTitle="Readings and thresholds can only be changed while the selected order is running."
             onCommitValue={(value) => commitReading("temperature", value)}
             onCommitThreshold={(value) =>
               commitThreshold("temperature_threshold", value)
@@ -317,6 +192,7 @@ export default function ConditionWorkspace() {
             value={readings.vibration}
             threshold={thresholds.vibration_threshold}
             disabled={controlsDisabled}
+            disabledTitle="Readings and thresholds can only be changed while the selected order is running."
             onCommitValue={(value) => commitReading("vibration", value)}
             onCommitThreshold={(value) =>
               commitThreshold("vibration_threshold", value)
@@ -325,16 +201,7 @@ export default function ConditionWorkspace() {
         </div>
 
         <div className="mt-auto flex min-h-[20px] items-center justify-between gap-2 pt-3 text-sm">
-          <span className="flex items-center gap-3 text-[#5C6C75]">
-            <span className="flex items-center gap-1">
-              <span className="inline-block h-3 w-3 rounded-full border-2 border-[#00A35C] bg-white" />
-              Reading
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="inline-block h-3.5 w-1 rounded-sm bg-[#DB6C00]" />
-              Threshold
-            </span>
-          </span>
+          <SensorLegend />
           <span className="flex min-w-0 items-center gap-1.5 truncate text-right">
             {busy ? (
               <>
@@ -414,40 +281,70 @@ export default function ConditionWorkspace() {
               </Body>
             </div>
           ) : (
-            visibleAlerts.map((alert, index) => (
-              <article
-                key={`${alert.timestamp}-${alert.metric}-${index}`}
-                className="rounded-xl border border-[#D8E3DF] bg-[#F8FAF9] p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-sm font-semibold uppercase ${severityClass(
-                      alert.severity
-                    )}`}
-                  >
-                    {alert.severity}
-                  </span>
-                  <Description
-                    className="shrink-0 whitespace-nowrap text-[11px] tabular-nums"
-                    title={
-                      alert.timestamp
-                        ? new Date(alert.timestamp).toLocaleString()
-                        : undefined
-                    }
-                  >
-                    {alert.timestamp
-                      ? new Date(alert.timestamp).toLocaleTimeString()
-                      : "Now"}
+            visibleAlerts.map((alert, index) => {
+              const alertKey = `${alert.order_id || selectedOrderId || "order"}-${alert.timestamp}-${alert.metric}-${index}`;
+              const unit = alert.metric === "vibration" ? "mm/s" : "°C";
+              const hasNumbers =
+                Number.isFinite(Number(alert.value)) &&
+                Number.isFinite(Number(alert.threshold));
+              return (
+                <article
+                  key={alertKey}
+                  className="flex flex-col rounded-xl border border-[#D8E3DF] bg-[#F8FAF9] p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-sm font-semibold uppercase ${severityClass(
+                        alert.severity
+                      )}`}
+                    >
+                      {alert.severity || "warning"}
+                    </span>
+                    <Description
+                      className="shrink-0 whitespace-nowrap text-[11px] tabular-nums"
+                      title={
+                        alert.timestamp
+                          ? new Date(alert.timestamp).toLocaleString()
+                          : undefined
+                      }
+                    >
+                      {alert.timestamp
+                        ? new Date(alert.timestamp).toLocaleTimeString()
+                        : "Now"}
+                    </Description>
+                  </div>
+                  <H3 className="mt-3 !text-base !leading-6 capitalize text-[#112733]">
+                    High {alert.metric}
+                  </H3>
+                  <Description className="mt-1">
+                    {formatMachineLabel(alert.machine)}
                   </Description>
-                </div>
-                <H3 className="mt-3 !text-base !leading-6 capitalize text-[#112733]">
-                  High {alert.metric}
-                </H3>
-                <Description className="mt-1">
-                  {alert.machine || "Laser Tab Welding"}
-                </Description>
-              </article>
-            ))
+                  {hasNumbers && (
+                    <Description className="mt-0.5 font-mono text-sm text-[#5C6C75]">
+                      {Number(alert.value)} {unit} &gt; {Number(alert.threshold)}{" "}
+                      {unit}
+                    </Description>
+                  )}
+                  <div className="mt-auto flex items-center justify-end pt-3">
+                    <button
+                      type="button"
+                      onClick={() => handleRootCause(alert, alertKey)}
+                      disabled={Boolean(launchingKey)}
+                      aria-label={`Run root cause analysis for high ${alert.metric} alert`}
+                      title="Run root cause analysis in Predictive Maintenance"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold text-[#00684A] hover:bg-white disabled:cursor-wait disabled:opacity-60"
+                    >
+                      <Icon
+                        glyph={launchingKey === alertKey ? "Refresh" : "Sparkle"}
+                        size={14}
+                        className={launchingKey === alertKey ? "animate-spin" : ""}
+                      />
+                      Root Cause
+                    </button>
+                  </div>
+                </article>
+              );
+            })
           )}
         </div>
       </div>

@@ -1,3 +1,7 @@
+# Ignore git directory
+.git
+.gitignore
+
 # Ignore node_modules and dependencies
 /node_modules/
 /.pnp
@@ -47,7 +51,7 @@ third-party-licenses.json
 # Ignore README and other docs files
 README.md
 
-# Ignore other folders not needed for build
-/data/
+# Ignore other folders and CLI scripts not needed for container build
 /environments/
-/scripts/
+scripts/*.sh
+scripts/*.mjs

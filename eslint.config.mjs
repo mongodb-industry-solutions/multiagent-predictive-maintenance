@@ -1,9 +1,7 @@
-import next from "@next/eslint-plugin-next";
 import reactHooks from "eslint-plugin-react-hooks";
 
 const eslintConfig = [
   { ignores: [".next/**", "out/**", "build/**", "next-env.d.ts"] },
-  next.flatConfig.coreWebVitals,
   {
     files: ["**/*.{js,jsx,mjs}"],
     languageOptions: {

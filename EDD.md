@@ -5,7 +5,7 @@ MongoDB data model for the Agentic Predictive Maintenance demo.
 Database: `agentic_predictive_maintenance` (configurable via `DATABASE_NAME`)
 
 Field types below were derived from the seeded documents and the runtime writes,
-not from a formal schema — this application defines no JSON Schema validators.
+not from a formal schema — except `change_records`, which enforces a strict `$jsonSchema` validator for shopfloor attribution and governance.
 
 ---
 
@@ -17,15 +17,18 @@ not from a formal schema — this application defines no JSON Schema validators.
 | `alerts` | Simulator threshold check + `seed:context` | Failure agent, Alerts list, Connected Factory Context Explorer | — |
 | `incident_reports` | Failure agent | Work order agent, UI | — |
 | `workorders` | Work order agent + seed + `seed:context` | Planning agent, vector retrieval, Connected Factory Context Explorer | `default` |
-| `manuals` | Seed | Failure agent (vector retrieval) | `default` |
-| `interviews` | Seed | Failure agent (vector retrieval) | `default` |
-| `inventory` | Seed | Work order agent | — |
-| `maintenance_staff` | Seed | Planning agent | — |
+| `manuals` | Seed / auto-sync | Failure agent (vector retrieval) | `default` |
+| `interviews` | Seed / auto-sync | Failure agent (vector retrieval) | `default` |
+| `inventory` | Seed / auto-sync | Work order agent | — |
+| `maintenance_staff` | Seed / auto-sync | Planning agent | — |
 | `production_calendar` | `generate_calendar` / release sync | Planning agent | — |
 | `argument_records` | Contestable AI agents + Engineer | Contestable AI scoring & UI | — |
 | `contestable_sessions` | Contestable AI API | Contestable AI UI, `$lookup` audit lineage | — |
-| `materials` | Auto-init / `seed:context` | Connected Factory Context Explorer (`$lookup` limits) | — |
+| `materials` | Auto-init / `seed:context` | Connected Factory Context Explorer (`$lookup` limits), Agentic Audit Trail | — |
 | `excursions` | Auto-init / `seed:context` | Connected Factory Context Explorer (`$vectorSearch`) | `excursion_signature_index` |
+| `change_records` | Auto-init + Agentic Audit Trail API (`$jsonSchema` strict) | Agentic Audit Trail UI, Documentation Agent episodic recall | — |
+| `change_record_revisions` | Auto-init + Agentic Audit Trail transactional versioning | Agentic Audit Trail `$lookup` lineage inspector | — |
+| `change_procedures` | Auto-init / `seed` | Change Documentation Agent (`$vectorSearch` pre-filtered) | `change_procedures_governed_idx` |
 | `checkpoints`, `checkpoint_writes` | LangGraph checkpointer | LangGraph | — |
 
 ---
@@ -55,19 +58,28 @@ Indexes: `metadata_1_ts_1` (implicit), `{ "metadata.machine_id": 1, "metadata.si
 
 ## `alerts`
 
-Shared operational alerts collection. Raised live on `M1` by [src/lib/simulation/failureDetection.js](./src/lib/simulation/failureDetection.js) and synced with 9 `LTW-04` edge-weld-monitor alerts (`ALT-LTW04-01` … `ALT-LTW04-09`) for the active UTC day (deliberately carrying no `workOrder`, `materialMaster`, or `operatorId` for read-time interval `$lookup`).
+Shared operational alerts collection. Raised live on `M1` (`Tab Laser Welding Cell`) from both **UNS in Action** ([src/components/factoryDataProvider/FactoryDataProvider.js](./src/components/factoryDataProvider/FactoryDataProvider.js)) and **Predictive Maintenance** ([src/lib/simulation/failureDetection.js](./src/lib/simulation/failureDetection.js) / [src/lib/api/alerts.js](./src/lib/api/alerts.js)), and synced with 9 `LTW-04` edge-weld-monitor alerts (`ALT-LTW04-01` … `ALT-LTW04-09`) for the active UTC day (deliberately carrying no `workOrder`, `materialMaster`, or `operatorId` for read-time interval `$lookup`).
 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `_id` | ObjectId | |
 | `alert_id` | string | Optional unique ID for `LTW-04` edge alerts (partial unique index) |
+| `uns_alert_key` | string | Optional deduplication key (`order_id:metric:timestamp`) for UNS / Predictive Maintenance alerts |
 | `err_code` | string | `E12` \| `E13` (`M1`) or `W-TEMP-01` etc. (`LTW-04`) |
 | `err_name` | string | Human-readable alarm label |
 | `machine_id` | string | `M1` \| `LTW-04` |
+| `machine` | string | Optional display asset label (`Tab Laser Welding Cell` on `M1`) |
+| `metric` | string | Optional (`temperature` \| `vibration` on `M1`) |
+| `value` | double | Optional measured reading at breach (`M1`) |
+| `threshold` | double | Optional active threshold at breach (`M1`) |
+| `severity` | string | Optional (`warning` \| `critical` on `M1`) |
+| `order_id` | string | Optional order ID associated with a UNS / Leafy Factory run |
+| `origin` | string | Optional (`uns-in-action` \| `predictive-maintenance`) |
+| `data_source` | string | Optional (`leafy` \| `local`) |
 | `area` | string | Optional (`welding`) |
 | `priority` | int | Optional (`1`–`3` on `LTW-04`, `1` = highest) |
-| `source` | string | Optional (`edge-weld-monitor`) |
-| `details` | object | `temperature` / `vibration` (`M1`) or `component` / `message` (`LTW-04`) |
+| `source` | string | Optional (`edge-weld-monitor` on `LTW-04`) |
+| `details` | object | `temperature` / `vibration` / `threshold` (`M1`) or `component` / `message` (`LTW-04`) |
 | `ts` | date | Point-in-time alert timestamp |
 | `status` | string | `new` \| `unacknowledged` |
 
@@ -104,9 +116,10 @@ Shared collection holding both maintenance work orders (`M1` seeded history + ag
 | `proposed_start_time` | string | ISO-8601 **string**, not a BSON date |
 | `required_skills` | array\<string\> | Matched against `maintenance_staff.skills` |
 | `observations` | string | Maintenance orders (embedded) |
-| `root cause` | string | ⚠️ Field name contains a space — see Known inconsistencies |
-| `status` | string | e.g. `completed` |
-| `created_at` | object \| date | ⚠️ Seeded maintenance docs store `{ $date: … }` |
+| `root_cause` | string | Maintenance orders (embedded) |
+| `status` | string | e.g. `completed` \| `new` |
+| `created_at` | date | BSON date (parsed via `EJSON` on seed/sync) |
+| `seed_version` | int | Optional (`2` for Tab Laser Welding Cell v2 seed sync) |
 | `embedding` | array\<double\> | 1024 dims (maintenance orders only) |
 | `workOrder` | string | Production order ID (`WO-1001232` … `WO-1001236`, partial unique index, updated in-place for active UTC day) |
 | `orderType` | string | `production` on `LTW-04` production order spans |
@@ -128,6 +141,7 @@ Indexes: `{ machine_id: 1, startedAt: 1 }`, `{ workOrder: 1 }` (partial unique).
 | `section` | string | Embedded |
 | `text` | string | Embedded |
 | `embedding` | array\<double\> | 1024 dims |
+| `seed_version` | int | Seed sync version (`2`) |
 
 Vector index `default`: `embedding`, cosine, 1024 dimensions.
 
@@ -144,6 +158,7 @@ Technician interview transcripts — the tacit-knowledge source for root-cause a
 | `type` | string | e.g. `maintenance` |
 | `text` | string | Embedded |
 | `embedding` | array\<double\> | 1024 dims |
+| `seed_version` | int | Seed sync version (`2`) |
 
 Vector index `default`: `embedding`, cosine, 1024 dimensions.
 
@@ -161,6 +176,7 @@ Vector index `default`: `embedding`, cosine, 1024 dimensions.
 | `location` | string | |
 | `unit_cost` | double | |
 | `last_updated` | object | ⚠️ Stored as `{ $date: … }`, not a BSON date |
+| `seed_version` | int | Seed sync version (`2`) |
 
 ## `maintenance_staff`
 
@@ -176,6 +192,7 @@ Vector index `default`: `embedding`, cosine, 1024 dimensions.
 | `weekly_schedule[].full_day` | bool | |
 | `weekly_schedule[].coverage` | string | |
 | `weekly_schedule[].shifts` | array\<object\> | Shift windows |
+| `seed_version` | int | Seed sync version (`2`) |
 
 ## `production_calendar`
 
@@ -282,6 +299,80 @@ Historical 4-minute weld-zone temperature excursions across the fleet (24 docume
 Indexes: `{ excursionId: 1 }` (unique), `{ machine_id: 1, start: 1 }`.
 Vector index `excursion_signature_index`: `signature` (`cosine`, `24` dims) with `filter` fields on `signal`, `status`, and `materialMaster`.
 
+## `change_records`
+
+Current-state operational governance collection for **Agentic Audit Trail** (`/agentic-ai/audit-trail`). Enforces a strict `$jsonSchema` validator (`validationLevel: "strict"`, `validationAction: "error"`) requiring `intervention_id`, `schema_version`, `v`, `status`, `agents` (`production_agent` and `documentation_agent` credentials), `intervention`, and `created_at`.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `_id` | ObjectId | |
+| `intervention_id` | string | Unique (`CHG-2026-0084` …) |
+| `schema_version` | int | `1` |
+| `v` | int | Monotonic revision counter (`1` .. `5`) |
+| `scenario_key` | string | `routine_trim` \| `out_of_bounds_deviation` \| `unauthorized_cloud_write` |
+| `data_source` | string | `leafy` \| `local` |
+| `status` | string | `captured` \| `policy_evaluated` \| `pending_human_review` \| `auto_approved` \| `approved_signed` \| `rejected` \| `quarantined_blocked` \| `closed_verified` \| `closed_exception` |
+| `agents` | object | Separated `production_agent`, `documentation_agent`, and optional `quality_engineer` credentials |
+| `intervention` | object | `ts`, `site`, `line`, `station`, `machine_id` (`LTW-04`), `mes_order_id`, `batch_unit_id`, `product`, `material_master`, `parameter`, `before_value`, `proposed_value`, `applied_value`, `execution_state` |
+| `reconstructed_context` | object | Deterministic UNS `telemetry` window, `materials` spec, MES order context, and `alerts` |
+| `policy_evaluation` | object | Deterministic rule checks (`R1` … `R4`), `classification`, `risk_level`, `routing_mode` |
+| `governed_requirements` | object \| null | Retrieved `approved_procedures` + `excluded_uncontrolled_docs` |
+| `episodic_recall` | array\<object\> | Prior closed `change_records` recalled for context |
+| `draft_record` | object \| null | Documentation Agent `change_summary`, `impact_assessment`, `compliance_rationale`, `recommended_actions` |
+| `approval` | object \| null | In-PAR auto-verification, quarantine notice, or 21 CFR Part 11 e-signature manifestation (`signer_user_id`, `auth_method`, `meaning_of_signature`, `signed_at`, `signature_sha256`) |
+| `outcome` | object \| null | Post-change telemetry check, `weld_ok`, `exception_opened`, and `closed_at` |
+| `evidence_sha256` | string | Canonical SHA-256 digest of the record state |
+| `created_at` | string | ISO-8601 timestamp |
+| `updated_at` | string | ISO-8601 timestamp |
+
+Indexes: `{ intervention_id: 1 }` (unique), `{ "intervention.machine_id": 1, "intervention.product": 1, created_at: -1 }`, `{ scenario_key: 1, status: 1, created_at: -1 }`.
+
+## `change_record_revisions`
+
+Append-only, hash-chained snapshot history implementing the MongoDB **Document Versioning Pattern** for `change_records` (aligned with 21 CFR §11.10(e) and EU GMP Annex 11 §9). Inserted atomically alongside `change_records` inside a multi-document transaction at every lifecycle transition.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `_id` | ObjectId | |
+| `intervention_id` | string | Joins with `change_records.intervention_id` |
+| `v` | int | Snapshot version (`1` .. `5`) |
+| `stage` | string | Lifecycle step identifier |
+| `triggered_by` | string | Agent display name (`Production Agent`, `Documentation Agent`, `Elena Rostova (Lead Quality Engineer)`) |
+| `agent_id` | string | `production_agent` \| `documentation_agent` \| `quality_engineer` |
+| `change_note` | string | Human-readable transition summary |
+| `field_changes` | array\<object\> | EU GMP Annex 11 §9 field-level `before` → `after` summary (`{ field, before, after }`) |
+| `prev_snapshot_sha256` | string \| null | Prior revision's `snapshot_sha256` (`null` on `v1`) forming a tamper-evident hash chain |
+| `snapshot_sha256` | string | Canonical SHA-256 hash of the snapshot state + `prev_snapshot_sha256` |
+| `snapshot` | object | Full historical `change_records` document at version `v` |
+| `changed_at` | string | ISO-8601 timestamp |
+
+Indexes: `{ intervention_id: 1, v: 1 }` (unique), `{ changed_at: -1 }`.
+
+## `change_procedures`
+
+Controlled SOPs, EV Welding Control Plans, and OT Security Policies (7 seeded documents spanning `approved`, `superseded`, and `draft` lifecycle states) grounded via governed `$vectorSearch` pre-filtering.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `_id` | ObjectId | |
+| `doc_id` | string | e.g. `SOP-LTW-014`, `SOP-QMS-008`, `CP-EV-WELD-004`, `POL-OTSEC-003` |
+| `version` | string | e.g. `3.2`, `2.1`, `4.0-rc1` |
+| `title` | string | |
+| `doc_type` | string | `SOP` \| `Control Plan` \| `Validation Protocol` \| `OT Security Policy` |
+| `status` | string | `approved` \| `superseded` \| `draft` (filter field) |
+| `site` | string | `leafy_factory` (filter field) |
+| `station` | string | `LTW-04` (filter field) |
+| `product` | string | `EV-PM-4C-S` \| `EV-PM-4C-P` \| `ALL` (filter field) |
+| `effective_from` | date | |
+| `approved_by` | string | |
+| `regulatory_refs` | array\<string\> | ISO 9001, IATF 16949, 21 CFR Part 11, EU GMP Annex 11, IEC 62443 |
+| `clauses` | array\<string\> | |
+| `text` | string | Embedded text |
+| `embedding` | array\<double\> | `EMBEDDING_DIMENSIONS` (default 1024) |
+
+Indexes: `{ doc_id: 1, version: 1 }` (unique), `{ status: 1, site: 1, station: 1, product: 1 }`.
+Vector index `change_procedures_governed_idx`: `embedding` (`cosine`, `1024` dims) with `filter` fields on `status`, `site`, `station`, and `product`.
+
 ---
 
 ## Relationships
@@ -301,6 +392,9 @@ erDiagram
     WORKORDERS }o--o{ INVENTORY : "parts consumed"
     WORKORDERS }o--o{ PRODUCTION_CALENDAR : "planning agent schedules around"
     INTERVIEWS }o--|| MAINTENANCE_STAFF : "employee_id"
+    CHANGE_RECORDS ||--o{ CHANGE_RECORD_REVISIONS : "transactional document versioning"
+    CHANGE_PROCEDURES }o--o{ CHANGE_RECORDS : "governed pre-filtered vectorSearch"
+    TELEMETRY }o--o{ CHANGE_RECORDS : "reconstructed 4-min window"
 
     TELEMETRY {
         date ts
@@ -360,6 +454,27 @@ erDiagram
         date deadline_date
         string priority
     }
+    CHANGE_RECORDS {
+        string intervention_id
+        int v
+        string status
+        object agents
+        object intervention
+        object policy_evaluation
+    }
+    CHANGE_RECORD_REVISIONS {
+        string intervention_id
+        int v
+        string snapshot_sha256
+        object snapshot
+    }
+    CHANGE_PROCEDURES {
+        string doc_id
+        string version
+        string status
+        string product
+        array embedding
+    }
 ```
 
 ---
@@ -369,22 +484,5 @@ erDiagram
 These are present in the current code and data. Documented here so agents model
 reality rather than the intended design.
 
-1. **`workorders.root cause` contains a space.** Every other collection uses
-   snake_case (`incident_reports.root_cause`). Critically,
-   [scripts/config.js](./scripts/config.js) lists `root_cause` in the
-   `workorders` `textFields`, so
-   [scripts/embed_collections.mjs](./scripts/embed_collections.mjs) resolves
-   `doc["root_cause"]` to `undefined` and substitutes `""` — **root-cause text is
-   silently excluded from the work order embeddings.**
-
-2. **Extended JSON dates are stored as nested objects.**
-   [scripts/seed.mjs](./scripts/seed.mjs) uses `JSON.parse` on `data/*.json`,
-   which leaves `{"$date": "…"}` as a plain object instead of converting it to a
-   BSON date. This affects `interviews.creation_date`, `inventory.last_updated`,
-   and `workorders.created_at`. Date range queries on those fields will not work.
-   The API route at [src/app/api/action/[action]/route.js](./src/app/api/action/%5Baction%5D/route.js)
-   already uses `EJSON.parse` correctly — the seed script does not.
-
-3. **`workorders.proposed_start_time` and `estimated_duration` are strings**
-   (`"2025-04-10T08:00:00.000Z"`, `"3 hours"`), so they cannot be sorted or
-   compared as dates/durations without conversion.
+1. **`workorders.proposed_start_time` and `estimated_duration` on seeded records are strings**
+   (`"2025-04-10T08:00:00.000Z"`, `"3 hours"`), while agent-generated work orders store `proposed_start_time` as a BSON `Date` and `estimated_duration_days` as a number.

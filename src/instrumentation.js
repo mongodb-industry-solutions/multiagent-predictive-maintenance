@@ -6,14 +6,24 @@ export async function register() {
   const { triggerConnectedFactoryBackgroundInit } = await import(
     "./lib/connectedFactory/seedData.js"
   );
+  const { triggerAuditTrailBackgroundInit } = await import(
+    "./lib/auditTrail/seedData.js"
+  );
   const { triggerDeploymentCalendarSync } = await import(
     "./lib/simulation/productionCalendar.js"
+  );
+  const { triggerPredictiveMaintenanceSeedSync } = await import(
+    "./lib/simulation/predictiveSeedSync.js"
   );
   // Run non-blocking in the background on server startup:
   // - If already provisioned, verifies in ~15ms with zero writes.
   // - On first deploy to an environment, populates only missing Connected Factory
-  //   records and indexes safely across pods.
+  //   and Agentic Audit Trail records and indexes safely across pods.
   void triggerConnectedFactoryBackgroundInit();
+  void triggerAuditTrailBackgroundInit();
+  // Idempotently upgrades/aligns Predictive Maintenance knowledge collections
+  // (manuals, interviews, inventory, maintenance_staff, seeded workorders) to the current seed version.
+  void triggerPredictiveMaintenanceSeedSync();
   // On new staging/production deployments (identified by DEPLOYMENT_ID),
   // regenerates production_calendar for PRODUCTION_CALENDAR_MONTHS once per release.
   void triggerDeploymentCalendarSync();

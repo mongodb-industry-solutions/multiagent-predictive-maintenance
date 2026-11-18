@@ -13,8 +13,6 @@ trigger:
       - .gitignore
       - .env.example
       - LICENSE
-      - scripts/**
-      - data/**
 
 steps:
   - name: publish
@@ -23,6 +21,9 @@ steps:
       create_repository: true
       registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
       repo: industrysolutions/multiagent-pred-maint # Change to demo name (short)
+      enable_cache: true
+      cache_repo: industrysolutions/multiagent-pred-maint
+      snapshot_mode: redo
       tags:
         - git-${DRONE_COMMIT_SHA:0:7}
         - latest
@@ -75,23 +76,20 @@ trigger:
       - .gitignore
       - .env.example
       - LICENSE
-      - scripts/**
-      - data/**
 
 steps:
-  - name: publish
-    image: plugins/kaniko-ecr
-    settings:
-      create_repository: true
-      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-      repo: industrysolutions/multiagent-pred-maint
-      tags:
-        - git-${DRONE_COMMIT_SHA:0:7}
-        - latest
-      access_key:
+  - name: retag-image-for-prod
+    image: public.ecr.aws/aws-cli/aws-cli:2.17.0
+    environment:
+      AWS_ACCESS_KEY_ID:
         from_secret: ecr_access_key
-      secret_key:
+      AWS_SECRET_ACCESS_KEY:
         from_secret: ecr_secret_key
+      AWS_DEFAULT_REGION: us-east-1
+    commands:
+      - aws ecr batch-get-image --repository-name industrysolutions/multiagent-pred-maint --image-ids imageTag=latest --query 'images[0].imageManifest' --output text > /tmp/manifest.json
+      - grep -q '{' /tmp/manifest.json
+      - aws ecr put-image --repository-name industrysolutions/multiagent-pred-maint --image-tag prod-${DRONE_COMMIT_SHA:0:7} --image-manifest file:///tmp/manifest.json || aws ecr describe-images --repository-name industrysolutions/multiagent-pred-maint --image-ids imageTag=prod-${DRONE_COMMIT_SHA:0:7} >/dev/null
     when:
       event:
         - push
@@ -105,7 +103,7 @@ steps:
       namespace: industrysolutions
       release: multiagent-predictive-maintenance
       values:
-        - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
+        - "image.tag=prod-${DRONE_COMMIT_SHA:0:7}"
         - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/multiagent-pred-maint"
         - "env.DEPLOYMENT_ID=production-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         - "ingress.enabled=true"

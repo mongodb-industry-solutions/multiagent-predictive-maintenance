@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "@via-ds/icons";
 import { Step, Stepper } from "@via-ds/components";
 import NextStepButton from "@/components/nextStepButton/NextStepButton";
+import FactorySourceSelector from "@/components/factorySourceSelector/FactorySourceSelector";
+import { useAgenticSource } from "@/components/agenticSourceProvider/AgenticSourceProvider";
 import { fetchAlerts } from "@/lib/api/alerts";
 import { fetchIncidentReports } from "@/lib/api/incidentReports";
 import { fetchWorkOrders } from "@/lib/api/workOrders";
@@ -58,6 +60,14 @@ export function isAgenticDemoPath(pathname) {
 export default function AgenticDemoStepper() {
   const pathname = usePathname();
   const router = useRouter();
+  const {
+    dataSource,
+    leafyAvailable,
+    isSourceChecking,
+    isSourceBusy,
+    sourceError,
+    handleSourceChange,
+  } = useAgenticSource();
   const [sessionProgress, setSessionProgress] = useState(0);
   const [availableProgress, setAvailableProgress] = useState(0);
   const [lastDemoRoute, setLastDemoRoute] = useState(null);
@@ -148,6 +158,24 @@ export default function AgenticDemoStepper() {
 
   if (!isAgenticDemoPath(pathname)) return null;
 
+  const sourceSelector = (
+    <div className="flex flex-col items-end gap-1">
+      <FactorySourceSelector
+        source={dataSource}
+        onChange={handleSourceChange}
+        connected={dataSource === "local" || leafyAvailable === true}
+        isChecking={isSourceChecking}
+        disabled={isSourceBusy || isSourceChecking}
+        menuAlign="right"
+      />
+      {sourceError && (
+        <p className="max-w-xs text-right text-sm font-medium text-[#B1371F]">
+          {sourceError}
+        </p>
+      )}
+    </div>
+  );
+
   if (pathname.startsWith("/agentic-ai/agent-sandbox")) {
     const fallbackRoute =
       navigationProgress >= 3
@@ -157,17 +185,20 @@ export default function AgenticDemoStepper() {
           : "/agentic-ai/failure-prediction";
 
     return (
-      <div className="shrink-0 px-4 py-3">
-        <h1 className="text-2xl font-semibold tracking-tight text-[#112733]">
-          Predictive Maintenance
-        </h1>
-        <Link
-          href={lastDemoRoute || fallbackRoute}
-          className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-[#00684A] hover:underline"
-        >
-          <Icon glyph="ArrowLeft" size={16} />
-          <span>Back to demo</span>
-        </Link>
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 px-4 py-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#112733]">
+            Predictive Maintenance
+          </h1>
+          <Link
+            href={lastDemoRoute || fallbackRoute}
+            className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-[#00684A] hover:underline"
+          >
+            <Icon glyph="ArrowLeft" size={16} />
+            <span>Back to demo</span>
+          </Link>
+        </div>
+        {sourceSelector}
       </div>
     );
   }
@@ -232,7 +263,9 @@ export default function AgenticDemoStepper() {
         <div
           id="agentic-demo-toolbar"
           className="flex w-full items-center justify-end"
-        />
+        >
+          {sourceSelector}
+        </div>
       </div>
 
       {nextAction && (

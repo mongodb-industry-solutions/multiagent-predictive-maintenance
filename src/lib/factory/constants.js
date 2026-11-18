@@ -3,6 +3,19 @@ export const FACTORY_SOURCES = {
   LEAFY: "leafy",
 };
 
+export const FACTORY_SOURCE_STORAGE_KEY = "leafy-factory-source";
+
+export const LASER_WELDING_MACHINE = {
+  id: "M1",
+  stationKey: "laser-welding",
+  title: "Tab Laser Welding Cell",
+  station: "Laser Tab Welding",
+  phaseLabel: "03 · High Precision Welding",
+  image: "/img/machines/Tab-Laser-Welding-Cell.png",
+  description:
+    "Joins cell tabs with a monitored laser process. Temperature and vibration thresholds drive maintenance alerts.",
+};
+
 export const PRODUCTS = [
   {
     id: "1",
