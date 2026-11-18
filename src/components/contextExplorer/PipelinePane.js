@@ -85,19 +85,27 @@ export default function PipelinePane({
   showingSignature,
   onToggleSignature,
   signatureLoading,
+  headerControl = null,
+  alwaysEditing = false,
+  collapsible = false,
+  showHeading = true,
+  onClear = null,
+  canClear = false,
 }) {
   const textareaRef = useRef(null);
   const [foldOpen, setFoldOpen] = useState(defaultProjectOpen);
+  const [bodyOpen, setBodyOpen] = useState(true);
+  const isEditing = alwaysEditing || (editing && !showingSignature);
 
   useEffect(() => {
     setFoldOpen(defaultProjectOpen);
   }, [defaultProjectOpen, pipeline]);
 
   useEffect(() => {
-    if (editing && textareaRef.current) {
+    if (isEditing && textareaRef.current) {
       textareaRef.current.focus();
     }
-  }, [editing]);
+  }, [isEditing]);
 
   const hasSignatureMacro = /SIGNATURE_OF\s*\(/.test(pipeline || "");
 
@@ -119,7 +127,7 @@ export default function PipelinePane({
   );
 
   const handleTextareaKeyDown = (event) => {
-    if (event.key === "Escape") {
+    if (event.key === "Escape" && !alwaysEditing) {
       event.preventDefault();
       setEditing(false);
       return;
@@ -131,17 +139,35 @@ export default function PipelinePane({
   };
 
   return (
-    <section className="flex h-full min-h-[420px] min-w-0 flex-col overflow-hidden rounded-2xl border border-[#D8E3DF] bg-white shadow-sm">
+    <section
+      className={`flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-[#D8E3DF] bg-white shadow-sm ${
+        bodyOpen ? "min-h-[420px]" : ""
+      }`}
+    >
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D8E3DF] bg-[#F8FAF9] px-4 py-2.5">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="text-base font-semibold text-[#112733]">
-            {showingSignature ? "SIGNATURE_OF" : "Pipeline"}
-          </span>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          {collapsible && (
+            <button
+              type="button"
+              onClick={() => setBodyOpen((open) => !open)}
+              aria-expanded={bodyOpen}
+              aria-label={bodyOpen ? "Collapse pipeline" : "Expand pipeline"}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[#3D4F58] hover:bg-[#E3FCF7]"
+            >
+              <Icon glyph={bodyOpen ? "ChevronDown" : "ChevronRight"} size={16} />
+            </button>
+          )}
+          {showHeading && (
+            <span className="text-base font-semibold text-[#112733]">
+              {showingSignature ? "SIGNATURE_OF" : "Pipeline"}
+            </span>
+          )}
           <code className="truncate rounded-md border border-[#D8E3DF] bg-white px-2 py-0.5 font-mono text-sm text-[#3D4F58]">
             {showingSignature
               ? "db.telemetry · 24 bins of 10 s, z-scored"
               : `db.${collection}`}
           </code>
+          {headerControl}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -172,7 +198,7 @@ export default function PipelinePane({
             </button>
           )}
 
-          {!showingSignature && (
+          {!showingSignature && !alwaysEditing && (
             <button
               type="button"
               onClick={() => setEditing((prev) => !prev)}
@@ -185,6 +211,18 @@ export default function PipelinePane({
             >
               <Icon glyph="Edit" size={14} />
               {editing ? "Done" : "Edit"}
+            </button>
+          )}
+
+          {canClear && (
+            <button
+              type="button"
+              onClick={onClear}
+              aria-label="Clear traversal result"
+              title="Clear hops"
+              className="inline-flex items-center justify-center text-[#3D4F58] hover:text-[#00684A]"
+            >
+              <Icon glyph="Refresh" size={16} />
             </button>
           )}
 
@@ -204,14 +242,17 @@ export default function PipelinePane({
         </div>
       </header>
 
+      {bodyOpen && (
       <div className="relative min-h-0 flex-1 overflow-auto bg-[#0B1620] text-[#E6EDF3]">
-        {editing && !showingSignature ? (
+        {isEditing ? (
           <textarea
             ref={textareaRef}
             value={pipeline}
             onChange={(event) => onChangePipeline(event.target.value)}
             onKeyDown={handleTextareaKeyDown}
-            onBlur={() => setEditing(false)}
+            onBlur={() => {
+              if (!alwaysEditing) setEditing(false);
+            }}
             spellCheck={false}
             aria-label="MongoDB aggregation pipeline editor"
             className="h-full min-h-[360px] w-full resize-none border-0 bg-[#0B1620] p-4 font-mono text-sm leading-6 text-[#E6EDF3] outline-none"
@@ -318,6 +359,7 @@ export default function PipelinePane({
           </pre>
         )}
       </div>
+      )}
     </section>
   );
 }

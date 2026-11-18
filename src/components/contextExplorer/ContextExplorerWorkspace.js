@@ -21,7 +21,7 @@ const DATA_COLLECTION_DESCRIPTIONS = {
   alerts:
     "LTW-04 edge alarms carry machine_id & ts, with no order or material ID",
   workorders:
-    "Stores M1 maintenance orders alongside LTW-04 production order spans",
+    "Stores welding-cell maintenance orders (legacy asset id M1) alongside LTW-04 production order spans",
   materials:
     "ERP cell-tab and busbar foil master data including maxWeldTempC thermal limits",
 };

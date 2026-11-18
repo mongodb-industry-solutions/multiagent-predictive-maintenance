@@ -116,7 +116,13 @@ async function main() {
     await seedAuditTrailData({
       onProgress: (msg) => process.stdout.write(`[seed:audit] ${msg}\n`),
     });
-    logStep("Agentic Audit Trail provisioned. Initial setup complete!");
+    logStep("Agentic Audit Trail provisioned. Seeding the knowledge graph...");
+    currentStep = "seed_knowledge_graph";
+    const { seedKnowledgeGraphData } = await import(
+      "../src/lib/knowledgeGraph/seedData.js"
+    );
+    await seedKnowledgeGraphData();
+    logStep("Knowledge graph provisioned. Initial setup complete!");
   } catch (err) {
     logStep(`Error: ${err.message}`);
     if (currentStep === "embed") {
@@ -128,6 +134,10 @@ async function main() {
     } else if (currentStep === "seed_context") {
       logStep(
         "Connected Factory seed failed. You can retry with: npm run seed:context"
+      );
+    } else if (currentStep === "seed_knowledge_graph") {
+      logStep(
+        "Knowledge graph seed failed. Restart the app to retry automatic provisioning."
       );
     } else {
       logStep("You can try running the failed step manually.");

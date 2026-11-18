@@ -29,6 +29,7 @@ not from a formal schema — except `change_records`, which enforces a strict `$
 | `change_records` | Auto-init + Agentic Audit Trail API (`$jsonSchema` strict) | Agentic Audit Trail UI, Documentation Agent episodic recall | — |
 | `change_record_revisions` | Auto-init + Agentic Audit Trail transactional versioning | Agentic Audit Trail `$lookup` lineage inspector | — |
 | `change_procedures` | Auto-init / `seed` | Change Documentation Agent (`$vectorSearch` pre-filtered) | `change_procedures_governed_idx` |
+| `knowledge_graph` | Auto-init / `seed` | Knowledge Graph explorer (`$graphLookup`), future agent GraphRAG | — |
 | `checkpoints`, `checkpoint_writes` | LangGraph checkpointer | LangGraph | — |
 
 ---
@@ -373,6 +374,31 @@ Controlled SOPs, EV Welding Control Plans, and OT Security Policies (7 seeded do
 Indexes: `{ doc_id: 1, version: 1 }` (unique), `{ status: 1, site: 1, station: 1, product: 1 }`.
 Vector index `change_procedures_governed_idx`: `embedding` (`cosine`, `1024` dims) with `filter` fields on `status`, `site`, `station`, and `product`.
 
+## `knowledge_graph`
+
+Polymorphic ontology for the Leafy Factory unified namespace (78 seeded vertices). Every station on the module line has one machine. The laser tab welder is `machine:LTW-04`. `M1` is its legacy asset id, stored on that same node, and is still the `machine_id` used by predictive-maintenance telemetry, alerts, and work orders. One collection holds the ISA-95 equipment tree, process flow, alarms, failure modes, spare parts, skills, manuals, materials, products, and governed procedures. Typed outbound edges live on each vertex so `$graphLookup` traverses inside this collection. `external_ref` points at the live UNS collection an agent or `$lookup` should join (`inventory`, `materials`, `manuals`, `alerts`, `maintenance_staff`, `change_procedures`, `telemetry`).
+
+`machine:LTW-04` is the only laser tab welder. `attributes.legacy_id` is `M1`, the id predictive maintenance still writes.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `_id` | string | Stable vertex id, e.g. `alarm:E12`, `part:P-001`, `station:laser-welding` |
+| `code` | string | Business code (`E12`, `M1`, `P-001`, `MAT-CU-020`, `Mechanical Maintenance`) |
+| `label` | string | Short display name |
+| `node_type` | string | `site` \| `line` \| `phase` \| `station` \| `machine` \| `subsystem` \| `sensor` \| `alarm` \| `failure` \| `part` \| `manual` \| `skill` \| `product` \| `material` \| `sop` |
+| `layer` | string | `uns_hierarchy` \| `diagnostics` \| `maintenance` \| `production_governance` |
+| `parent_id` | string \| null | ISA-95 / equipment parent. `$graphLookup` uses `connectToField: "parent_id"` |
+| `uns_topic` | string | Unified namespace topic |
+| `summary` | string | One-sentence meaning for the explorer and future agents |
+| `attributes` | object | Type-specific facts (thresholds, recipes, contestable candidate ids) |
+| `external_ref` | object \| absent | `{ collection, field, value }` join key into an operational collection |
+| `edges` | array\<object\> | Outbound adjacency list. Each item is `{ target, rel, label }` |
+| `edges[].target` | string | `_id` of the destination vertex |
+| `edges[].rel` | string | `CONTAINS`, `FEEDS_INTO`, `OPERATED_BY`, `INDICATES`, `REQUIRES_PART`, `REQUIRES_SKILL`, `DOCUMENTED_IN`, `GOVERNED_BY`, `GOVERNS`, `USES`, `WELDS`, `RUNS`, `RAISES`, … |
+| `seed_version` | int | Knowledge-graph seed sync version (`7`) |
+
+Indexes: `{ "edges.target": 1, layer: 1 }` (multikey; reverse `$graphLookup` and `restrictSearchWithMatch`), `{ parent_id: 1, node_type: 1 }` (top-down equipment traversal), `{ layer: 1, node_type: 1 }`, `{ code: 1 }`, `{ "external_ref.collection": 1, "external_ref.value": 1 }`. Forward traversal matches `edges.target` to `_id`.
+
 ---
 
 ## Relationships
@@ -395,6 +421,10 @@ erDiagram
     CHANGE_RECORDS ||--o{ CHANGE_RECORD_REVISIONS : "transactional document versioning"
     CHANGE_PROCEDURES }o--o{ CHANGE_RECORDS : "governed pre-filtered vectorSearch"
     TELEMETRY }o--o{ CHANGE_RECORDS : "reconstructed 4-min window"
+    KNOWLEDGE_GRAPH }o--o{ ALERTS : "external_ref err_code"
+    KNOWLEDGE_GRAPH }o--o{ INVENTORY : "external_ref part_id"
+    KNOWLEDGE_GRAPH }o--o{ MANUALS : "external_ref pages"
+    KNOWLEDGE_GRAPH }o--o{ MAINTENANCE_STAFF : "external_ref skills"
 
     TELEMETRY {
         date ts
@@ -474,6 +504,13 @@ erDiagram
         string status
         string product
         array embedding
+    }
+    KNOWLEDGE_GRAPH {
+        string _id
+        string node_type
+        string layer
+        string parent_id
+        array edges
     }
 ```
 
