@@ -46,13 +46,10 @@ async function createCollectionsFromData(db) {
     if (!Array.isArray(docs))
       throw new Error(`${file} does not contain a JSON array.`);
     if (docs.length === 0) continue;
-    const versionedDocs =
-      colName === "maintenance_staff"
-        ? docs
-        : docs.map((doc) => ({
-            ...doc,
-            seed_version: PREDICTIVE_SEED_VERSION,
-          }));
+    const versionedDocs = docs.map((doc) => ({
+      ...doc,
+      seed_version: PREDICTIVE_SEED_VERSION,
+    }));
     await db.collection(colName).insertMany(versionedDocs);
     process.stdout.write(
       `[seed] Inserted ${versionedDocs.length} docs into ${colName}\n`

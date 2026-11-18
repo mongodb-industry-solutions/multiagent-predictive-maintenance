@@ -17,10 +17,10 @@ not from a formal schema — except `change_records`, which enforces a strict `$
 | `alerts` | Simulator threshold check + `seed:context` | Failure agent, Alerts list, Connected Factory Context Explorer | — |
 | `incident_reports` | Failure agent | Work order agent, UI | — |
 | `workorders` | Work order agent + seed + `seed:context` | Planning agent, vector retrieval, Connected Factory Context Explorer | `default` |
-| `manuals` | Seed | Failure agent (vector retrieval) | `default` |
-| `interviews` | Seed | Failure agent (vector retrieval) | `default` |
-| `inventory` | Seed | Work order agent | — |
-| `maintenance_staff` | Seed | Planning agent | — |
+| `manuals` | Seed / auto-sync | Failure agent (vector retrieval) | `default` |
+| `interviews` | Seed / auto-sync | Failure agent (vector retrieval) | `default` |
+| `inventory` | Seed / auto-sync | Work order agent | — |
+| `maintenance_staff` | Seed / auto-sync | Planning agent | — |
 | `production_calendar` | `generate_calendar` / release sync | Planning agent | — |
 | `argument_records` | Contestable AI agents + Engineer | Contestable AI scoring & UI | — |
 | `contestable_sessions` | Contestable AI API | Contestable AI UI, `$lookup` audit lineage | — |
@@ -141,6 +141,7 @@ Indexes: `{ machine_id: 1, startedAt: 1 }`, `{ workOrder: 1 }` (partial unique).
 | `section` | string | Embedded |
 | `text` | string | Embedded |
 | `embedding` | array\<double\> | 1024 dims |
+| `seed_version` | int | Seed sync version (`2`) |
 
 Vector index `default`: `embedding`, cosine, 1024 dimensions.
 
@@ -157,6 +158,7 @@ Technician interview transcripts — the tacit-knowledge source for root-cause a
 | `type` | string | e.g. `maintenance` |
 | `text` | string | Embedded |
 | `embedding` | array\<double\> | 1024 dims |
+| `seed_version` | int | Seed sync version (`2`) |
 
 Vector index `default`: `embedding`, cosine, 1024 dimensions.
 
@@ -174,6 +176,7 @@ Vector index `default`: `embedding`, cosine, 1024 dimensions.
 | `location` | string | |
 | `unit_cost` | double | |
 | `last_updated` | object | ⚠️ Stored as `{ $date: … }`, not a BSON date |
+| `seed_version` | int | Seed sync version (`2`) |
 
 ## `maintenance_staff`
 
@@ -189,6 +192,7 @@ Vector index `default`: `embedding`, cosine, 1024 dimensions.
 | `weekly_schedule[].full_day` | bool | |
 | `weekly_schedule[].coverage` | string | |
 | `weekly_schedule[].shifts` | array\<object\> | Shift windows |
+| `seed_version` | int | Seed sync version (`2`) |
 
 ## `production_calendar`
 

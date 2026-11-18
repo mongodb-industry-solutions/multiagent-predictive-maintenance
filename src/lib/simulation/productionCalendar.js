@@ -162,42 +162,67 @@ export async function replaceProductionCalendar(
 }
 
 /**
- * Regenerate `production_calendar` strictly once per staging/production deployment,
- * using `deployment_id` stamped directly on `production_calendar` tasks (no extra collection).
+ * Ensure `production_calendar` is populated and up to date:
  *
- * - Runs ONLY when `NEXT_PUBLIC_ENV` is `staging` or `production`, `DEPLOYMENT_ID`
- *   is injected by CI/CD, and `PRODUCTION_CALENDAR_MONTHS` is configured (>= 1).
- * - Never runs on local `npm run dev`, `npm start`, or Docker Compose.
- * - Never re-runs on pod restarts or scaling within the same release because existing
- *   `production_calendar` tasks already carry `deployment_id === DEPLOYMENT_ID`.
+ * - On an empty collection in any environment (including local `npm run dev` against
+ *   a fresh database), seeds an initial 6-month (or `PRODUCTION_CALENDAR_MONTHS`) calendar once.
+ * - On staging/production deployments (`NEXT_PUBLIC_ENV` in `staging` | `production`,
+ *   `DEPLOYMENT_ID` set, `PRODUCTION_CALENDAR_MONTHS` >= 1), regenerates `production_calendar`
+ *   strictly once per `DEPLOYMENT_ID` without re-running on pod restarts or scaling.
+ * - Never overwrites an already-populated local calendar.
  */
 export async function syncProductionCalendarForDeployment() {
-  const envName = process.env.NEXT_PUBLIC_ENV?.trim();
-  const deploymentId = process.env.DEPLOYMENT_ID?.trim();
-  const months = parseInt(process.env.PRODUCTION_CALENDAR_MONTHS ?? "", 10);
-
-  if (
-    !DEPLOY_TARGET_ENVIRONMENTS.has(envName) ||
-    !deploymentId ||
-    !Number.isInteger(months) ||
-    months < 1
-  ) {
-    return { skipped: true, reason: "not_a_managed_deployment" };
-  }
-
-  const cacheKey = `${envName}:${deploymentId}`;
-  if (verifiedDeploymentKeyInProcess === cacheKey) {
-    return { skipped: true, reason: "already_verified_in_process" };
-  }
-
   const dbName = process.env.DATABASE_NAME;
   if (!dbName) {
     throw new Error("DATABASE_NAME environment variable is required but not set");
   }
 
+  const envName = process.env.NEXT_PUBLIC_ENV?.trim();
+  const deploymentId = process.env.DEPLOYMENT_ID?.trim();
+  const configuredMonths = parseInt(
+    process.env.PRODUCTION_CALENDAR_MONTHS ?? "",
+    10
+  );
+  const isManagedDeployment =
+    DEPLOY_TARGET_ENVIRONMENTS.has(envName) &&
+    Boolean(deploymentId) &&
+    Number.isInteger(configuredMonths) &&
+    configuredMonths >= 1;
+
+  const cacheKey = isManagedDeployment
+    ? `${envName}:${deploymentId}`
+    : "unmanaged:non_empty";
+  if (verifiedDeploymentKeyInProcess === cacheKey) {
+    return { skipped: true, reason: "already_verified_in_process" };
+  }
+
   const client = await getMongoClientPromise();
   const db = client.db(dbName);
   const collection = db.collection(PRODUCTION_CALENDAR_COLLECTION);
+
+  if (!isManagedDeployment) {
+    const existing = await collection.findOne({}, { projection: { _id: 1 } });
+    if (existing) {
+      verifiedDeploymentKeyInProcess = cacheKey;
+      return { skipped: true, reason: "already_populated" };
+    }
+    const defaultMonths =
+      Number.isInteger(configuredMonths) && configuredMonths >= 1
+        ? configuredMonths
+        : 6;
+    const { insertedCount } = await replaceProductionCalendar(db, defaultMonths);
+    verifiedDeploymentKeyInProcess = cacheKey;
+    console.log(
+      `[production-calendar] Seeded initial ${insertedCount} tasks (${defaultMonths} months) into empty collection.`
+    );
+    return {
+      skipped: false,
+      months: defaultMonths,
+      tasksGenerated: insertedCount,
+    };
+  }
+
+  const months = configuredMonths;
 
   const alreadySynced = await collection.findOne(
     { deployment_id: deploymentId },

@@ -51,5 +51,7 @@ third-party-licenses.json
 # Ignore README and other docs files
 README.md
 
-# Ignore other folders not needed for build
+# Ignore other folders and CLI scripts not needed for container build
 /environments/
+scripts/*.sh
+scripts/*.mjs

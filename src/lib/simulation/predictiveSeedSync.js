@@ -36,6 +36,8 @@ async function isAlreadySynced(db) {
     v2Interviews,
     staleInventory,
     v2Inventory,
+    staleStaff,
+    v2Staff,
     legacyWorkorders,
     v2Workorders,
     unembeddedManuals,
@@ -59,6 +61,12 @@ async function isAlreadySynced(db) {
       .countDocuments({ seed_version: { $ne: PREDICTIVE_SEED_VERSION } }, { limit: 1 }),
     db
       .collection("inventory")
+      .countDocuments({ seed_version: PREDICTIVE_SEED_VERSION }, { limit: 1 }),
+    db
+      .collection("maintenance_staff")
+      .countDocuments({ seed_version: { $ne: PREDICTIVE_SEED_VERSION } }, { limit: 1 }),
+    db
+      .collection("maintenance_staff")
       .countDocuments({ seed_version: PREDICTIVE_SEED_VERSION }, { limit: 1 }),
     db
       .collection("workorders")
@@ -93,6 +101,8 @@ async function isAlreadySynced(db) {
     v2Interviews > 0 &&
     staleInventory === 0 &&
     v2Inventory > 0 &&
+    staleStaff === 0 &&
+    v2Staff > 0 &&
     legacyWorkorders === 0 &&
     v2Workorders > 0 &&
     unembeddedManuals === 0 &&
@@ -214,18 +224,21 @@ export async function syncPredictiveMaintenanceSeedData() {
   if (!locked) return;
 
   try {
-    const [manuals, interviews, inventory, workorders] = await Promise.all([
-      readSeedJson("manuals.json"),
-      readSeedJson("interviews.json"),
-      readSeedJson("inventory.json"),
-      readSeedJson("workorders.json"),
-    ]);
+    const [manuals, interviews, inventory, maintenanceStaff, workorders] =
+      await Promise.all([
+        readSeedJson("manuals.json"),
+        readSeedJson("interviews.json"),
+        readSeedJson("inventory.json"),
+        readSeedJson("maintenance_staff.json"),
+        readSeedJson("workorders.json"),
+      ]);
 
-    // Replace static knowledge collections if stale
+    // Replace static knowledge collections if empty or stale
     for (const [colName, docs] of [
       ["manuals", manuals],
       ["interviews", interviews],
       ["inventory", inventory],
+      ["maintenance_staff", maintenanceStaff],
     ]) {
       const staleCount = await db
         .collection(colName)

@@ -22,7 +22,7 @@ export async function register() {
   void triggerConnectedFactoryBackgroundInit();
   void triggerAuditTrailBackgroundInit();
   // Idempotently upgrades/aligns Predictive Maintenance knowledge collections
-  // (manuals, interviews, inventory, seeded workorders) to the current seed version.
+  // (manuals, interviews, inventory, maintenance_staff, seeded workorders) to the current seed version.
   void triggerPredictiveMaintenanceSeedSync();
   // On new staging/production deployments (identified by DEPLOYMENT_ID),
   // regenerates production_calendar for PRODUCTION_CALENDAR_MONTHS once per release.

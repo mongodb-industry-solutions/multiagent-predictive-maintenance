@@ -9,16 +9,16 @@ MongoDB Atlas, and retrieval uses Atlas Vector Search.
 ## Build and test commands
 
 ```bash
-npm install              # install dependencies (Node.js 20+)
-npm run seed             # first-time only: seed collections, embeddings, indexes
-npm run dev              # dev server on http://localhost:8080
-npm run build            # production build
-npm run lint             # ESLint
+npm install # install dependencies (Node.js 20+)
+npm run dev # dev server on http://localhost:8080 (auto-provisions DB on startup)
+npm run build # production build
+npm run lint # ESLint
 ```
 
 Supporting scripts:
 
 ```bash
+npm run seed                   # optional CLI one-shot setup on an empty DB
 npm run embed                  # re-embed configured collections, refresh vector indexes
 npm run generate_calendar 6    # regenerate production_calendar (destructive, see below)
 npm run tpn                    # regenerate THIRD-PARTY-NOTICES.md
@@ -131,6 +131,21 @@ Constraints worth knowing before you debug a failure:
 
 Use the official MongoDB agent skills from https://github.com/mongodb/agent-skills
 whenever the task is MongoDB-specific and a matching skill exists.
+
+## Database Changes and Provisioning Rules
+
+All database changes — collections, time-series/TTL options, `$jsonSchema` validators, seed documents, embeddings, B-tree indexes, and Atlas Search / Vector Search indexes — **must be 100% code-driven and require zero manual intervention** (wired through [`src/instrumentation.js`](./src/instrumentation.js)):
+
+- **Out-of-the-box across every environment:** Every change must work automatically in:
+  1. **Local development** (`npm run dev`),
+  2. **New environment deployments** (against a completely empty database), and
+  3. **Existing database deployments** (upgrading older schemas/seed data in staging or production, including image promotions to production that do not re-run `docker build`).
+  Never assume a developer or operator will manually run `npm run seed`, `npm run embed`, `mongosh`, or Atlas UI steps.
+- **Idempotent, simple, and efficient — never wipe-and-reload on every deploy:**
+  - Startup checks must fast-path in milliseconds with **zero writes and zero embedding calls** when the database is already aligned, caching verification in-process.
+  - Only create, update, or embed what is missing or outdated (for example, bump `PREDICTIVE_SEED_VERSION` in [`src/lib/simulation/predictiveSeedSync.js`](./src/lib/simulation/predictiveSeedSync.js) when updating `data/*.json`), and preserve live user- or agent-created documents in shared collections.
+  - Coordinate writes safely across pods (e.g., lightweight MongoDB lease locks) so concurrent replicas do not race.
+  - Ensure any seed/config files needed at build or runtime (such as `data/*.json` and `scripts/config.js`) remain included in [`.dockerignore`](./.dockerignore), [`Dockerfile`](./Dockerfile), and [`Dockerfile.lambda`](./Dockerfile.lambda).
 
 ## When To Use EDD.md
 
