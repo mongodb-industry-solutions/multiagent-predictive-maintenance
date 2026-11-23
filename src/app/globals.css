@@ -442,6 +442,7 @@ body.contestable-select-open [class*="selectDropdown"] {
   background-color: #ffeae5;
 }
 .agent-log-tool {
+  max-width: calc(100% - 3rem);
   padding: 0;
   background: transparent;
   box-shadow: none;

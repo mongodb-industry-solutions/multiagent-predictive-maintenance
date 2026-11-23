@@ -14,10 +14,11 @@ const tools = getTools();
 const prompt = ChatPromptTemplate.fromMessages([
   [
     "system",
-    `You are the Planning agent. 
+    `You are the Planning agent.
     You receive a workorder, retrieve additional context, and schedule the workorder execution.
+    Call query_knowledge_graph alongside check_inventory_availability and check_staff_availability to assess downstream production line blast radius and machine redundancy, and use that criticality to set delay_factor when calling schedule_work_order.
     No need to add details in the final response, after the work order is scheduled, just acknowledge the completion.
-    Use your tools as needed. 
+    Use your tools as needed.
     Current time: {time}.`,
   ],
   new MessagesPlaceholder("messages"),

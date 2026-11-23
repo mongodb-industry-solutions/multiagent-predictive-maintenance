@@ -6,6 +6,37 @@ import {
   findProductionSlot,
   scheduleMaintenanceWorkOrder,
 } from "@/lib/simulation/planning";
+import { queryDownstreamImpactGraph } from "@/lib/knowledgeGraph/agentQueries";
+
+export const queryKnowledgeGraph = tool(
+  async ({ machine_id = "M1" }) => {
+    const result = await queryDownstreamImpactGraph({
+      machineId: machine_id,
+    });
+    return JSON.stringify(result);
+  },
+  {
+    name: "query_knowledge_graph",
+    description:
+      "Traverse the factory knowledge graph via MongoDB $graphLookup to resolve machine topology, check station redundancy, and assess downstream production blast radius (starved stations and blocked EV products) to inform scheduling priority (delay_factor).",
+    schema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Name of the tool for identification purposes",
+          enum: ["query_knowledge_graph"],
+        },
+        machine_id: {
+          type: "string",
+          description: "Machine ID from the work order (e.g. M1 or LTW-04)",
+          default: "M1",
+        },
+      },
+      required: ["name", "machine_id"],
+    },
+  }
+);
 
 export const checkInventoryAvailability = tool(
   async ({ items }) => {
@@ -190,6 +221,7 @@ export const scheduleWorkOrder = tool(
 
 export function getTools() {
   return [
+    queryKnowledgeGraph,
     checkInventoryAvailability,
     checkStaffAvailability,
     scheduleWorkOrder,

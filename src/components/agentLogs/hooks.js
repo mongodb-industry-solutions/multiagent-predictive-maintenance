@@ -1,5 +1,23 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 
+function extractToolInput(values) {
+  if (!values || typeof values !== "object") return null;
+  if (values.query != null) return values.query;
+  if (values.kwargs?.query != null) return values.kwargs.query;
+  const source =
+    values.kwargs && typeof values.kwargs === "object" ? values.kwargs : values;
+  const args = Object.fromEntries(
+    Object.entries(source).filter(
+      ([key, value]) =>
+        key !== "name" &&
+        key !== "kwargs" &&
+        value !== undefined &&
+        value !== null
+    )
+  );
+  return Object.keys(args).length > 0 ? args : null;
+}
+
 // Helper to group tool_start/tool_end and extract tool info
 function processLogs(logs) {
   if (!logs) return [];
@@ -21,7 +39,7 @@ function processLogs(logs) {
       // Tool calls
       if (log.name === "tool_start") {
         const toolName = log.values?.name || log.values?.kwargs?.name || "Tool";
-        const query = log.values?.query || log.values?.kwargs?.query || null;
+        const query = extractToolInput(log.values);
         const toolLog = {
           type: "tool",
           toolName,

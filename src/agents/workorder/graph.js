@@ -14,8 +14,9 @@ const tools = getTools();
 const prompt = ChatPromptTemplate.fromMessages([
   [
     "system",
-    `You are the work order agent. 
+    `You are the work order agent.
     You receive an incident report, retrieve additional context, and generate a work order.
+    Call query_knowledge_graph alongside retrieve_work_orders to ground required_materials (using the exact inventory_name values), required_skills, and governing SOP citations for the diagnosed failure mode before generating the work order.
     No need to add details in the final response, after the work order is generated, just acknowledge the completion.
     Use your tools as needed.
     `,
