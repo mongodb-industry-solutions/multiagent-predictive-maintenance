@@ -9,7 +9,6 @@ import { KNOWLEDGE_GRAPH_TALK_TRACK } from "@/lib/const/talkTrack";
 import GraphCanvas from "./GraphCanvas";
 import GraphInspectorPane from "./GraphInspectorPane";
 import {
-  DEFAULT_DEPTH,
   HIERARCHY_LEVELS,
   LAYERS,
   LENS_DEFAULTS,
@@ -25,16 +24,19 @@ export default function KnowledgeGraphWorkspace() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [lens, setLens] = useState("full");
-  const [enabledLayers, setEnabledLayers] = useState(() => new Set(["uns_hierarchy"]));
+  const [lens, setLens] = useState("process");
+  const [enabledLayers, setEnabledLayers] = useState(
+    () => new Set(LENS_DEFAULTS.process.layers)
+  );
   const [search, setSearch] = useState("");
-  const [layout, setLayout] = useState("line");
-  const [depth, setDepth] = useState(DEFAULT_DEPTH);
+  const [layout, setLayout] = useState("network");
+  const [depth, setDepth] = useState(LENS_DEFAULTS.process.depth);
   const [expandedIds, setExpandedIds] = useState(() => new Set());
   const [focusMode, setFocusMode] = useState(false);
   const [focusIds, setFocusIds] = useState(null);
   const [selectedId, setSelectedId] = useState("");
   const [highlight, setHighlight] = useState(null);
+  const [resetSignal, setResetSignal] = useState(0);
   const [tab, setTab] = useState("query");
   const [infoOpen, setInfoOpen] = useState(false);
 
@@ -175,7 +177,7 @@ export default function KnowledgeGraphWorkspace() {
   }, [highlight, spotlight]);
 
   function selectLens(lensId) {
-    const defaults = LENS_DEFAULTS[lensId] || LENS_DEFAULTS.full;
+    const defaults = LENS_DEFAULTS[lensId] || LENS_DEFAULTS.process;
     setLens(lensId);
     setEnabledLayers(new Set(defaults.layers));
     setDepth(defaults.depth);
@@ -193,12 +195,42 @@ export default function KnowledgeGraphWorkspace() {
     setFocusMode(false);
   }
 
+  function handleHighlight(nextHighlight) {
+    setHighlight(nextHighlight);
+    const traversalIds = new Set([
+      ...(nextHighlight?.rootIds || []),
+      ...Object.keys(nextHighlight?.hopByNodeId || {}),
+    ]);
+    if (traversalIds.size > 0) {
+      setFocusIds(traversalIds);
+      setFocusMode(true);
+      setExpandedIds(new Set());
+      setSelectedId("");
+    } else {
+      setFocusMode(false);
+      setFocusIds(null);
+    }
+  }
+
+  function resetVisualization() {
+    setLens("process");
+    setEnabledLayers(new Set(LENS_DEFAULTS.process.layers));
+    setSearch("");
+    setLayout("network");
+    setDepth(LENS_DEFAULTS.process.depth);
+    setExpandedIds(new Set());
+    setFocusMode(false);
+    setFocusIds(null);
+    setSelectedId("");
+    setHighlight(null);
+    setResetSignal((current) => current + 1);
+  }
+
   function applyExampleView(view) {
     if (!view) return;
     setEnabledLayers(new Set(view.layers));
     setDepth(view.depth);
     setExpandedIds(new Set());
-    setFocusMode(false);
     setSearch("");
   }
 
@@ -306,21 +338,30 @@ export default function KnowledgeGraphWorkspace() {
           <div className="inline-flex rounded-lg border border-[#C1C7C6] bg-white p-0.5">
             <button
               type="button"
-              onClick={() => setLayout("line")}
-              className={`rounded-md px-2.5 py-1 text-sm font-medium ${
-                layout === "line" ? "bg-[#E3FCF7] font-semibold text-[#00684A]" : "text-[#5C6C75]"
-              }`}
-            >
-              Hierarchy
-            </button>
-            <button
-              type="button"
               onClick={() => setLayout("network")}
               className={`rounded-md px-2.5 py-1 text-sm font-medium ${
                 layout === "network" ? "bg-[#E3FCF7] font-semibold text-[#00684A]" : "text-[#5C6C75]"
               }`}
             >
               Network
+            </button>
+            <button
+              type="button"
+              onClick={() => setLayout("hierarchy")}
+              className={`rounded-md px-2.5 py-1 text-sm font-medium ${
+                layout === "hierarchy" ? "bg-[#E3FCF7] font-semibold text-[#00684A]" : "text-[#5C6C75]"
+              }`}
+            >
+              Hierarchy
+            </button>
+            <button
+              type="button"
+              onClick={() => setLayout("flow")}
+              className={`rounded-md px-2.5 py-1 text-sm font-medium ${
+                layout === "flow" ? "bg-[#E3FCF7] font-semibold text-[#00684A]" : "text-[#5C6C75]"
+              }`}
+            >
+              Flow
             </button>
           </div>
         </div>
@@ -349,10 +390,10 @@ export default function KnowledgeGraphWorkspace() {
             highlight={highlight}
             isolate={focusMode || expandedIds.size > 0}
             expandableIds={expandableIds}
-            canFocus={Boolean(emphasizedIds && emphasizedIds.size > 0)}
             focusMode={focusMode}
             onFocus={enterFocus}
             onExitFocus={exitFocus}
+            onReset={resetVisualization}
           />
           <GraphInspectorPane
             tab={tab}
@@ -360,8 +401,9 @@ export default function KnowledgeGraphWorkspace() {
             selectedNode={selectedNode}
             indexes={status?.indexes || []}
             nodesById={nodesById}
-            onHighlight={setHighlight}
+            onHighlight={handleHighlight}
             onView={applyExampleView}
+            resetSignal={resetSignal}
           />
         </div>
       )}

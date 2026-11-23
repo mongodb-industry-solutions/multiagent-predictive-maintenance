@@ -29,7 +29,7 @@ not from a formal schema — except `change_records`, which enforces a strict `$
 | `change_records` | Auto-init + Agentic Audit Trail API (`$jsonSchema` strict) | Agentic Audit Trail UI, Documentation Agent episodic recall | — |
 | `change_record_revisions` | Auto-init + Agentic Audit Trail transactional versioning | Agentic Audit Trail `$lookup` lineage inspector | — |
 | `change_procedures` | Auto-init / `seed` | Change Documentation Agent (`$vectorSearch` pre-filtered) | `change_procedures_governed_idx` |
-| `knowledge_graph` | Auto-init / `seed` | Knowledge Graph explorer (`$graphLookup`), future agent GraphRAG | — |
+| `knowledge_graph` | Auto-init / `seed` | Knowledge Graph explorer (`$graphLookup`), Predictive Maintenance agents (Failure, Work Order, Planning via `$graphLookup` + `$lookup`) | — |
 | `checkpoints`, `checkpoint_writes` | LangGraph checkpointer | LangGraph | — |
 
 ---

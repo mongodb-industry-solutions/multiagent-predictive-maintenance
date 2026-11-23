@@ -2,6 +2,42 @@ import { tool } from "@langchain/core/tools";
 import { vectorSearch } from "@/integrations/mongodb/vectorSearch";
 import getMongoClientPromise from "@/integrations/mongodb/client";
 import { generateEmbedding } from "@/integrations/embeddings_factory";
+import { queryMaintenanceRequirementsGraph } from "@/lib/knowledgeGraph/agentQueries";
+
+export const queryKnowledgeGraph = tool(
+  async ({ error_code, machine_id = "M1" }) => {
+    const result = await queryMaintenanceRequirementsGraph({
+      errorCode: error_code,
+      machineId: machine_id,
+    });
+    return JSON.stringify(result);
+  },
+  {
+    name: "query_knowledge_graph",
+    description:
+      "Traverse the factory knowledge graph via MongoDB $graphLookup + $lookup to get exact required spare parts (with live inventory names, stock, and lead times), certified skills, and governing SOPs for each candidate failure mode.",
+    schema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Name of the tool for identification purposes",
+          enum: ["query_knowledge_graph"],
+        },
+        error_code: {
+          type: "string",
+          description: "Incident error code (e.g. E12, E13)",
+        },
+        machine_id: {
+          type: "string",
+          description: "Machine ID from the incident report (e.g. M1 or LTW-04)",
+          default: "M1",
+        },
+      },
+      required: ["name", "machine_id"],
+    },
+  }
+);
 
 export const retrieveWorkOrders = tool(
   async ({ query, n = 3 }) => {
@@ -169,5 +205,5 @@ export const generateWorkOrder = tool(
 );
 
 export function getTools() {
-  return [retrieveWorkOrders, generateWorkOrder];
+  return [queryKnowledgeGraph, retrieveWorkOrders, generateWorkOrder];
 }

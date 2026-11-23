@@ -31,9 +31,10 @@ export async function callModel(state, config) {
   const prompt = ChatPromptTemplate.fromMessages([
     [
       "system",
-      `You are the Failure agent. 
+      `You are the Failure agent.
       You receive alert details, retrieve additional context, and generate an incident report.
-      No need to add details in the final response, after the incident report is generated, just acknowledge the completion.  
+      Call query_knowledge_graph alongside your manual, work order, and interview retrieval tools to resolve the canonical asset (e.g. M1 / LTW-04), affected subsystems, correlated shopfloor edge alarms, and governing SOPs before generating the incident report.
+      No need to add details in the final response, after the incident report is generated, just acknowledge the completion.
       Use your tools as needed.`,
     ],
     new MessagesPlaceholder("messages"),

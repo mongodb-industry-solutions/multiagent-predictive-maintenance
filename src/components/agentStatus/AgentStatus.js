@@ -92,40 +92,42 @@ export default function AgentStatus({
         {/* Center: Logs (flexible) */}
         <div
           className="flex flex-col flex-1 justify-center min-w-0"
-          style={{ height: "120px", alignItems: "flex-start" }}
+          style={{ height: "144px", alignItems: "flex-start" }}
         >
           <div
-            className="flex flex-col gap-1 overflow-y-auto w-full h-full pr-2 pl-3 agent-logs-scrollbar"
+            className="flex flex-col overflow-y-auto w-full h-full pr-2 pl-3 agent-logs-scrollbar"
             style={{
               scrollBehavior: "smooth",
-              height: "120px",
+              height: "144px",
               alignItems: "flex-start",
             }}
           >
-            {agentLogs.map((log, idx) => (
-              <div key={log.key || idx} className="flex items-center gap-2">
-                <span
-                  className="flex items-center justify-center"
-                  style={{ width: 22, height: 22, minWidth: 22 }}
-                >
-                  {log.loading ? (
-                    <ProgressCircle size="small" aria-label="Loading" />
-                  ) : (
-                    <Icon
-                      glyph="CheckmarkWithCircle"
-                      fill="#22c55e"
-                      size={20}
-                    />
-                  )}
-                </span>
-                <span className="text-gray-700 text-sm font-medium truncate max-w-xs">
-                  {log.toolName
-                    .replace(/_/g, " ")
-                    .replace(/^\w/, (c) => c.toUpperCase())}
-                </span>
-              </div>
-            ))}
-            <div ref={logsEndRef} />
+            <div className="my-auto flex flex-col gap-1 w-full">
+              {agentLogs.map((log, idx) => (
+                <div key={log.key || idx} className="flex items-center gap-2">
+                  <span
+                    className="flex items-center justify-center"
+                    style={{ width: 22, height: 22, minWidth: 22 }}
+                  >
+                    {log.loading ? (
+                      <ProgressCircle size="small" aria-label="Loading" />
+                    ) : (
+                      <Icon
+                        glyph="CheckmarkWithCircle"
+                        fill="#22c55e"
+                        size={20}
+                      />
+                    )}
+                  </span>
+                  <span className="text-gray-700 text-sm font-medium truncate max-w-xs">
+                    {log.toolName
+                      .replace(/_/g, " ")
+                      .replace(/^\w/, (c) => c.toUpperCase())}
+                  </span>
+                </div>
+              ))}
+              <div ref={logsEndRef} />
+            </div>
           </div>
         </div>
         {/* Right: See full logs (fixed width) */}
@@ -181,10 +183,10 @@ export default function AgentStatus({
                 style={{
                   top: navbarHeight,
                   right: 0,
-                  width: "40vw",
+                  width: "48vw",
                   height: `calc(100dvh - ${navbarHeight}px)`,
-                  minWidth: 400,
-                  maxWidth: 800,
+                  minWidth: 460,
+                  maxWidth: 860,
                 }}
               >
           <button
@@ -195,7 +197,7 @@ export default function AgentStatus({
           >
             <Icon glyph="ChevronRight" size={24} />
           </button>
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="min-h-0 flex-1 overflow-hidden p-4">
             <AgentLogs
               logs={logs}
               threadId={threadId}

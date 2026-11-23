@@ -1,6 +1,42 @@
 import { tool } from "@langchain/core/tools";
 import { vectorSearch } from "@/integrations/mongodb/vectorSearch";
 import getMongoClientPromise from "@/integrations/mongodb/client";
+import { queryFailureDiagnosticsGraph } from "@/lib/knowledgeGraph/agentQueries";
+
+export const queryKnowledgeGraph = tool(
+  async ({ error_code, machine_id = "M1" }) => {
+    const result = await queryFailureDiagnosticsGraph({
+      errorCode: error_code,
+      machineId: machine_id,
+    });
+    return JSON.stringify(result);
+  },
+  {
+    name: "query_knowledge_graph",
+    description:
+      "Traverse the factory knowledge graph via MongoDB $graphLookup to resolve legacy machine IDs (e.g. M1 -> LTW-04), candidate failure modes, affected subsystems, correlated shopfloor edge alarms, and governing SOPs.",
+    schema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Name of the tool for identification purposes",
+          enum: ["query_knowledge_graph"],
+        },
+        error_code: {
+          type: "string",
+          description: "Alert error code (e.g. E12, E13)",
+        },
+        machine_id: {
+          type: "string",
+          description: "Machine ID from the alert (e.g. M1 or LTW-04)",
+          default: "M1",
+        },
+      },
+      required: ["name", "error_code"],
+    },
+  }
+);
 
 export const retrieveManual = tool(
   async ({ query, n = 3 }) => {
@@ -192,6 +228,7 @@ export const generateIncidentReport = tool(
 
 export function getTools() {
   return [
+    queryKnowledgeGraph,
     retrieveManual,
     retrieveWorkOrders,
     retrieveInterviews,

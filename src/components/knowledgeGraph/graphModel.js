@@ -33,15 +33,14 @@ export const LAYERS = [
 ];
 
 export const LENSES = [
-  { id: "full", label: "Full Factory Ontology" },
-  { id: "welding", label: "Laser Welding Cell" },
   { id: "process", label: "Battery Line Process Flow" },
+  { id: "welding", label: "Laser Welding Cell" },
   { id: "fmea", label: "Fault-to-Repair FMEA" },
   { id: "governance", label: "Product & SOP Governance" },
+  { id: "full", label: "Full Factory Ontology" },
 ];
 
 export const LENS_DEFAULTS = {
-  full: { layers: ["uns_hierarchy"], depth: 5 },
   process: { layers: ["uns_hierarchy"], depth: 5 },
   welding: {
     layers: ["uns_hierarchy", "diagnostics", "maintenance", "production_governance"],
@@ -53,6 +52,10 @@ export const LENS_DEFAULTS = {
   },
   governance: {
     layers: ["uns_hierarchy", "production_governance"],
+    depth: 15,
+  },
+  full: {
+    layers: ["uns_hierarchy", "diagnostics", "maintenance", "production_governance"],
     depth: 15,
   },
 };
@@ -71,26 +74,12 @@ const LINE_STATIONS = [
   "station:eol-test",
 ];
 
-const COLUMNS = [
-  ["site", "line"],
-  ["phase"],
-  ["station"],
-  ["machine"],
-  ["subsystem"],
-  ["sensor"],
-  ["alarm"],
-  ["failure"],
-  ["part"],
-  ["manual"],
-  ["skill"],
-  ["product"],
-  ["material"],
-  ["sop"],
-];
-
 const ROW = 76;
 const BAND_GAP = 16;
 const COL_W = CARD_W + 52;
+const H_STEP = CARD_W + 20;
+const H_BAND_GAP = 32;
+const V_ROW = CARD_H + 56;
 
 export const NODE_TYPES = [
   { id: "site", label: "Site", glyph: "Building" },
@@ -300,16 +289,21 @@ export function fitTransform(positions, viewport) {
   const bounds = boundsOf(positions);
   const width = viewport?.w || 800;
   const height = viewport?.h || 600;
+  const padX = 24;
+  const padTop = 52;
+  const padBottom = 24;
+  const availW = Math.max(width - padX * 2, 100);
+  const availH = Math.max(height - padTop - padBottom, 100);
   const k = Math.min(
-    (width - 48) / (bounds.width + 32),
-    (height - 48) / (bounds.height + 32),
+    availW / Math.max(bounds.width, 1),
+    availH / Math.max(bounds.height, 1),
     1.25
   );
-  const safeK = Math.max(k, 0.28);
+  const safeK = Math.max(k, 0.05);
   return {
     k: safeK,
-    x: (width - bounds.width * safeK) / 2 - bounds.minX * safeK,
-    y: (height - bounds.height * safeK) / 2 - bounds.minY * safeK,
+    x: padX + (availW - bounds.width * safeK) / 2 - bounds.minX * safeK,
+    y: padTop + (availH - bounds.height * safeK) / 2 - bounds.minY * safeK,
   };
 }
 
@@ -427,6 +421,14 @@ const SPINE_COLUMN = {
   machine: 3,
 };
 
+const HIERARCHY_SPINE_ROW = {
+  site: 0,
+  line: 1,
+  phase: 2,
+  station: 3,
+  machine: 4,
+};
+
 function layoutEdges(nodes) {
   const ids = new Set(nodes.map((node) => node._id));
   const edges = [];
@@ -439,19 +441,29 @@ function layoutEdges(nodes) {
   return edges;
 }
 
-function childColumns(nodes) {
+function childLevels(nodes, spineMap, fallbackLevel) {
   const edges = layoutEdges(nodes);
-  const columnOf = new Map();
+  const levelOf = new Map();
   const parentOf = new Map();
   const placed = new Set();
   for (const node of nodes) {
-    const spine = SPINE_COLUMN[node.node_type];
+    const spine = spineMap[node.node_type];
     if (spine === undefined) continue;
-    columnOf.set(node._id, spine);
+    levelOf.set(node._id, spine);
     placed.add(node._id);
   }
 
   let pending = nodes.filter((node) => !placed.has(node._id));
+  if (placed.size === 0 && pending.length > 0) {
+    const minType = Math.min(...pending.map((node) => typeLevel(node.node_type)));
+    for (const node of pending) {
+      if (typeLevel(node.node_type) !== minType) continue;
+      levelOf.set(node._id, fallbackLevel);
+      placed.add(node._id);
+    }
+    pending = pending.filter((node) => !placed.has(node._id));
+  }
+
   let guard = 0;
   while (pending.length > 0 && guard <= nodes.length) {
     guard += 1;
@@ -464,40 +476,57 @@ function childColumns(nodes) {
         continue;
       }
       let parentId = neighbors[0];
-      let parentColumn = columnOf.get(parentId);
+      let parentLevel = levelOf.get(parentId);
       for (const id of neighbors) {
-        const column = columnOf.get(id);
-        if (column > parentColumn) {
-          parentColumn = column;
+        const level = levelOf.get(id);
+        if (level > parentLevel) {
+          parentLevel = level;
           parentId = id;
         }
       }
       if (
         node.parent_id &&
         neighbors.includes(node.parent_id) &&
-        columnOf.get(node.parent_id) === parentColumn
+        levelOf.get(node.parent_id) === parentLevel
       ) {
         parentId = node.parent_id;
       }
-      wave.push({ node, column: parentColumn + 1, parentId });
+      wave.push({ node, level: parentLevel + 1, parentId });
     }
-    if (wave.length === 0) break;
+    if (wave.length === 0) {
+      const minType = Math.min(...rest.map((node) => typeLevel(node.node_type)));
+      for (const node of rest) {
+        if (typeLevel(node.node_type) !== minType) continue;
+        levelOf.set(node._id, fallbackLevel);
+        placed.add(node._id);
+      }
+      pending = rest.filter((node) => !placed.has(node._id));
+      continue;
+    }
     for (const item of wave) {
-      columnOf.set(item.node._id, item.column);
+      levelOf.set(item.node._id, item.level);
       parentOf.set(item.node._id, item.parentId);
       placed.add(item.node._id);
     }
     pending = rest;
   }
-  for (const node of pending) columnOf.set(node._id, SPINE_COLUMN.machine + 1);
-  return { columnOf, parentOf };
+  return { levelOf, parentOf };
 }
 
 export function lineLayout(nodes) {
+  if (nodes.length === 0) return {};
   const byId = new Map(nodes.map((node) => [node._id, node]));
   const links = adjacency(nodes);
   const anchors = new Map();
-  const { columnOf, parentOf } = childColumns(nodes);
+  const { levelOf: columnOf, parentOf } = childLevels(
+    nodes,
+    SPINE_COLUMN,
+    SPINE_COLUMN.machine + 1
+  );
+  const usedCols = [...new Set(columnOf.values())].sort((a, b) => a - b);
+  const compactColIndex = new Map(usedCols.map((col, index) => [col, index]));
+  const columnX = (column) => 28 + (compactColIndex.get(column) ?? 0) * COL_W;
+
   const stations = LINE_STATIONS.filter((id) => byId.has(id));
   const bands = new Map(stations.map((id) => [id, new Map()]));
   const loose = new Map();
@@ -521,9 +550,8 @@ export function lineLayout(nodes) {
   const positions = {};
   const stationColumn = SPINE_COLUMN.station;
   const machineColumn = SPINE_COLUMN.machine;
-  const stationX = 28 + stationColumn * COL_W;
-  const machineX = 28 + machineColumn * COL_W;
-  const columnX = (column) => 28 + column * COL_W;
+  const stationX = columnX(stationColumn);
+  const machineX = columnX(machineColumn);
   const byParent = (list) =>
     [...list].sort((a, b) => {
       const parentA = positions[parentOf.get(a._id)]?.y ?? 0;
@@ -544,13 +572,19 @@ export function lineLayout(nodes) {
     cursor += rows * ROW + BAND_GAP;
   }
 
-  const phaseColumn = COLUMNS.findIndex((types) => types.includes("phase"));
+  const looseMachines = loose.get(machineColumn) || [];
+  if (looseMachines.length > 0) {
+    const sorted = [...looseMachines].sort((a, b) => a.label.localeCompare(b.label));
+    Object.assign(positions, placeStack(sorted, machineX, cursor));
+    cursor += sorted.length * ROW + BAND_GAP;
+  }
+
   for (const phase of nodes.filter((node) => node.node_type === "phase")) {
     const children = stations.filter((id) => byId.get(id)?.parent_id === phase._id);
     if (children.length === 0) continue;
     const tops = children.map((id) => positions[id].y);
     positions[phase._id] = {
-      x: 28 + phaseColumn * COL_W,
+      x: columnX(SPINE_COLUMN.phase),
       y: (Math.min(...tops) + Math.max(...tops)) / 2,
     };
   }
@@ -558,11 +592,18 @@ export function lineLayout(nodes) {
   const enterprise = nodes
     .filter((node) => node.node_type === "site" || node.node_type === "line")
     .sort((a, b) => (a.node_type === "site" ? -1 : 1));
-  if (enterprise.length > 0 && stations.length > 0) {
-    const tops = stations.map((id) => positions[id].y);
-    const mid = (Math.min(...tops) + Math.max(...tops)) / 2;
+  if (enterprise.length > 0) {
+    const refYs =
+      stations.length > 0
+        ? stations.map((id) => positions[id].y)
+        : Object.values(positions).map((point) => point.y);
+    const mid =
+      refYs.length > 0 ? (Math.min(...refYs) + Math.max(...refYs)) / 2 : 36;
     const start = mid - ((enterprise.length - 1) * ROW) / 2;
-    Object.assign(positions, placeStack(enterprise, 28, Math.max(36, start)));
+    Object.assign(
+      positions,
+      placeStack(enterprise, columnX(SPINE_COLUMN.site), Math.max(36, start))
+    );
   }
 
   const detailColumns = new Set();
@@ -596,14 +637,254 @@ export function lineLayout(nodes) {
     }
     const looseList = loose.get(column);
     if (looseList && looseList.length > 0) {
-      const lowest = Math.max(...Object.values(positions).map((point) => point.y), 36);
-      stacks.push({
-        nodes: byParent(looseList),
-        x: columnX(column),
-        anchorY: lowest + ROW,
-      });
+      const groups = new Map();
+      for (const node of byParent(looseList)) {
+        const parentId = parentOf.get(node._id) || "__loose__";
+        if (!groups.has(parentId)) groups.set(parentId, []);
+        groups.get(parentId).push(node);
+      }
+      const existingYs = Object.values(positions).map((point) => point.y);
+      let fallbackY = existingYs.length > 0 ? Math.max(...existingYs) + ROW : 36;
+      for (const [parentId, group] of groups) {
+        const anchorY = positions[parentId]?.y ?? fallbackY;
+        if (positions[parentId]?.y == null) {
+          fallbackY += group.length * ROW;
+        }
+        stacks.push({
+          nodes: group,
+          x: columnX(column),
+          anchorY,
+        });
+      }
     }
     Object.assign(positions, relaxStacks(stacks));
+  }
+
+  const ids = Object.keys(positions);
+  if (ids.length > 0) {
+    const minY = Math.min(...ids.map((id) => positions[id].y));
+    if (minY < 36) {
+      const shift = 36 - minY;
+      for (const id of ids) positions[id].y += shift;
+    }
+  }
+
+  return positions;
+}
+
+function placeHorizontalStack(list, startX, y) {
+  const positions = {};
+  list.forEach((node, index) => {
+    positions[node._id] = { x: startX + index * H_STEP, y };
+  });
+  return positions;
+}
+
+function relaxHorizontalStacks(stacks) {
+  const groups = stacks
+    .filter((stack) => stack.nodes.length > 0)
+    .map((stack) => ({
+      nodes: stack.nodes,
+      y: stack.y,
+      start: stack.anchorX - ((stack.nodes.length - 1) * H_STEP) / 2,
+    }))
+    .sort((left, right) => left.start - right.start);
+  for (let pass = 0; pass < groups.length * 3; pass += 1) {
+    let moved = false;
+    for (let index = 1; index < groups.length; index += 1) {
+      const previous = groups[index - 1];
+      const rightEdge = previous.start + previous.nodes.length * H_STEP;
+      if (groups[index].start >= rightEdge) continue;
+      const push = (rightEdge - groups[index].start) / 2;
+      previous.start -= push;
+      groups[index].start += push;
+      moved = true;
+    }
+    if (!moved) break;
+  }
+  const positions = {};
+  for (const group of groups) {
+    Object.assign(positions, placeHorizontalStack(group.nodes, group.start, group.y));
+  }
+  return positions;
+}
+
+export function hierarchyLayout(nodes) {
+  if (nodes.length === 0) return {};
+  const byId = new Map(nodes.map((node) => [node._id, node]));
+  const links = adjacency(nodes);
+  const anchors = new Map();
+  const { levelOf: rowOf, parentOf } = childLevels(
+    nodes,
+    HIERARCHY_SPINE_ROW,
+    HIERARCHY_SPINE_ROW.machine + 1
+  );
+  const usedRows = [...new Set(rowOf.values())].sort((a, b) => a - b);
+  const compactRowIndex = new Map(usedRows.map((row, index) => [row, index]));
+  const rowY = (row) => 36 + (compactRowIndex.get(row) ?? 0) * V_ROW;
+
+  const stations = LINE_STATIONS.filter((id) => byId.has(id));
+  const bands = new Map(stations.map((id) => [id, new Map()]));
+  const loose = new Map();
+
+  for (const node of nodes) {
+    if (["site", "line", "phase", "station"].includes(node.node_type)) continue;
+    const row = rowOf.get(node._id);
+    if (row === undefined) continue;
+    const stationId =
+      owningStation(node, byId) || anchorStation(node, byId, links, anchors);
+    if (stationId && bands.has(stationId)) {
+      const rows = bands.get(stationId);
+      if (!rows.has(row)) rows.set(row, []);
+      rows.get(row).push(node);
+    } else {
+      if (!loose.has(row)) loose.set(row, []);
+      loose.get(row).push(node);
+    }
+  }
+
+  const positions = {};
+  const stationRow = HIERARCHY_SPINE_ROW.station;
+  const machineRow = HIERARCHY_SPINE_ROW.machine;
+  const byParentX = (list) =>
+    [...list].sort((a, b) => {
+      const parentA = positions[parentOf.get(a._id)]?.x ?? 0;
+      const parentB = positions[parentOf.get(b._id)]?.x ?? 0;
+      return (
+        parentA - parentB ||
+        typeLevel(a.node_type) - typeLevel(b.node_type) ||
+        a.label.localeCompare(b.label)
+      );
+    });
+
+  let cursorX = 36;
+  for (const stationId of stations) {
+    const machines = bands.get(stationId).get(machineRow) || [];
+    const slots = Math.max(1, machines.length);
+    const centerOffset = ((slots - 1) * H_STEP) / 2;
+    positions[stationId] = { x: cursorX + centerOffset, y: rowY(stationRow) };
+    Object.assign(positions, placeHorizontalStack(machines, cursorX, rowY(machineRow)));
+    cursorX += slots * H_STEP + H_BAND_GAP;
+  }
+
+  const looseMachines = loose.get(machineRow) || [];
+  if (looseMachines.length > 0) {
+    const sorted = [...looseMachines].sort((a, b) => a.label.localeCompare(b.label));
+    Object.assign(positions, placeHorizontalStack(sorted, cursorX, rowY(machineRow)));
+    cursorX += sorted.length * H_STEP + H_BAND_GAP;
+  }
+
+  const phaseNodes = nodes.filter((node) => node.node_type === "phase");
+  if (phaseNodes.length > 0) {
+    const phaseStacks = [];
+    let fallbackX = 36;
+    for (const phase of phaseNodes) {
+      const children = stations.filter((id) => byId.get(id)?.parent_id === phase._id);
+      const anchorX =
+        children.length > 0
+          ? (Math.min(...children.map((id) => positions[id].x)) +
+              Math.max(...children.map((id) => positions[id].x))) /
+            2
+          : fallbackX;
+      fallbackX = anchorX + H_STEP;
+      phaseStacks.push({ nodes: [phase], y: rowY(HIERARCHY_SPINE_ROW.phase), anchorX });
+    }
+    Object.assign(positions, relaxHorizontalStacks(phaseStacks));
+  }
+
+  const lineNodes = nodes.filter((node) => node.node_type === "line");
+  if (lineNodes.length > 0) {
+    const refXs =
+      phaseNodes.length > 0
+        ? phaseNodes.map((node) => positions[node._id]?.x).filter((x) => x != null)
+        : Object.values(positions).map((point) => point.x);
+    const centerX =
+      refXs.length > 0 ? (Math.min(...refXs) + Math.max(...refXs)) / 2 : 36;
+    Object.assign(
+      positions,
+      relaxHorizontalStacks([
+        { nodes: lineNodes, y: rowY(HIERARCHY_SPINE_ROW.line), anchorX: centerX },
+      ])
+    );
+  }
+
+  const siteNodes = nodes.filter((node) => node.node_type === "site");
+  if (siteNodes.length > 0) {
+    const refXs =
+      lineNodes.length > 0
+        ? lineNodes.map((node) => positions[node._id]?.x).filter((x) => x != null)
+        : Object.values(positions).map((point) => point.x);
+    const centerX =
+      refXs.length > 0 ? (Math.min(...refXs) + Math.max(...refXs)) / 2 : 36;
+    Object.assign(
+      positions,
+      relaxHorizontalStacks([
+        { nodes: siteNodes, y: rowY(HIERARCHY_SPINE_ROW.site), anchorX: centerX },
+      ])
+    );
+  }
+
+  const detailRows = new Set();
+  for (const rows of bands.values()) {
+    for (const row of rows.keys()) {
+      if (row !== machineRow) detailRows.add(row);
+    }
+  }
+  for (const row of loose.keys()) {
+    if (row !== machineRow) detailRows.add(row);
+  }
+
+  for (const row of [...detailRows].sort((left, right) => left - right)) {
+    const stacks = [];
+    for (const stationId of stations) {
+      const list = bands.get(stationId).get(row);
+      if (!list || list.length === 0) continue;
+      const groups = new Map();
+      for (const node of byParentX(list)) {
+        const parentId = parentOf.get(node._id) || stationId;
+        if (!groups.has(parentId)) groups.set(parentId, []);
+        groups.get(parentId).push(node);
+      }
+      for (const [parentId, group] of groups) {
+        stacks.push({
+          nodes: group,
+          y: rowY(row),
+          anchorX: positions[parentId]?.x ?? positions[stationId]?.x ?? 36,
+        });
+      }
+    }
+    const looseList = loose.get(row);
+    if (looseList && looseList.length > 0) {
+      const groups = new Map();
+      for (const node of byParentX(looseList)) {
+        const parentId = parentOf.get(node._id) || "__loose__";
+        if (!groups.has(parentId)) groups.set(parentId, []);
+        groups.get(parentId).push(node);
+      }
+      let fallbackX =
+        Math.max(...Object.values(positions).map((point) => point.x), 36) + H_STEP;
+      for (const [parentId, group] of groups) {
+        const anchorX = positions[parentId]?.x ?? fallbackX;
+        if (positions[parentId]?.x == null) {
+          fallbackX += group.length * H_STEP;
+        }
+        stacks.push({
+          nodes: group,
+          y: rowY(row),
+          anchorX,
+        });
+      }
+    }
+    Object.assign(positions, relaxHorizontalStacks(stacks));
+  }
+
+  const ids = Object.keys(positions);
+  if (ids.length > 0) {
+    const minX = Math.min(...ids.map((id) => positions[id].x));
+    if (minX < 36) {
+      const shift = 36 - minX;
+      for (const id of ids) positions[id].x += shift;
+    }
   }
 
   return positions;
@@ -641,10 +922,14 @@ export function networkLayout(nodes) {
     }
   }
   let maxRank = Math.max(...rank.values());
+  let disconnectedRing = null;
   for (const node of nodes) {
     if (rank.has(node._id)) continue;
-    maxRank += 1;
-    rank.set(node._id, maxRank);
+    if (disconnectedRing == null) {
+      maxRank += 1;
+      disconnectedRing = maxRank;
+    }
+    rank.set(node._id, disconnectedRing);
   }
 
   const rings = new Map();
@@ -655,29 +940,37 @@ export function networkLayout(nodes) {
   }
 
   const positions = {};
-  let radius = 0;
+  const aspectY = 0.68;
+  const ringStepX = CARD_W * 0.78;
+  const ringStepY = CARD_H + 44;
+  let rx = 0;
+  let ry = 0;
   for (const ring of [...rings.keys()].sort((a, b) => a - b)) {
     const ids = rings.get(ring);
     if (ring === 0 && ids.length === 1) {
       positions[ids[0]] = { x: -CARD_W / 2, y: -CARD_H / 2 };
-      radius = Math.max(CARD_W + 48, CARD_H + 72);
+      rx = CARD_W * 0.85;
+      ry = CARD_H + 40;
       continue;
     }
-    const needed = (ids.length * (CARD_W + 36)) / (2 * Math.PI);
-    radius = Math.max(radius, needed);
+    const avgFootprint = (CARD_W + CARD_H) / 2 + 12;
+    const neededRx = (ids.length * avgFootprint) / (2 * Math.PI * ((1 + aspectY) / 2));
+    rx = Math.max(rx, neededRx);
+    ry = Math.max(ry, rx * aspectY);
     ids.forEach((id, index) => {
       const angle = -Math.PI / 2 + (index / ids.length) * Math.PI * 2;
       positions[id] = {
-        x: Math.cos(angle) * radius - CARD_W / 2,
-        y: Math.sin(angle) * radius - CARD_H / 2,
+        x: Math.cos(angle) * rx - CARD_W / 2,
+        y: Math.sin(angle) * ry - CARD_H / 2,
       };
     });
-    radius += Math.max(CARD_W + 56, CARD_H + 88);
+    rx += ringStepX;
+    ry += ringStepY;
   }
 
-  const pad = 20;
+  const pad = 12;
   const ids = Object.keys(positions);
-  for (let iteration = 0; iteration < 120; iteration += 1) {
+  for (let iteration = 0; iteration < 140; iteration += 1) {
     let moved = false;
     for (let i = 0; i < ids.length; i += 1) {
       for (let j = i + 1; j < ids.length; j += 1) {
@@ -706,8 +999,8 @@ export function networkLayout(nodes) {
   const minX = Math.min(...ids.map((id) => positions[id].x));
   const minY = Math.min(...ids.map((id) => positions[id].y));
   for (const id of ids) {
-    positions[id].x += 40 - minX;
-    positions[id].y += 40 - minY;
+    positions[id].x += 24 - minX;
+    positions[id].y += 24 - minY;
   }
   return positions;
 }
@@ -726,13 +1019,41 @@ export function networkEdgeGeometry(source, target) {
   const endY = y2 - (dy / distance) * (CARD_H * 0.46);
   const midX = (startX + endX) / 2;
   const midY = (startY + endY) / 2;
-  const bend = Math.min(42, distance * 0.18);
+  const bend = Math.min(28, distance * 0.14);
   const controlX = midX + (-dy / distance) * bend;
   const controlY = midY + (dx / distance) * bend;
   return {
     path: `M ${startX} ${startY} Q ${controlX} ${controlY}, ${endX} ${endY}`,
     labelX: controlX,
     labelY: controlY,
+  };
+}
+
+export function hierarchyEdgeGeometry(source, target) {
+  const sameRow = Math.abs(source.y - target.y) < 24;
+  if (sameRow) {
+    const fromLeft = source.x < target.x;
+    const x1 = fromLeft ? source.x + CARD_W : source.x;
+    const x2 = fromLeft ? target.x : target.x + CARD_W;
+    const y = source.y + CARD_H / 2;
+    const span = Math.abs(x2 - x1);
+    const bend = span > 80 ? source.y - 18 : y - 14;
+    return {
+      path: `M ${x1} ${y} C ${x1} ${bend}, ${x2} ${bend}, ${x2} ${y}`,
+      labelX: (x1 + x2) / 2,
+      labelY: bend - 4,
+    };
+  }
+  const downward = target.y >= source.y;
+  const x1 = source.x + CARD_W / 2;
+  const x2 = target.x + CARD_W / 2;
+  const y1 = downward ? source.y + CARD_H : source.y;
+  const y2 = downward ? target.y : target.y + CARD_H;
+  const mid = (y1 + y2) / 2;
+  return {
+    path: `M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`,
+    labelX: (x1 + x2) / 2,
+    labelY: mid - 6,
   };
 }
 

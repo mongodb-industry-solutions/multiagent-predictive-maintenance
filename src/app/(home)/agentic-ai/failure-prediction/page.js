@@ -163,7 +163,7 @@ export default function Page() {
           className="mx-2 mb-2 mt-0 flex min-h-[320px] min-w-[320px] w-1/2 flex-col overflow-hidden rounded-xl border border-[#D8E3DF] bg-white p-4 shadow-sm"
         >
           {/* AgentStatus centered */}
-          <div className="mb-8 flex w-full justify-center">
+          <div className="mb-4 flex w-full justify-center">
             <div className="w-full">
               <AgentStatus
                 isActive={agentActive}
