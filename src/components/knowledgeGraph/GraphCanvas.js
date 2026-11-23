@@ -8,6 +8,8 @@ import {
   edgeGeometry,
   edgeRole,
   fitTransform,
+  hierarchyEdgeGeometry,
+  hierarchyLayout,
   layerStyle,
   lineLayout,
   networkEdgeGeometry,
@@ -36,28 +38,55 @@ export default function GraphCanvas({
   highlight,
   isolate = false,
   expandableIds,
-  canFocus = false,
   focusMode = false,
   onFocus,
   onExitFocus,
+  onReset,
 }) {
   const frameRef = useRef(null);
   const sizeRef = useRef({ w: 800, h: 640 });
+  const measuredRef = useRef(false);
   const dragRef = useRef(null);
   const transformRef = useRef({ x: 24, y: 24, k: 0.8 });
+  const positionsRef = useRef({});
   const modelRef = useRef({ nodes, edges, layout, selectedId });
   modelRef.current = { nodes, edges, layout, selectedId };
   const [size, setSize] = useState({ w: 800, h: 640 });
   const [positions, setPositions] = useState({});
+  positionsRef.current = positions;
   const [transform, setTransform] = useState({ x: 24, y: 24, k: 0.8 });
   transformRef.current = transform;
+  const [resetTick, setResetTick] = useState(0);
   const [legendOpen, setLegendOpen] = useState(true);
   const [edgeTip, setEdgeTip] = useState(null);
 
   const signature = useMemo(
-    () => `${layout}:${nodes.map((node) => node._id).join("|")}:${edges.length}`,
-    [edges.length, layout, nodes]
+    () => `${resetTick}:${layout}:${nodes.map((node) => node._id).join("|")}:${edges.length}`,
+    [edges.length, layout, nodes, resetTick]
   );
+
+  function getViewportSize() {
+    const rect = frameRef.current?.getBoundingClientRect();
+    if (rect && rect.width > 0 && rect.height > 0) {
+      return { w: rect.width, h: rect.height };
+    }
+    return sizeRef.current;
+  }
+
+  function handleFit() {
+    const currentPositions = {};
+    for (const node of modelRef.current.nodes) {
+      if (positionsRef.current[node._id]) {
+        currentPositions[node._id] = positionsRef.current[node._id];
+      }
+    }
+    setTransform(fitTransform(currentPositions, getViewportSize()));
+  }
+
+  function handleReset() {
+    setResetTick((current) => current + 1);
+    onReset?.();
+  }
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -67,8 +96,15 @@ export default function GraphCanvas({
         w: entry.contentRect.width,
         h: entry.contentRect.height,
       };
+      if (next.w <= 0 || next.h <= 0) return;
       sizeRef.current = next;
       setSize(next);
+      if (!measuredRef.current) {
+        measuredRef.current = true;
+        if (Object.keys(positionsRef.current).length > 0) {
+          setTransform(fitTransform(positionsRef.current, next));
+        }
+      }
     });
     observer.observe(frame);
     return () => observer.disconnect();
@@ -77,9 +113,14 @@ export default function GraphCanvas({
   useEffect(() => {
     const model = modelRef.current;
     const nextPositions =
-      model.layout === "network" ? networkLayout(model.nodes) : lineLayout(model.nodes);
+      model.layout === "network"
+        ? networkLayout(model.nodes)
+        : model.layout === "hierarchy"
+        ? hierarchyLayout(model.nodes)
+        : lineLayout(model.nodes);
+    positionsRef.current = nextPositions;
     setPositions(nextPositions);
-    setTransform(fitTransform(nextPositions, sizeRef.current));
+    setTransform(fitTransform(nextPositions, getViewportSize()));
   }, [signature]);
 
   useEffect(() => {
@@ -92,7 +133,7 @@ export default function GraphCanvas({
       const my = event.clientY - rect.top;
       const factor = event.deltaY < 0 ? 1.08 : 0.92;
       setTransform((current) => {
-        const k = Math.min(2.5, Math.max(0.22, current.k * factor));
+        const k = Math.min(2.5, Math.max(0.05, current.k * factor));
         const scale = k / current.k;
         return {
           k,
@@ -193,6 +234,19 @@ export default function GraphCanvas({
     <section className="relative flex min-h-[520px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#D8E3DF] bg-[#F7FBFA] shadow-sm">
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-end p-3">
         <div className="pointer-events-auto flex items-center gap-1.5">
+          {(focusMode || Boolean(selectedId) || highlightActive) && (
+            <button
+              type="button"
+              onClick={focusMode ? onExitFocus : onFocus}
+              className={`inline-flex h-8 items-center rounded-lg border px-2.5 text-sm font-semibold ${
+                focusMode
+                  ? "border-[#00684A] bg-[#E3FCF7] text-[#00684A]"
+                  : "border-[#C1C7C6] bg-white text-[#112733]"
+              }`}
+            >
+              {focusMode ? "Back" : "Focus"}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setTransform((current) => ({ ...current, k: Math.min(2.5, current.k * 1.15) }))}
@@ -203,7 +257,7 @@ export default function GraphCanvas({
           </button>
           <button
             type="button"
-            onClick={() => setTransform((current) => ({ ...current, k: Math.max(0.22, current.k / 1.15) }))}
+            onClick={() => setTransform((current) => ({ ...current, k: Math.max(0.05, current.k / 1.15) }))}
             className="inline-flex h-8 items-center rounded-lg border border-[#C1C7C6] bg-white px-2.5 text-sm font-semibold text-[#112733]"
             aria-label="Zoom out"
           >
@@ -211,22 +265,19 @@ export default function GraphCanvas({
           </button>
           <button
             type="button"
-            onClick={() => setTransform(fitTransform(positions, size))}
+            onClick={handleFit}
             className="inline-flex h-8 items-center rounded-lg border border-[#C1C7C6] bg-white px-2.5 text-sm font-semibold text-[#112733]"
           >
             Fit
           </button>
           <button
             type="button"
-            onClick={focusMode ? onExitFocus : onFocus}
-            disabled={!focusMode && !canFocus}
-            className={`inline-flex h-8 items-center rounded-lg border px-2.5 text-sm font-semibold disabled:text-[#889397] ${
-              focusMode
-                ? "border-[#00684A] bg-[#E3FCF7] text-[#00684A]"
-                : "border-[#C1C7C6] bg-white text-[#112733]"
-            }`}
+            onClick={handleReset}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#C1C7C6] bg-white text-[#112733] hover:bg-[#F7FBFA]"
+            aria-label="Reset visualization"
+            title="Reset visualization"
           >
-            {focusMode ? "Back" : "Focus"}
+            <Icon glyph="Refresh" size={15} />
           </button>
         </div>
       </div>
@@ -280,6 +331,8 @@ export default function GraphCanvas({
             const geometry =
               layout === "network"
                 ? networkEdgeGeometry(source, target)
+                : layout === "hierarchy"
+                ? hierarchyEdgeGeometry(source, target)
                 : edgeGeometry(source, target);
             const quiet = !isolate && highlightActive && !hot;
             return (

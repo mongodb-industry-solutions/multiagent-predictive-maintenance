@@ -92,7 +92,13 @@ function PathSummary({ result, nodesById }) {
   );
 }
 
-export default function GraphQueryLab({ active = true, nodesById, onHighlight, onView }) {
+export default function GraphQueryLab({
+  active = true,
+  nodesById,
+  onHighlight,
+  onView,
+  resetSignal = 0,
+}) {
   const [presetId, setPresetId] = useState(QUERY_PRESETS[0].id);
   const [pipelineText, setPipelineText] = useState(
     formatPipeline(QUERY_PRESETS[0].pipeline)
@@ -102,15 +108,15 @@ export default function GraphQueryLab({ active = true, nodesById, onHighlight, o
   const [error, setError] = useState("");
   const [showJson, setShowJson] = useState(false);
 
-  const preset =
-    QUERY_PRESETS.find((item) => item.id === presetId) || QUERY_PRESETS[0];
-
-  function clearResult() {
+  useEffect(() => {
+    if (!resetSignal) return;
     setResult(null);
     setError("");
     setShowJson(false);
-    onHighlight(null);
-  }
+  }, [resetSignal]);
+
+  const preset =
+    QUERY_PRESETS.find((item) => item.id === presetId) || QUERY_PRESETS[0];
 
   function selectPreset(next) {
     setPresetId(next.id);
@@ -182,8 +188,6 @@ export default function GraphQueryLab({ active = true, nodesById, onHighlight, o
           alwaysEditing
           collapsible
           showHeading={false}
-          onClear={clearResult}
-          canClear={Boolean(result)}
           headerControl={
             <select
               aria-label="Sample graph traversal"

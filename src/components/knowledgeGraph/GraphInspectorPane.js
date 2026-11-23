@@ -46,6 +46,7 @@ export default function GraphInspectorPane({
   nodesById,
   onHighlight,
   onView,
+  resetSignal = 0,
 }) {
   const style = selectedNode ? layerStyle(selectedNode.layer) : null;
 
@@ -77,6 +78,7 @@ export default function GraphInspectorPane({
             nodesById={nodesById}
             onHighlight={onHighlight}
             onView={onView}
+            resetSignal={resetSignal}
           />
         </div>
         {tab === "document" && (
