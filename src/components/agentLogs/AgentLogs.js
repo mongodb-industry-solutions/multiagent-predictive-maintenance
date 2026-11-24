@@ -16,6 +16,7 @@ import {
 } from "@via-ds/components";
 import { Icon } from "@via-ds/icons";
 import { useAgentLogs } from "./hooks";
+import KnowledgeGraphLogView from "./KnowledgeGraphLogView";
 
 export default function AgentLogs({
   logs,
@@ -66,10 +67,7 @@ export default function AgentLogs({
         )}
       </div>
       {/* Logs display */}
-      <div
-        className="min-h-0 flex-1 overflow-y-auto px-2 py-4"
-        style={{ maxHeight: "calc(100vh - 200px)" }}
-      >
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-4">
         {uiLogs && uiLogs.length > 0 ? (
           <>
             {uiLogs.map((log, i) => {
@@ -107,6 +105,15 @@ export default function AgentLogs({
                 );
               }
               if (log.type === "tool") {
+                const kgDoc =
+                  log.toolName === "query_knowledge_graph" &&
+                  Array.isArray(log.documents) &&
+                  log.documents.length > 0 &&
+                  log.documents[0] &&
+                  typeof log.documents[0] === "object" &&
+                  log.documents[0].knowledge_graph_trace
+                    ? log.documents[0]
+                    : null;
                 // Format tool name: replace _ with space and capitalize first letter
                 const formattedToolName = log.toolName
                   ? log.toolName
@@ -121,7 +128,7 @@ export default function AgentLogs({
                     <Disclosure defaultExpanded={false} className="agent-log-tool agent-log-bubble">
                       <DisclosureHeader>
                         <span className="flex items-center gap-2">
-                          {formattedToolName}
+                          <span>{formattedToolName}</span>
                           {log.loading && (
                             <>
                               <ProgressCircle
@@ -134,61 +141,78 @@ export default function AgentLogs({
                         </span>
                       </DisclosureHeader>
                       <DisclosurePanel>
-                        {log.query && (
-                          <div className="mb-2">
-                            <Body className="font-semibold">Query:</Body>
-                            <CodeBlock language="none">
-                              <CodeSnippet>
-                                {typeof log.query === "string"
-                                  ? log.query
-                                  : JSON.stringify(log.query, null, 2)}
-                              </CodeSnippet>
-                              <CopyButton
-                                copyText={
-                                  typeof log.query === "string"
-                                    ? log.query
-                                    : JSON.stringify(log.query, null, 2)
-                                }
-                              >
-                                <Button aria-label="Copy code">
-                                  <Icon glyph="Copy" />
-                                </Button>
-                              </CopyButton>
-                            </CodeBlock>
-                          </div>
-                        )}
-                        {log.documents &&
-                          Array.isArray(log.documents) &&
-                          log.documents.length > 0 &&
-                          log.documents.some(
-                            (doc) =>
-                              doc &&
-                              (typeof doc === "string"
-                                ? doc.trim() !== ""
-                                : Object.keys(doc).length > 0),
-                          ) && (
-                            <div className="max-h-64 overflow-y-auto space-y-2">
-                              <Body className="font-semibold mb-1 block">
-                                Result:
-                              </Body>
-                              {log.documents.map((doc, idx) => {
-                                const documentText =
-                                  typeof doc === "string"
-                                    ? doc
-                                    : JSON.stringify(doc, null, 2);
-                                return (
-                                  <CodeBlock key={idx} language="json">
-                                    <CodeSnippet>{documentText}</CodeSnippet>
-                                    <CopyButton copyText={documentText}>
+                        {kgDoc ? (
+                          <KnowledgeGraphLogView
+                            doc={kgDoc}
+                            inputArgs={log.query}
+                          />
+                        ) : (
+                          <>
+                            {log.query && (
+                              <div className="mb-3">
+                                <Body className="font-semibold">Query:</Body>
+                                <div className="max-h-56 overflow-y-auto rounded-lg">
+                                  <CodeBlock
+                                    language={
+                                      typeof log.query === "string"
+                                        ? "none"
+                                        : "json"
+                                    }
+                                  >
+                                    <CodeSnippet>
+                                      {typeof log.query === "string"
+                                        ? log.query
+                                        : JSON.stringify(log.query, null, 2)}
+                                    </CodeSnippet>
+                                    <CopyButton
+                                      copyText={
+                                        typeof log.query === "string"
+                                          ? log.query
+                                          : JSON.stringify(log.query, null, 2)
+                                      }
+                                    >
                                       <Button aria-label="Copy code">
                                         <Icon glyph="Copy" />
                                       </Button>
                                     </CopyButton>
                                   </CodeBlock>
-                                );
-                              })}
-                            </div>
-                          )}
+                                </div>
+                              </div>
+                            )}
+                            {log.documents &&
+                              Array.isArray(log.documents) &&
+                              log.documents.length > 0 &&
+                              log.documents.some(
+                                (doc) =>
+                                  doc &&
+                                  (typeof doc === "string"
+                                    ? doc.trim() !== ""
+                                    : Object.keys(doc).length > 0),
+                              ) && (
+                                <div className="max-h-96 overflow-y-auto space-y-2">
+                                  <Body className="font-semibold mb-1 block">
+                                    Result:
+                                  </Body>
+                                  {log.documents.map((doc, idx) => {
+                                    const documentText =
+                                      typeof doc === "string"
+                                        ? doc
+                                        : JSON.stringify(doc, null, 2);
+                                    return (
+                                      <CodeBlock key={idx} language="json">
+                                        <CodeSnippet>{documentText}</CodeSnippet>
+                                        <CopyButton copyText={documentText}>
+                                          <Button aria-label="Copy code">
+                                            <Icon glyph="Copy" />
+                                          </Button>
+                                        </CopyButton>
+                                      </CodeBlock>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                          </>
+                        )}
                       </DisclosurePanel>
                     </Disclosure>
                   </div>

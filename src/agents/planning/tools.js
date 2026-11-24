@@ -3,9 +3,39 @@ import getMongoClientPromise from "@/integrations/mongodb/client";
 import {
   inventoryAvailabilityCheck,
   assignStaffToWorkorder,
-  findProductionSlot,
   scheduleMaintenanceWorkOrder,
 } from "@/lib/simulation/planning";
+import { queryDownstreamImpactGraph } from "@/lib/knowledgeGraph/agentQueries";
+
+export const queryKnowledgeGraph = tool(
+  async ({ machine_id = "M1" }) => {
+    const result = await queryDownstreamImpactGraph({
+      machineId: machine_id,
+    });
+    return JSON.stringify(result);
+  },
+  {
+    name: "query_knowledge_graph",
+    description:
+      "Traverse the factory knowledge graph via MongoDB $graphLookup to resolve machine topology, check station redundancy, and assess downstream production blast radius (starved stations and blocked EV products) to inform scheduling priority (delay_factor).",
+    schema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Name of the tool for identification purposes",
+          enum: ["query_knowledge_graph"],
+        },
+        machine_id: {
+          type: "string",
+          description: "Machine ID from the work order (e.g. M1 or LTW-04)",
+          default: "M1",
+        },
+      },
+      required: ["name", "machine_id"],
+    },
+  }
+);
 
 export const checkInventoryAvailability = tool(
   async ({ items }) => {
@@ -116,15 +146,24 @@ export const checkStaffAvailability = tool(
 
 export const scheduleWorkOrder = tool(
   async ({ duration, delay_factor }) => {
-    if (typeof duration !== "number" || duration < 1) {
+    if (typeof duration !== "number" || !Number.isFinite(duration) || duration < 1) {
       return JSON.stringify({ error: "Invalid duration." });
     }
-    // Build the maintenance task object
-    const today = new Date();
-    const task_id = `MAINT-${today.getFullYear()}${(today.getMonth() + 1)
+    const normalizedDuration = Math.ceil(duration);
+    const normalizedDelayFactor =
+      typeof delay_factor === "number" && Number.isFinite(delay_factor)
+        ? delay_factor
+        : 0;
+
+    // Normalize "today" to UTC midnight so all calendar comparisons use a single boundary
+    const now = new Date();
+    const today = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    );
+    const task_id = `MAINT-${today.getUTCFullYear()}${(today.getUTCMonth() + 1)
       .toString()
       .padStart(2, "0")}${today
-      .getDate()
+      .getUTCDate()
       .toString()
       .padStart(2, "0")}-${Math.floor(Math.random() * 10000)
       .toString()
@@ -140,23 +179,21 @@ export const scheduleWorkOrder = tool(
       );
     const db = client.db(dbName);
     const collection = db.collection("production_calendar");
-    // Get all tasks with planned_end_date after today, for the next 2 months
-    today.setUTCHours(0, 0, 0, 0);
-    const twoMonthsLater = new Date(today);
-    twoMonthsLater.setUTCMonth(twoMonthsLater.getUTCMonth() + 2);
+    // Fetch only active and future tasks (strictly excluding past tasks whose exclusive end <= today)
     const tasks = await collection
       .find({
-        planned_end_date: { $gte: today, $lte: twoMonthsLater },
+        planned_end_date: { $gt: today },
       })
       .sort({ planned_start_date: 1 })
       .toArray();
-    // Use helper to schedule and update tasks
+    // Schedule maintenance work order and shift only colliding future tasks
     const result = await scheduleMaintenanceWorkOrder(
       tasks,
       db,
       maintenance_task,
-      duration,
-      delay_factor
+      normalizedDuration,
+      normalizedDelayFactor,
+      today
     );
     return JSON.stringify(result);
   },
@@ -190,6 +227,7 @@ export const scheduleWorkOrder = tool(
 
 export function getTools() {
   return [
+    queryKnowledgeGraph,
     checkInventoryAvailability,
     checkStaffAvailability,
     scheduleWorkOrder,

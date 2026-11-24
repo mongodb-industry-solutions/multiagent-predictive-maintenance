@@ -104,184 +104,272 @@ export function assignStaffToWorkorder(staffDocs, requiredSkills) {
   };
 }
 
-/**
- * Find the optimal start date and number of affected tasks for a new workorder.
- * @param {Array} calendarTasks - Array of production calendar tasks (sorted by planned_start_date)
- * @param {number} duration - Duration in days of the new workorder
- * @param {number} delayFactor - Delay factor of the new workorder (always 0 for this use case)
- * @returns {Object} { start_date: Date, affected_tasks: number }
- */
-export function findProductionSlot(calendarTasks, duration, delayFactor) {
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  const now = today;
-  // Identify not-movable tasks: active/past or delay_factor <= new
-  const notMovable = calendarTasks.filter((t) => {
-    const start = new Date(t.planned_start_date);
-    const end = new Date(start);
-    end.setUTCDate(start.getUTCDate() + (t.duration || 1));
-    // Active or past: end < today OR (today >= start && today < end)
-    const isPast = end < now;
-    const isActive = start <= now && now < end;
-    const isLowPriority = t.delay_factor <= delayFactor;
-    return isPast || isActive || isLowPriority;
-  });
-  // Movable: future and delay_factor > new
-  const movable = calendarTasks.filter((t) => !notMovable.includes(t));
-  // Find the last not-movable task's end date (planned_start_date + duration)
-  let lastNotMovableEnd = today;
-  if (notMovable.length > 0) {
-    lastNotMovableEnd = new Date(
-      Math.max(
-        ...notMovable.map((t) => {
-          const start = new Date(t.planned_start_date);
-          const end = new Date(start);
-          end.setUTCDate(start.getUTCDate() + (t.duration || 1));
-          return end.getTime();
-        })
-      )
-    );
-    lastNotMovableEnd.setUTCHours(0, 0, 0, 0);
-  }
-  // Earliest possible slot is the end date of the latest not-movable task, or today if that is in the past
-  let slotStart;
-  if (lastNotMovableEnd >= today) {
-    slotStart = new Date(lastNotMovableEnd);
-  } else {
-    slotStart = today;
-  }
-
-  // Now, simulate inserting the new workorder and count affected movable tasks
-  let affected = 0;
-  let currentStart = new Date(slotStart);
-  let currentEnd = new Date(currentStart);
-  currentEnd.setUTCDate(currentEnd.getUTCDate() + duration);
-  // Only consider movable tasks, sorted by planned_start_date
-  const movableSorted = [...movable].sort(
-    (a, b) => new Date(a.planned_start_date) - new Date(b.planned_start_date)
+function toUtcMidnight(value) {
+  const date = new Date(value);
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
   );
-  for (let i = 0; i < movableSorted.length; i++) {
-    const t = movableSorted[i];
-    const tStart = new Date(t.planned_start_date);
-    const tEnd = new Date(tStart);
-    tEnd.setUTCDate(tStart.getUTCDate() + (t.duration || 1));
-    if (tStart < currentEnd) {
-      // This movable task would be pushed
-      affected++;
-      // Move this task to after the new workorder
-      currentStart = new Date(currentEnd);
-      currentEnd = new Date(currentStart);
-      currentEnd.setUTCDate(currentEnd.getUTCDate() + (t.duration || 1));
-    } else {
-      // There is a gap, so the rest can stay
-      currentStart = new Date(tEnd);
-      currentEnd = new Date(currentStart);
-      currentEnd.setUTCDate(currentEnd.getUTCDate() + (t.duration || 1));
+}
+
+function addUtcDays(date, days) {
+  return new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate() + days
+    )
+  );
+}
+
+function normalizeDurationDays(duration) {
+  const numeric = Number(duration);
+  if (!Number.isFinite(numeric) || numeric < 1) {
+    return 1;
+  }
+  return Math.ceil(numeric);
+}
+
+function normalizeCalendarTask(task) {
+  const start = toUtcMidnight(task.planned_start_date);
+  const duration = normalizeDurationDays(task.duration);
+  const end = addUtcDays(start, duration);
+  return { task, start, end, duration };
+}
+
+function insertIntervalSorted(intervals, interval) {
+  let idx = intervals.length;
+  while (idx > 0 && intervals[idx - 1].start > interval.start) {
+    idx -= 1;
+  }
+  intervals.splice(idx, 0, interval);
+}
+
+/**
+ * Find the earliest half-open UTC day interval [start, start + duration) with
+ * start >= minStart that does not overlap any interval in blockedIntervals
+ * (sorted ascending by start).
+ */
+function findEarliestFreeSlot(minStart, duration, blockedIntervals) {
+  let candidateStart = toUtcMidnight(minStart);
+  let candidateEnd = addUtcDays(candidateStart, duration);
+
+  for (const interval of blockedIntervals) {
+    if (interval.start >= candidateEnd) {
+      break;
+    }
+    if (interval.end > candidateStart) {
+      candidateStart = new Date(interval.end);
+      candidateEnd = addUtcDays(candidateStart, duration);
     }
   }
+
+  return { start: candidateStart, end: candidateEnd };
+}
+
+/**
+ * Compute an optimal non-overlapping schedule for a new maintenance work order
+ * without modifying input task objects or affecting past/active/fixed tasks.
+ *
+ * All task dates are modeled as half-open UTC day intervals [start, end), where
+ * end = start + duration days:
+ * - Past tasks (end <= today) are strictly immutable and ignored.
+ * - Active tasks (start <= today < end), existing maintenance tasks, and future
+ *   tasks with delay_factor <= delayFactor are fixed in place.
+ * - The maintenance task is placed in the earliest slot >= today that does not
+ *   overlap any fixed task (today if today is free, or immediately after any
+ *   currently running task).
+ * - Movable future tasks are only shifted forward if they collide with the new
+ *   maintenance task or an earlier shifted task, naturally absorbing existing
+ *   calendar gaps and hopping over fixed tasks without creating overlaps.
+ *
+ * @param {Array} calendarTasks - Production calendar task documents
+ * @param {number} duration - Duration in days (>= 1)
+ * @param {number} [delayFactor=0] - Priority delay factor (0 = highest priority)
+ * @param {Date|string} [referenceDate=new Date()] - Reference date for "today"
+ * @returns {{ startDate: Date, endDate: Date, updates: Array, affectedCount: number }}
+ */
+export function planMaintenanceSchedule(
+  calendarTasks,
+  duration,
+  delayFactor = 0,
+  referenceDate = new Date()
+) {
+  const today = toUtcMidnight(referenceDate);
+  const normalizedDuration = normalizeDurationDays(duration);
+  const normalizedDelayFactor = Number.isFinite(Number(delayFactor))
+    ? Number(delayFactor)
+    : 0;
+
+  const fixedIntervals = [];
+  const movableEntries = [];
+
+  for (const rawTask of calendarTasks || []) {
+    if (!rawTask?.planned_start_date) continue;
+    const entry = normalizeCalendarTask(rawTask);
+
+    // Past tasks (exclusive end <= today) are strictly untouched.
+    if (entry.end <= today) {
+      continue;
+    }
+
+    const isActive = entry.start <= today && today < entry.end;
+    const isMaintenance = rawTask.task_type === "maintenance";
+    const isHigherOrEqualPriority =
+      typeof rawTask.delay_factor === "number" &&
+      rawTask.delay_factor <= normalizedDelayFactor;
+
+    if (isActive || isMaintenance || isHigherOrEqualPriority) {
+      fixedIntervals.push({ start: entry.start, end: entry.end });
+    } else {
+      movableEntries.push(entry);
+    }
+  }
+
+  fixedIntervals.sort((a, b) => a.start - b.start);
+  movableEntries.sort(
+    (a, b) =>
+      a.start - b.start ||
+      String(a.task.task_id || "").localeCompare(String(b.task.task_id || ""))
+  );
+
+  // Place the new maintenance work order in the earliest free slot >= today.
+  const maintenanceSlot = findEarliestFreeSlot(
+    today,
+    normalizedDuration,
+    fixedIntervals
+  );
+
+  // Track all occupied intervals (fixed tasks + new maintenance + placed movable tasks).
+  const occupied = [...fixedIntervals];
+  insertIntervalSorted(occupied, {
+    start: maintenanceSlot.start,
+    end: maintenanceSlot.end,
+  });
+
+  const updates = [];
+  for (const entry of movableEntries) {
+    const slot = findEarliestFreeSlot(entry.start, entry.duration, occupied);
+    insertIntervalSorted(occupied, { start: slot.start, end: slot.end });
+
+    if (
+      slot.start.getTime() !== entry.start.getTime() ||
+      slot.end.getTime() !== entry.end.getTime()
+    ) {
+      updates.push({
+        _id: entry.task._id,
+        task_id: entry.task.task_id,
+        previous_start_date: entry.start,
+        planned_start_date: slot.start,
+        planned_end_date: slot.end,
+      });
+    }
+  }
+
   return {
-    start_date: slotStart,
-    affected_tasks: affected,
+    startDate: maintenanceSlot.start,
+    endDate: maintenanceSlot.end,
+    updates,
+    affectedCount: updates.length,
+  };
+}
+
+/**
+ * Find the optimal start date and number of affected tasks for a new workorder.
+ * @param {Array} calendarTasks - Array of production calendar tasks
+ * @param {number} duration - Duration in days of the new workorder
+ * @param {number} [delayFactor=0] - Delay factor of the new workorder (0 = highest priority)
+ * @param {Date|string} [referenceDate=new Date()] - Reference date for "today"
+ * @returns {{ start_date: Date, affected_tasks: number }}
+ */
+export function findProductionSlot(
+  calendarTasks,
+  duration,
+  delayFactor = 0,
+  referenceDate = new Date()
+) {
+  const plan = planMaintenanceSchedule(
+    calendarTasks,
+    duration,
+    delayFactor,
+    referenceDate
+  );
+  return {
+    start_date: plan.startDate,
+    affected_tasks: plan.affectedCount,
   };
 }
 
 /**
  * Schedules a new maintenance workorder, updates affected tasks, and inserts the new task into the production calendar.
- * @param {Array} tasks - Array of production calendar tasks (future 2 months)
+ * @param {Array} tasks - Array of production calendar tasks (active and future)
  * @param {Object} db - MongoDB database instance
  * @param {Object} maintenanceTask - The maintenance task object to insert
  * @param {number} duration - Duration in days
- * @param {number} delayFactor - Delay factor
- * @returns {Promise<{start_date: string, affected_tasks: number, maintenance_task_id: string|null}>}
+ * @param {number} [delayFactor=0] - Delay factor
+ * @param {Date|string} [referenceDate=new Date()] - Reference date for "today"
+ * @returns {Promise<{start_date: string, end_date: string, affected_tasks: number, maintenance_task_id: string|null}>}
  */
 export async function scheduleMaintenanceWorkOrder(
   tasks,
   db,
   maintenanceTask,
   duration,
-  delayFactor
+  delayFactor = 0,
+  referenceDate = new Date()
 ) {
   const collection = db.collection("production_calendar");
-  // Use helper to find slot and affected tasks
-  const result = findProductionSlot(tasks, duration, delayFactor);
-  const newStart = new Date(result.start_date);
-  const newEnd = new Date(newStart);
-  newEnd.setUTCDate(newEnd.getUTCDate() + duration);
+  const normalizedDuration = normalizeDurationDays(duration);
+  const normalizedDelayFactor = Number.isFinite(Number(delayFactor))
+    ? Number(delayFactor)
+    : 0;
 
-  // Identify not-movable and movable tasks
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  const now = today;
-  const notMovable = tasks.filter((t) => {
-    const start = new Date(t.planned_start_date);
-    const end = new Date(start);
-    end.setUTCDate(start.getUTCDate() + (t.duration || 1));
-    const isPast = end < now;
-    const isActive = start <= now && now < end;
-    const isLowPriority = t.delay_factor <= delayFactor;
-    return isPast || isActive || isLowPriority;
-  });
-  const movable = tasks.filter((t) => !notMovable.includes(t));
-  // Only reschedule movable tasks that overlap with the new maintenance task
-  let currentStart = new Date(newEnd);
-  let currentEnd = new Date(currentStart);
-  let affectedTaskIds = [];
-  // Sort movable by planned_start_date
-  const movableSorted = [...movable].sort(
-    (a, b) => new Date(a.planned_start_date) - new Date(b.planned_start_date)
+  const plan = planMaintenanceSchedule(
+    tasks,
+    normalizedDuration,
+    normalizedDelayFactor,
+    referenceDate
   );
-  for (let i = 0; i < movableSorted.length; i++) {
-    const t = movableSorted[i];
-    const tStart = new Date(t.planned_start_date);
-    const tEnd = new Date(tStart);
-    tEnd.setUTCDate(tStart.getUTCDate() + (t.duration || 1));
-    if (tStart < currentEnd) {
-      // This movable task would be pushed
-      affectedTaskIds.push(t._id);
-      t.planned_start_date = new Date(currentStart);
-      t.planned_end_date = new Date(currentStart);
-      t.planned_end_date.setUTCDate(
-        t.planned_end_date.getUTCDate() + (t.duration || 1)
-      );
-      // Move the slot forward to after this task
-      currentStart = new Date(t.planned_end_date);
-      currentEnd = new Date(currentStart);
-      currentEnd.setUTCDate(currentEnd.getUTCDate() + (t.duration || 1));
-    } else {
-      // If this task is already after the current slot, move the slot forward to after this task
-      currentStart = new Date(tEnd);
-      currentEnd = new Date(currentStart);
-      currentEnd.setUTCDate(currentEnd.getUTCDate() + (t.duration || 1));
-    }
-  }
-  // Update affected tasks in DB
-  for (const t of tasks) {
-    if (affectedTaskIds.includes(t._id)) {
-      await collection.updateOne(
-        { _id: t._id },
-        {
-          $set: {
-            planned_start_date: t.planned_start_date,
-            planned_end_date: t.planned_end_date,
+
+  if (plan.updates.length > 0) {
+    await collection.bulkWrite(
+      plan.updates.map((update) => ({
+        updateOne: {
+          filter: { _id: update._id },
+          update: {
+            $set: {
+              planned_start_date: update.planned_start_date,
+              planned_end_date: update.planned_end_date,
+            },
           },
-        }
-      );
-    }
+        },
+      })),
+      { ordered: false }
+    );
   }
-  // Insert the new maintenance task
+
+  const priority =
+    maintenanceTask?.priority ??
+    (normalizedDelayFactor <= 0
+      ? "high"
+      : normalizedDelayFactor === 1
+      ? "medium"
+      : "low");
+
   const maintenanceDoc = {
     ...maintenanceTask,
     task_type: "maintenance",
-    planned_start_date: newStart,
-    planned_end_date: newEnd,
-    initial_start_date: newStart,
-    duration,
-    delay_factor: delayFactor,
+    planned_start_date: plan.startDate,
+    planned_end_date: plan.endDate,
+    initial_start_date: plan.startDate,
+    duration: normalizedDuration,
+    delay_factor: normalizedDelayFactor,
+    priority,
   };
   const insertResult = await collection.insertOne(maintenanceDoc);
   return {
-    start_date: newStart.toISOString().slice(0, 10),
-    affected_tasks: result.affected_tasks,
+    start_date: plan.startDate.toISOString().slice(0, 10),
+    end_date: plan.endDate.toISOString().slice(0, 10),
+    affected_tasks: plan.affectedCount,
     maintenance_task_id:
       maintenanceDoc.task_id || insertResult.insertedId || null,
   };

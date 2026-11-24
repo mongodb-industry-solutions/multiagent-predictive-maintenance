@@ -21,12 +21,12 @@ export async function fetchProductionCalendarEvents() {
     const startDate = new Date(task.planned_start_date);
     const endDate = new Date(startDate);
     endDate.setUTCDate(endDate.getUTCDate() + (task.duration || 1));
-    // Set orange background for maintenance tasks
+    // Use YYYY-MM-DD strings for allDay events so FullCalendar stays timezone-invariant
     const event = {
       id: task.task_id,
       title: `${task.task_id}: ${task.pieces_to_produce} pcs (${task.priority})`,
-      start: startDate,
-      end: endDate, // exclusive
+      start: startDate.toISOString().slice(0, 10),
+      end: endDate.toISOString().slice(0, 10), // exclusive
       allDay: true,
       extendedProps: {
         ...task,
